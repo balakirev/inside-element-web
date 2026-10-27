@@ -2141,6 +2141,9 @@
     },
     "room_list": {
         "add_space_label": "Add space",
+        "bottom_bar_label": "Sections",
+        "chats": "Chats",
+        "contacts": "Contacts",
         "failed_add_tag": "Failed to add tag %(tagName)s to room",
         "failed_remove_tag": "Failed to remove tag %(tagName)s from room",
         "failed_set_dm_tag": "Failed to set direct message tag",

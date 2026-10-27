@@ -2122,6 +2122,9 @@
     },
     "room_list": {
         "add_space_label": "Добавить пространство",
+        "bottom_bar_label": "Разделы",
+        "chats": "Чаты",
+        "contacts": "Контакты",
         "failed_add_tag": "Не удалось добавить тег %(tagName)s в комнату",
         "failed_remove_tag": "Не удалось удалить тег %(tagName)s из комнаты",
         "failed_set_dm_tag": "Не удалось установить метку личного сообщения",

@@ -11,7 +11,7 @@ Please see LICENSE files in the repository root for full details.
 
 import { vi, describe, it, expect, beforeAll, beforeEach, afterEach } from "vitest";
 import React from "react";
-import { render, screen, fireEvent, act, cleanup, waitFor, within } from "test-utils-rtl";
+import { render, screen, fireEvent, act, cleanup, within } from "test-utils-rtl";
 import { type MatrixClient, type Room } from "matrix-js-sdk/src/matrix";
 import { mkStubRoom, wrapInMatrixClientContext, wrapInSdkContext, TestSDKContext } from "test-utils";
 
@@ -23,8 +23,6 @@ import DMRoomMap from "../../../utils/DMRoomMap";
 import { type SpaceNotificationState } from "../../../stores/notifications/SpaceNotificationState";
 import SettingsStore from "../../../settings/SettingsStore";
 import UnwrappedSpacePanel from "./SpacePanel";
-import defaultDispatcher from "../../../dispatcher/dispatcher";
-import { Action } from "../../../dispatcher/actions";
 
 // DND test utilities based on
 // https://github.com/colinrobertbrooks/react-beautiful-dnd-test-utils/issues/18#issuecomment-1373388693
@@ -205,12 +203,5 @@ describe("<SpacePanel />", () => {
         expect(sdkContext.spaceStore.moveRootSpace).toHaveBeenCalledWith(0, 1);
     });
 
-    it("should be able to open the user menu via dispatcher", async () => {
-        const { baseElement } = render(<SpacePanel />);
-        defaultDispatcher.dispatch({ action: Action.ToggleUserMenu });
-        await waitFor(() => {
-            // Menu exists outside the component due to Portals, so select it manually.
-            expect(baseElement.querySelector("div[aria-label='User menu']")).toBeInTheDocument();
-        });
-    });
+    // Inside: the user menu moved to RoomListBottomBar, its test moved with it.
 });

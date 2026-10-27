@@ -9,3 +9,41 @@
     background-color: var(--cpd-color-bg-canvas-default);
     height: 100%;
 }
+
+/* Inside: contacts · chats · own avatar under the room list, see RoomListBottomBar. */
+.mx_RoomListBottomBar {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    height: 52px;
+    border-top: 1px solid var(--cpd-color-border-disabled);
+
+    .mx_RoomListBottomBar_button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        color: var(--cpd-color-icon-secondary);
+
+        svg {
+            width: 28px;
+            height: 28px;
+        }
+
+        &:hover {
+            color: var(--cpd-color-icon-primary);
+        }
+    }
+
+    .mx_RoomListBottomBar_button_active,
+    .mx_RoomListBottomBar_button_active:hover {
+        color: var(--cpd-color-icon-accent-primary);
+    }
+
+    .mx_RoomListBottomBar_userMenu {
+        flex: 0 0 auto;
+    }
+}
