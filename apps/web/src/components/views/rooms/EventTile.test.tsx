@@ -715,7 +715,9 @@ describe("EventTile", () => {
         it("does not render the message context menu while editing", () => {
             const { container } = getComponent({ editState: {} as EventTileProps["editState"] });
 
-            expect(container.querySelector(".mx_EventTile_line")).toBeNull();
+            // Inside: the message is edited in the composer, so the bubble stays and can be right-clicked.
+            fireEvent.contextMenu(getLine(container), { clientX: 1, clientY: 2 });
+
             expect(screen.queryByTestId("mx_MessageContextMenu")).toBeNull();
         });
 
