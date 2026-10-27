@@ -48,6 +48,10 @@ jobs:
 
             - run: pnpm install --frozen-lockfile
 
+            # Browser-mode tests (apps/web *.test.browser.tsx, all of shared-components) need Chromium.
+            - name: Install the Playwright browser
+              run: pnpm exec playwright install --with-deps chromium-headless-shell
+
             - name: Prepare shared components
               run: pnpm exec nx run-many -t test:unit:prepare -p
 
@@ -63,7 +67,6 @@ jobs:
               working-directory: packages/shared-components
               run: |
                   base=$(cat ../../.inside-base)
-                  pnpm exec playwright install --with-deps chromium-headless-shell
                   pnpm exec vitest run --project=unit --changed "$base" --passWithNoTests
 
     image:
