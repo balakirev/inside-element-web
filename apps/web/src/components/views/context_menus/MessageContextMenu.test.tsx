@@ -645,26 +645,26 @@ describe("MessageContextMenu", () => {
             expect(replyButton).toBeFalsy();
         });
 
-        it("shows react button when we can react", () => {
+        it("shows the quick reactions instead of a react item when we can react", () => {
             const eventContent = createMessageEventContent("hello");
             const context = {
                 canReact: true,
             };
 
             createRightClickMenuWithContent(eventContent, context);
-            const reactButton = document.querySelector('li[aria-label="React"]');
-            expect(reactButton).toBeTruthy();
+            expect(document.querySelector('[role="group"][aria-label="Quick reactions"]')).toBeTruthy();
+            expect(document.querySelector('button[aria-label="All reactions"]')).toBeTruthy();
+            expect(document.querySelector('li[aria-label="React"]')).toBeFalsy();
         });
 
-        it("does not show react button when we cannot react", () => {
+        it("does not show the quick reactions when we cannot react", () => {
             const eventContent = createMessageEventContent("hello");
             const context = {
                 canReact: false,
             };
 
             createRightClickMenuWithContent(eventContent, context);
-            const reactButton = document.querySelector('li[aria-label="React"]');
-            expect(reactButton).toBeFalsy();
+            expect(document.querySelector('[role="group"][aria-label="Quick reactions"]')).toBeFalsy();
         });
 
         it("shows view in room button when the event is a thread root", () => {

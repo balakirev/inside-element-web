@@ -29,7 +29,6 @@ import {
     LinkIcon,
     PinIcon,
     QuoteIcon,
-    ReactionAddIcon,
     ReplyIcon,
     RestartIcon,
     ThreadsIcon,
@@ -58,6 +57,7 @@ import { type ButtonEvent } from "../elements/AccessibleButton";
 import { copyPlaintext, getSelectedText } from "../../../utils/strings";
 import ContextMenu, { toRightOf, type MenuProps } from "../../structures/ContextMenu";
 import ReactionPicker from "../emojipicker/ReactionPicker";
+import { QuickReactionBar } from "./QuickReactionBar";
 import ViewSource from "../../structures/ViewSource";
 import { createRedactEventDialog } from "../dialogs/ConfirmRedactDialog";
 import { ShareDialog } from "../dialogs/ShareDialog";
@@ -661,14 +661,18 @@ export default class MessageContextMenu extends React.Component<IProps, IState> 
             replyInThreadButton = <ReplyInThreadButton mxEvent={mxEvent} closeMenu={this.closeMenu} />;
         }
 
-        let reactButton: JSX.Element | undefined;
+        // On right click, reactions are a row of one-tap emoji above the menu, with a button for the
+        // full picker, instead of a "React" item that opens the picker straight away.
+        let quickReactionBar: JSX.Element | undefined;
         if (rightClick && contentActionable && canReact) {
-            reactButton = (
-                <IconizedContextMenuOption
-                    icon={<ReactionAddIcon />}
-                    label={_t("action|react")}
-                    onClick={this.onReactClick}
-                    inputRef={this.reactButtonRef}
+            quickReactionBar = (
+                <QuickReactionBar
+                    mxEvent={mxEvent}
+                    reactions={reactions}
+                    canSelfRedact={this.context.canSelfRedact}
+                    onFinished={this.closeMenu}
+                    onShowAll={this.onReactClick}
+                    showAllRef={this.reactButtonRef}
                 />
             );
         }
@@ -708,10 +712,9 @@ export default class MessageContextMenu extends React.Component<IProps, IState> 
         }
 
         let quickItemsList: JSX.Element | undefined;
-        if (editButton || replyButton || reactButton || pinButton) {
+        if (editButton || replyButton || pinButton) {
             quickItemsList = (
                 <IconizedContextMenuOptionList>
-                    {reactButton}
                     {replyButton}
                     {replyInThreadButton}
                     {editButton}
@@ -760,6 +763,7 @@ export default class MessageContextMenu extends React.Component<IProps, IState> 
                     compact={true}
                     data-testid="mx_MessageContextMenu"
                 >
+                    {quickReactionBar}
                     {nativeItemsList}
                     {quickItemsList}
                     {commonItemsList}

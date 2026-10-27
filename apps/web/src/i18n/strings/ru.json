@@ -3301,9 +3301,11 @@
     },
     "timeline": {
         "context_menu": {
+            "all_reactions": "Все реакции",
             "collapse_reply_thread": "Свернуть ответы обсуждения",
             "external_url": "Исходная ссылка",
             "open_in_osm": "Открыть в OpenStreetMap",
+            "quick_reactions": "Быстрые реакции",
             "report": "Сообщить",
             "resent_unsent_reactions": "Отправить повторно %(unsentCount)s реакций",
             "show_url_preview": "Предпросмотр",

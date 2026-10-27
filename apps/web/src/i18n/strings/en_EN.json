@@ -81,7 +81,6 @@
         "pin": "Pin",
         "proceed": "Proceed",
         "quote": "Quote",
-        "react": "React",
         "refresh": "Refresh",
         "register": "Register",
         "reload": "Reload",
@@ -3344,9 +3343,11 @@
     },
     "timeline": {
         "context_menu": {
+            "all_reactions": "All reactions",
             "collapse_reply_thread": "Collapse reply thread",
             "external_url": "Source URL",
             "open_in_osm": "Open in OpenStreetMap",
+            "quick_reactions": "Quick reactions",
             "report": "Report",
             "resent_unsent_reactions": "Resend %(unsentCount)s reaction(s)",
             "show_url_preview": "Show preview",
