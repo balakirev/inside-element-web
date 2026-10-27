@@ -157,11 +157,13 @@ export class RoomListItemViewModel
             SettingsStore.unwatchSetting(sectionDataRef);
         });
 
+        // Known before the preview loads: the preview drops the sender line in DMs.
+        this.dmUserId = DMRoomMap.shared().getUserIdForRoomId(props.room.roomId) ?? undefined;
+
         // Load message preview asynchronously (sync data is already complete)
         void this.loadAndSetMessagePreview();
 
         // If this room is a DM, show the MSC4426 user status of the other user
-        this.dmUserId = DMRoomMap.shared().getUserIdForRoomId(props.room.roomId) ?? undefined;
         if (this.dmUserId) {
             props.client.on(ClientEvent.UserProfileUpdate, this.onUserProfileUpdate);
             this.disposables.track(() => {
@@ -318,9 +320,13 @@ export class RoomListItemViewModel
             }
         } else {
             // In group rooms the preview reads "Sender: text"; show the sender on a line of its own instead.
-            const prefix = `${getSenderName(event)}: `;
-            if (getSenderName(event) && preview.text.startsWith(prefix)) {
-                fields.messagePreviewSender = getSenderName(event);
+            // In a conversation of two the sender is obvious, so the prefix is simply dropped, as in other
+            // messengers. Rooms not marked as DMs still count when only two people are in them.
+            const senderName = getSenderName(event);
+            const prefix = `${senderName}: `;
+            if (senderName && preview.text.startsWith(prefix)) {
+                const isOneToOne = Boolean(this.dmUserId) || room.getJoinedMemberCount() === 2;
+                fields.messagePreviewSender = isOneToOne ? undefined : senderName;
                 fields.messagePreview = preview.text.slice(prefix.length);
             }
         }

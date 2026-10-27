@@ -285,6 +285,7 @@ describe("RoomListItemViewModel", () => {
                 event,
                 isThreadReply: false,
             } as MessagePreview);
+            vi.spyOn(room, "getJoinedMemberCount").mockReturnValue(5);
 
             viewModel = new RoomListItemViewModel({ room, client: matrixClient });
             await flushPromises();
@@ -292,6 +293,23 @@ describe("RoomListItemViewModel", () => {
             expect(viewModel.getSnapshot().messagePreviewSender).toBe("Alice");
             expect(viewModel.getSnapshot().messagePreview).toBe("The viewing moved to Friday");
             expect(viewModel.getSnapshot().lastMessageStatus).toBeUndefined();
+        });
+
+        it("drops the sender prefix without a sender line in a conversation of two", async () => {
+            const event = mkMessage({ room: room.roomId, user: "@alice:server", msg: "x", event: true });
+            vi.spyOn(event, "sender", "get").mockReturnValue({ name: "Alice" } as RoomMember);
+            vi.spyOn(MessagePreviewStore.instance, "getPreviewForRoom").mockResolvedValue({
+                text: "Alice: See you on Friday",
+                event,
+                isThreadReply: false,
+            } as MessagePreview);
+            vi.spyOn(room, "getJoinedMemberCount").mockReturnValue(2);
+
+            viewModel = new RoomListItemViewModel({ room, client: matrixClient });
+            await flushPromises();
+
+            expect(viewModel.getSnapshot().messagePreviewSender).toBeUndefined();
+            expect(viewModel.getSnapshot().messagePreview).toBe("See you on Friday");
         });
 
         it("marks the user's own latest message as sent until someone else reads it", async () => {
