@@ -50,7 +50,8 @@ const openStickerPicker = async (): Promise<void> => {
 
 const startVoiceMessage = async (): Promise<void> => {
     await userEvent.click(screen.getByLabelText("More options"));
-    await userEvent.click(screen.getByLabelText("Voice Message"));
+    // The round mic button next to the composer carries the same label.
+    await userEvent.click(screen.getByRole("menuitem", { name: "Voice Message" }));
 };
 
 const expectVoiceMessageRecordingTriggered = (): void => {
@@ -256,6 +257,23 @@ describe("MessageComposer", () => {
             expect(screen.queryByLabelText("Send message")).not.toBeInTheDocument();
         });
 
+        it("should render the voice message button in place of send while the composer is empty", () => {
+            wrapAndRender({ room });
+            expect(screen.getByTestId("voicemessagebtn")).toBeInTheDocument();
+        });
+
+        describe("when clicking the voice message button", () => {
+            beforeEach(async () => {
+                wrapAndRender({ room });
+                await userEvent.click(screen.getByTestId("voicemessagebtn"));
+                await flushPromises();
+            });
+
+            it("should try to start a voice message", () => {
+                expectVoiceMessageRecordingTriggered();
+            });
+        });
+
         describe("when a message has been entered", () => {
             beforeEach(async () => {
                 const renderResult = wrapAndRender({ room }).renderResult;
@@ -264,6 +282,10 @@ describe("MessageComposer", () => {
 
             it("should render the send button", () => {
                 expect(screen.getByLabelText("Send message")).toBeInTheDocument();
+            });
+
+            it("should not render the voice message button", () => {
+                expect(screen.queryByTestId("voicemessagebtn")).not.toBeInTheDocument();
             });
         });
 

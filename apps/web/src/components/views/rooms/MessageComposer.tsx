@@ -18,7 +18,7 @@ import {
 } from "matrix-js-sdk/src/matrix";
 import { Tooltip } from "@vector-im/compound-web";
 import { logger } from "matrix-js-sdk/src/logger";
-import { LockOffIcon, SendSolidIcon } from "@vector-im/compound-design-tokens/assets/web/icons";
+import { LockOffIcon, MicOnSolidIcon, SendSolidIcon } from "@vector-im/compound-design-tokens/assets/web/icons";
 import { useCreateAutoDisposedViewModel } from "@element-hq/web-shared-components";
 
 import { _t } from "../../../languageHandler";
@@ -84,6 +84,23 @@ function SendButton(props: ISendButtonProps): JSX.Element {
             data-testid="sendmessagebtn"
         >
             <SendSolidIcon />
+        </AccessibleButton>
+    );
+}
+
+/**
+ * Inside: the round button in place of "send" while the composer is empty starts a voice message,
+ * as in other messengers. Recording itself is Element's {@link VoiceRecordComposerTile}.
+ */
+function VoiceMessageButton(props: { onClick: (ev: ButtonEvent) => void }): JSX.Element {
+    return (
+        <AccessibleButton
+            className="mx_MessageComposer_sendMessage mx_MessageComposer_voiceMessage"
+            onClick={props.onClick}
+            title={_t("composer|voice_message_button")}
+            data-testid="voicemessagebtn"
+        >
+            <MicOnSolidIcon />
         </AccessibleButton>
     );
 }
@@ -686,6 +703,8 @@ export class MessageComposer extends React.Component<IProps, IState> {
         );
 
         const showSendButton = canSendMessages && (!this.state.isComposerEmpty || this.state.haveRecording);
+        // Recording does not work well in narrow mode (see MessageComposerButtons), so no mic there.
+        const showVoiceMessageButton = canSendMessages && !showSendButton && !this.context.narrow;
 
         const classes = classNames({
             "mx_MessageComposer": true,
@@ -727,6 +746,9 @@ export class MessageComposer extends React.Component<IProps, IState> {
                                     onComposerModeClick={this.onRichTextToggle}
                                     toggleButtonMenu={this.toggleButtonMenu}
                                 />
+                            )}
+                            {showVoiceMessageButton && (
+                                <VoiceMessageButton key="controls_voice_message" onClick={this.onRecordStartEndClick} />
                             )}
                             {showSendButton && (
                                 <SendButton
