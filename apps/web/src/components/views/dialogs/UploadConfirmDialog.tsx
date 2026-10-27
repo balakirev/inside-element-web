@@ -7,13 +7,11 @@ SPDX-License-Identifier: AGPL-3.0-only OR GPL-3.0-only OR LicenseRef-Element-Com
 Please see LICENSE files in the repository root for full details.
 */
 
-import React, { useCallback, useState, type ChangeEvent, type JSX, type KeyboardEvent } from "react";
+import React, { useCallback, useEffect, useRef, useState, type ChangeEvent, type JSX, type KeyboardEvent } from "react";
 
 import { _t } from "../../../languageHandler";
 import BaseDialog from "./BaseDialog";
 import DialogButtons from "../elements/DialogButtons";
-import Modal from "../../../Modal";
-import QuestionDialog from "./QuestionDialog";
 import { fileSize } from "../../../utils/FileUtils";
 import {
     attachmentIcon,
@@ -130,22 +128,36 @@ export default function UploadConfirmDialog({
         setCaption(ev.target.value);
     }, []);
 
-    const onCancelClick = useCallback(async (): Promise<void> => {
-        // Closing the dialog throws the typed caption away, so confirm first, like other messengers do.
-        if (trimmedCaption) {
-            const { finished } = Modal.createDialog(QuestionDialog, {
-                title: _t("upload_file|discard_caption_title"),
-                description: _t("upload_file|discard_caption_description"),
-                button: _t("upload_file|discard_caption_button"),
-                // The default "Cancel" reads the same as "discard" in some languages, so name both choices.
-                cancelButton: _t("upload_file|keep_caption_button"),
-                danger: true,
-            });
-            const [discard] = await finished;
-            if (!discard) return;
+    // Asking before throwing a typed caption away happens inside this dialog rather than in a
+    // separate one: Modal shows only the topmost dialog, so opening another would unmount this one
+    // and lose the caption the user wants to keep.
+    const [confirmingDiscard, setConfirmingDiscard] = useState(false);
+
+    const onCancelClick = useCallback((): void => {
+        if (confirmingDiscard) {
+            // A second Escape while asking means "go back to the caption".
+            setConfirmingDiscard(false);
+        } else if (trimmedCaption) {
+            setConfirmingDiscard(true);
+        } else {
+            onFinished(false);
         }
+    }, [confirmingDiscard, onFinished, trimmedCaption]);
+
+    // Put focus on the safe choice, so a stray Enter keeps the caption instead of throwing it away.
+    const discardRef = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+        if (!confirmingDiscard) return;
+        discardRef.current?.querySelector<HTMLButtonElement>("button:not(.mx_Dialog_primary)")?.focus();
+    }, [confirmingDiscard]);
+
+    const onKeepCaptionClick = useCallback((): void => {
+        setConfirmingDiscard(false);
+    }, []);
+
+    const onDiscardClick = useCallback((): void => {
         onFinished(false);
-    }, [onFinished, trimmedCaption]);
+    }, [onFinished]);
 
     const onUploadClick = useCallback((): void => {
         onFinished(true, false, trimmedCaption || undefined);
@@ -158,12 +170,13 @@ export default function UploadConfirmDialog({
     const onCaptionKeyDown = useCallback(
         (ev: KeyboardEvent<HTMLTextAreaElement>): void => {
             // Enter sends, Shift+Enter starts a new line; ignore Enter that confirms an IME composition.
+            if (confirmingDiscard) return;
             if (ev.key === "Enter" && !ev.shiftKey && !ev.nativeEvent.isComposing) {
                 ev.preventDefault();
                 onUploadClick();
             }
         },
-        [onUploadClick],
+        [confirmingDiscard, onUploadClick],
     );
 
     let uploadAllButton: JSX.Element | undefined;
@@ -205,6 +218,31 @@ export default function UploadConfirmDialog({
             <DialogButtons primaryButton={_t("action|upload")} hasCancel={false} onPrimaryButtonClick={onUploadClick}>
                 {uploadAllButton}
             </DialogButtons>
+
+            {confirmingDiscard && (
+                <div
+                    ref={discardRef}
+                    className="mx_UploadConfirmDialog_discard"
+                    role="alertdialog"
+                    aria-labelledby="mx_UploadConfirmDialog_discardTitle"
+                    aria-describedby="mx_UploadConfirmDialog_discardDescription"
+                >
+                    <div className="mx_UploadConfirmDialog_discardCard">
+                        <h2 id="mx_UploadConfirmDialog_discardTitle">{_t("upload_file|discard_caption_title")}</h2>
+                        <p id="mx_UploadConfirmDialog_discardDescription">
+                            {_t("upload_file|discard_caption_description")}
+                        </p>
+                        <DialogButtons
+                            primaryButton={_t("upload_file|discard_caption_button")}
+                            primaryButtonClass="danger"
+                            onPrimaryButtonClick={onDiscardClick}
+                            // The default "Cancel" reads the same as "discard" in some languages, so name it.
+                            cancelButton={_t("upload_file|keep_caption_button")}
+                            onCancel={onKeepCaptionClick}
+                        />
+                    </div>
+                </div>
+            )}
         </BaseDialog>
     );
 }

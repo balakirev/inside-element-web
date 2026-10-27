@@ -13,8 +13,6 @@ import { secureRandomString } from "matrix-js-sdk/src/randomstring";
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 
 import UploadConfirmDialog from "./UploadConfirmDialog.tsx";
-import Modal from "../../../Modal";
-import QuestionDialog from "./QuestionDialog";
 
 /**
  * The shared media preview tile hides the image until it has loaded it once out of band, which jsdom
@@ -147,41 +145,58 @@ describe("<UploadConfirmDialog />", () => {
             expect(onFinished).toHaveBeenCalledWith(true, false, undefined);
         });
 
-        it("closes straight away when there is no caption to lose", async () => {
-            const createDialog = vi.spyOn(Modal, "createDialog");
+        it("closes straight away when there is no caption to lose", () => {
             const onFinished = vi.fn();
-            const { getByRole } = render(<UploadConfirmDialog file={file} onFinished={onFinished} />);
+            const { getByRole, queryByRole } = render(<UploadConfirmDialog file={file} onFinished={onFinished} />);
 
             fireEvent.click(getByRole("button", { name: "Close dialog" }));
 
-            await waitFor(() => expect(onFinished).toHaveBeenCalledWith(false));
-            expect(createDialog).not.toHaveBeenCalled();
-            createDialog.mockRestore();
+            expect(onFinished).toHaveBeenCalledWith(false);
+            expect(queryByRole("alertdialog")).toBeNull();
         });
 
-        it.each([
-            [true, 1],
-            [false, 0],
-        ])("asks before discarding a typed caption (discard: %s)", async (discard, closeCalls) => {
-            const createDialog = vi
-                .spyOn(Modal, "createDialog")
-                .mockReturnValue({ finished: Promise.resolve([discard]), close: vi.fn() } as any);
+        it("keeps the typed caption when the user chooses to keep editing", () => {
+            const onFinished = vi.fn();
+            const { getByRole, queryByRole } = render(<UploadConfirmDialog file={file} onFinished={onFinished} />);
+            const caption = getByRole("textbox", { name: "Caption" });
+
+            fireEvent.change(caption, { target: { value: "draft" } });
+            fireEvent.click(getByRole("button", { name: "Close dialog" }));
+            expect(getByRole("alertdialog", { name: "Discard caption?" })).toBeInTheDocument();
+
+            fireEvent.click(getByRole("button", { name: "Keep editing" }));
+
+            expect(queryByRole("alertdialog")).toBeNull();
+            expect(caption).toHaveValue("draft");
+            expect(onFinished).not.toHaveBeenCalled();
+
+            // And the kept caption is still sent.
+            fireEvent.keyDown(caption, { key: "Enter" });
+            expect(onFinished).toHaveBeenCalledWith(true, false, "draft");
+        });
+
+        it("focuses keep editing and ignores Enter in the caption while asking", () => {
+            const onFinished = vi.fn();
+            const { getByRole } = render(<UploadConfirmDialog file={file} onFinished={onFinished} />);
+            const caption = getByRole("textbox", { name: "Caption" });
+
+            fireEvent.change(caption, { target: { value: "draft" } });
+            fireEvent.click(getByRole("button", { name: "Close dialog" }));
+
+            expect(getByRole("button", { name: "Keep editing" })).toHaveFocus();
+            fireEvent.keyDown(caption, { key: "Enter" });
+            expect(onFinished).not.toHaveBeenCalled();
+        });
+
+        it("closes the dialog when the user discards the caption", () => {
             const onFinished = vi.fn();
             const { getByRole } = render(<UploadConfirmDialog file={file} onFinished={onFinished} />);
 
             fireEvent.change(getByRole("textbox", { name: "Caption" }), { target: { value: "draft" } });
             fireEvent.click(getByRole("button", { name: "Close dialog" }));
+            fireEvent.click(getByRole("button", { name: "Discard" }));
 
-            await waitFor(() =>
-                expect(createDialog).toHaveBeenCalledWith(
-                    QuestionDialog,
-                    // Both choices are named, so "discard" cannot be mistaken for "cancel".
-                    expect.objectContaining({ button: "Discard", cancelButton: "Keep editing" }),
-                ),
-            );
-            await new Promise((resolve) => setTimeout(resolve, 0));
-            expect(onFinished).toHaveBeenCalledTimes(closeCalls);
-            createDialog.mockRestore();
+            expect(onFinished).toHaveBeenCalledWith(false);
         });
     });
 });
