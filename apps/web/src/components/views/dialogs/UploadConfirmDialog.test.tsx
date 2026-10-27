@@ -172,7 +172,13 @@ describe("<UploadConfirmDialog />", () => {
             fireEvent.change(getByRole("textbox", { name: "Caption" }), { target: { value: "draft" } });
             fireEvent.click(getByRole("button", { name: "Close dialog" }));
 
-            await waitFor(() => expect(createDialog).toHaveBeenCalledWith(QuestionDialog, expect.any(Object)));
+            await waitFor(() =>
+                expect(createDialog).toHaveBeenCalledWith(
+                    QuestionDialog,
+                    // Both choices are named, so "discard" cannot be mistaken for "cancel".
+                    expect.objectContaining({ button: "Discard", cancelButton: "Keep editing" }),
+                ),
+            );
             await new Promise((resolve) => setTimeout(resolve, 0));
             expect(onFinished).toHaveBeenCalledTimes(closeCalls);
             createDialog.mockRestore();

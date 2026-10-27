@@ -137,6 +137,8 @@ export default function UploadConfirmDialog({
                 title: _t("upload_file|discard_caption_title"),
                 description: _t("upload_file|discard_caption_description"),
                 button: _t("upload_file|discard_caption_button"),
+                // The default "Cancel" reads the same as "discard" in some languages, so name both choices.
+                cancelButton: _t("upload_file|keep_caption_button"),
                 danger: true,
             });
             const [discard] = await finished;
