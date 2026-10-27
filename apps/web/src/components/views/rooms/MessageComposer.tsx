@@ -18,7 +18,12 @@ import {
 } from "matrix-js-sdk/src/matrix";
 import { Tooltip } from "@vector-im/compound-web";
 import { logger } from "matrix-js-sdk/src/logger";
-import { LockOffIcon, MicOnSolidIcon, SendSolidIcon } from "@vector-im/compound-design-tokens/assets/web/icons";
+import {
+    CheckIcon,
+    LockOffIcon,
+    MicOnSolidIcon,
+    SendSolidIcon,
+} from "@vector-im/compound-design-tokens/assets/web/icons";
 import { useCreateAutoDisposedViewModel } from "@element-hq/web-shared-components";
 
 import { _t } from "../../../languageHandler";
@@ -31,6 +36,10 @@ import E2EIcon from "./E2EIcon";
 import SettingsStore from "../../../settings/SettingsStore";
 import { aboveLeftOf, type MenuProps } from "../../structures/ContextMenu";
 import ReplyPreview from "./ReplyPreview";
+import EditPreview from "./EditPreview";
+import { EditMessageComposerWrapper } from "./EditMessageComposerWrapper";
+import { type EditMessageComposer as EditMessageComposerClass } from "./EditMessageComposer";
+import type EditorStateTransfer from "../../../utils/EditorStateTransfer";
 import { UserIdentityWarning } from "./UserIdentityWarning";
 import { UPDATE_EVENT } from "../../../stores/AsyncStore";
 import VoiceRecordComposerTile from "./VoiceRecordComposerTile";
@@ -89,6 +98,22 @@ function SendButton(props: ISendButtonProps): JSX.Element {
 }
 
 /**
+ * Inside: the round button in place of "send" while a message is edited in the composer.
+ */
+function SaveEditButton(props: { onClick: (ev: ButtonEvent) => void }): JSX.Element {
+    return (
+        <AccessibleButton
+            className="mx_MessageComposer_sendMessage mx_MessageComposer_saveEdit"
+            onClick={props.onClick}
+            title={_t("action|save")}
+            data-testid="saveeditbtn"
+        >
+            <CheckIcon />
+        </AccessibleButton>
+    );
+}
+
+/**
  * Inside: the round button in place of "send" while the composer is empty starts a voice message,
  * as in other messengers. Recording itself is Element's {@link VoiceRecordComposerTile}.
  */
@@ -114,6 +139,11 @@ interface IProps extends MatrixClientProps {
     e2eStatus?: E2EStatus;
     compact?: boolean;
     urlPreviewVm: MessageComposerUrlPreviewViewModel;
+    /**
+     * Inside: the message being edited. It is edited here, in place of the composer, rather than in the timeline,
+     * as in other messengers. Not with the rich text editor (labs), which keeps editing in the timeline.
+     */
+    editState?: EditorStateTransfer;
 }
 
 interface IState {
@@ -140,6 +170,7 @@ type WysiwygComposerState = {
 export class MessageComposer extends React.Component<IProps, IState> {
     private dispatcherRef?: string;
     private messageComposerInput = createRef<SendMessageComposerClass>();
+    private editMessageComposer = createRef<EditMessageComposerClass>();
     private voiceRecordingButton = createRef<VoiceRecordComposerTile>();
     private ref = createRef<HTMLDivElement>();
     private instanceId: number;
@@ -450,6 +481,14 @@ export class MessageComposer extends React.Component<IProps, IState> {
         }
     };
 
+    private saveEdit = (): void => {
+        this.editMessageComposer.current?.save();
+    };
+
+    private cancelEdit = (): void => {
+        this.editMessageComposer.current?.cancel();
+    };
+
     private onChange = (model: EditorModel): void => {
         this.props.urlPreviewVm.updateWithText({
             content: model.contentPlainText,
@@ -599,9 +638,22 @@ export class MessageComposer extends React.Component<IProps, IState> {
         const menuPosition = this.getMenuPosition();
 
         const canSendMessages = this.context.canSendMessages && !this.context.tombstone;
+        const editState = canSendMessages && !this.state.isWysiwygLabEnabled ? this.props.editState : undefined;
         let composer: ReactNode;
         if (canSendMessages) {
-            if (this.state.isWysiwygLabEnabled && menuPosition) {
+            if (editState) {
+                // The send composer unmounts while editing; it keeps its draft in local storage and gets it back.
+                composer = (
+                    <EditMessageComposerWrapper
+                        key={editState.getEvent().getId()}
+                        composerRef={this.editMessageComposer}
+                        editState={editState}
+                        mxClient={this.props.mxClient}
+                        showUrlPreview={this.context.showUrlPreview ?? false}
+                        inComposer={true}
+                    />
+                );
+            } else if (this.state.isWysiwygLabEnabled && menuPosition) {
                 composer = (
                     <SendWysiwygComposer
                         key="controls_input"
@@ -702,26 +754,32 @@ export class MessageComposer extends React.Component<IProps, IState> {
             />,
         );
 
-        const showSendButton = canSendMessages && (!this.state.isComposerEmpty || this.state.haveRecording);
+        const showSendButton =
+            canSendMessages && !editState && (!this.state.isComposerEmpty || this.state.haveRecording);
         // Recording does not work well in narrow mode (see MessageComposerButtons), so no mic there.
-        const showVoiceMessageButton = canSendMessages && !showSendButton && !this.context.narrow;
+        const showVoiceMessageButton = canSendMessages && !editState && !showSendButton && !this.context.narrow;
 
         const classes = classNames({
             "mx_MessageComposer": true,
             "mx_MessageComposer--compact": this.props.compact,
             "mx_MessageComposer_e2eStatus": leftIcon,
             "mx_MessageComposer_wysiwyg": this.state.isWysiwygLabEnabled,
+            "mx_MessageComposer--editing": !!editState,
         });
 
         return (
             <div className={classes} ref={this.ref} role="region" aria-label={_t("a11y|message_composer")}>
                 <div className="mx_MessageComposer_wrapper">
-                    <MessageComposerUrlPreviewWrapper urlPreviewVm={this.props.urlPreviewVm} />
+                    {!editState && <MessageComposerUrlPreviewWrapper urlPreviewVm={this.props.urlPreviewVm} />}
                     <UserIdentityWarning room={this.props.room} key={this.props.room.roomId} />
-                    <ReplyPreview
-                        replyToEvent={this.props.replyToEvent}
-                        permalinkCreator={this.props.permalinkCreator}
-                    />
+                    {editState ? (
+                        <EditPreview mxEvent={editState.getEvent()} onCancel={this.cancelEdit} />
+                    ) : (
+                        <ReplyPreview
+                            replyToEvent={this.props.replyToEvent}
+                            permalinkCreator={this.props.permalinkCreator}
+                        />
+                    )}
                     <div className="mx_MessageComposer_row">
                         {leftIcon}
                         {composer}
@@ -750,6 +808,7 @@ export class MessageComposer extends React.Component<IProps, IState> {
                             {showVoiceMessageButton && (
                                 <VoiceMessageButton key="controls_voice_message" onClick={this.onRecordStartEndClick} />
                             )}
+                            {editState && <SaveEditButton key="controls_save_edit" onClick={this.saveEdit} />}
                             {showSendButton && (
                                 <SendButton
                                     key="controls_send"

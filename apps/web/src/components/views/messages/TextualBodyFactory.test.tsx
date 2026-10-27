@@ -28,6 +28,7 @@ import { TextualBodyFactory as TextualBody } from "./TextualBodyFactory";
 import MatrixClientContext from "../../../contexts/MatrixClientContext";
 import RoomContext from "../../../contexts/RoomContext";
 import { RoomPermalinkCreator } from "../../../utils/permalinks/Permalinks";
+import EditorStateTransfer from "../../../utils/EditorStateTransfer";
 import { type MediaEventHelper } from "../../../utils/MediaEventHelper";
 import Modal from "../../../Modal";
 import ImageView from "../elements/ImageView";
@@ -243,6 +244,13 @@ describe("<TextualBody />", () => {
         });
 
         await waitFor(() => expect(container).toHaveTextContent("* sender waves(edited)"));
+    });
+
+    it("keeps the body while the message is edited in the composer", () => {
+        const ev = mkRoomTextMessage("Original text");
+        const { container } = getComponent({ mxEvent: ev, editState: new EditorStateTransfer(ev) });
+        expect(container).toHaveTextContent("Original text");
+        expect(container.querySelector(".mx_EditMessageComposer")).toBeNull();
     });
 
     it("renders m.notice correctly", () => {

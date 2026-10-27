@@ -600,6 +600,7 @@
         },
         "close_sticker_picker": "Hide stickers",
         "edit_composer_label": "Edit message",
+        "editing_title": "Editing",
         "format_bold": "Bold",
         "format_code_block": "Code block",
         "format_decrease_indent": "Indent decrease",

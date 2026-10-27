@@ -101,12 +101,18 @@ interface IEditMessageComposerProps extends MatrixClientProps {
      */
     isUrlPreviewsModified?: boolean;
     className?: string;
+    /**
+     * Inside: the editor replaces the main composer instead of the message body, as in other messengers.
+     * The composer draws the cancel and save buttons and calls {@link EditMessageComposer.cancel} and
+     * {@link EditMessageComposer.save}.
+     */
+    inComposer?: boolean;
 }
 interface IState {
     saveDisabled: boolean;
 }
 
-class EditMessageComposer extends React.Component<IEditMessageComposerProps, IState> {
+export class EditMessageComposer extends React.Component<IEditMessageComposerProps, IState> {
     public static contextType = RoomContext;
     declare public context: React.ContextType<typeof RoomContext>;
 
@@ -238,6 +244,19 @@ class EditMessageComposer extends React.Component<IEditMessageComposerProps, ISt
     private cancelEdit = (): void => {
         this.endEdit();
     };
+
+    public cancel(): void {
+        this.cancelEdit();
+    }
+
+    public save(): void {
+        // The round save button is always shown in the composer, so saving unchanged text just closes the edit.
+        if (this.state.saveDisabled && !this.props.isUrlPreviewsModified) {
+            this.endEdit();
+            return;
+        }
+        void this.sendEdit();
+    }
 
     private get shouldSaveStoredEditorState(): boolean {
         return localStorage.getItem(this.editorRoomKey) !== null;
@@ -474,7 +493,12 @@ class EditMessageComposer extends React.Component<IEditMessageComposerProps, ISt
         if (!room) return null;
 
         return (
-            <div className={classNames("mx_EditMessageComposer", this.props.className)} onKeyDown={this.onKeyDown}>
+            <div
+                className={classNames("mx_EditMessageComposer", this.props.className, {
+                    mx_EditMessageComposer_inComposer: this.props.inComposer,
+                })}
+                onKeyDown={this.onKeyDown}
+            >
                 <BasicMessageComposer
                     ref={this.editorRef}
                     model={this.model}
@@ -484,18 +508,20 @@ class EditMessageComposer extends React.Component<IEditMessageComposerProps, ISt
                     label={_t("composer|edit_composer_label")}
                     onChange={this.onChange}
                 />
-                <div className="mx_EditMessageComposer_buttons">
-                    <AccessibleButton kind="secondary" onClick={this.cancelEdit}>
-                        {_t("action|cancel")}
-                    </AccessibleButton>
-                    <AccessibleButton
-                        kind="primary"
-                        onClick={this.sendEdit}
-                        disabled={this.state.saveDisabled && !this.props.isUrlPreviewsModified}
-                    >
-                        {_t("action|save")}
-                    </AccessibleButton>
-                </div>
+                {!this.props.inComposer && (
+                    <div className="mx_EditMessageComposer_buttons">
+                        <AccessibleButton kind="secondary" onClick={this.cancelEdit}>
+                            {_t("action|cancel")}
+                        </AccessibleButton>
+                        <AccessibleButton
+                            kind="primary"
+                            onClick={this.sendEdit}
+                            disabled={this.state.saveDisabled && !this.props.isUrlPreviewsModified}
+                        >
+                            {_t("action|save")}
+                        </AccessibleButton>
+                    </div>
+                )}
             </div>
         );
     }

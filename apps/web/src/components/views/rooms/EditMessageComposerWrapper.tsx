@@ -5,7 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR LicenseRef-Element-Commercial
 Please see LICENSE in the repository root for full details.
 */
 
-import React, { useCallback, type JSX } from "react";
+import React, { useCallback, type JSX, type Ref } from "react";
 
 import { type MatrixClientProps } from "../../../contexts/MatrixClientContext";
 import { useSettingValue } from "../../../hooks/useSettings";
@@ -14,7 +14,7 @@ import { EditWysiwygComposer } from "./wysiwyg_composer";
 import { MessageComposerUrlPreviewViewModel } from "../../../viewmodels/composer/MessageComposerUrlPreviewViewModel";
 import { useCreateAutoDisposedViewModel, useViewModel } from "@element-hq/web-shared-components";
 import { MessageComposerUrlPreviewWrapper } from "./MessageComposerUrlPreview";
-import EditMessageComposer from "./EditMessageComposer";
+import EditMessageComposer, { type EditMessageComposer as EditMessageComposerClass } from "./EditMessageComposer";
 import type EditorModel from "../../../editor/model";
 import { type RoomMessageEventContent } from "../../../../@types/url-preview";
 import { attachUrlPreviews } from "../../../utils/messages";
@@ -25,6 +25,9 @@ interface IEditMessageComposerProps extends MatrixClientProps {
     showUrlPreview: boolean;
     editState: EditorStateTransfer;
     className?: string;
+    /** Inside: edit in the main composer, see {@link EditMessageComposerClass} `inComposer`. */
+    inComposer?: boolean;
+    composerRef?: Ref<EditMessageComposerClass>;
 }
 
 export function EditMessageComposerWrapper(props: IEditMessageComposerProps): JSX.Element {
@@ -86,6 +89,8 @@ export function EditMessageComposerWrapper(props: IEditMessageComposerProps): JS
             isUrlPreviewsModified={isUrlPreviewsModified}
             editState={props.editState}
             className={props.className}
+            inComposer={props.inComposer}
+            ref={props.composerRef}
         />
     );
 

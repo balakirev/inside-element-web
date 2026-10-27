@@ -2530,6 +2530,7 @@ export class RoomView extends React.Component<IRoomProps, IRoomState> {
                     e2eStatus={this.state.e2eStatus}
                     resizeNotifier={this.context.resizeNotifier}
                     replyToEvent={this.state.replyToEvent}
+                    editState={this.state.editState}
                     permalinkCreator={this.permalinkCreator}
                 />
             );

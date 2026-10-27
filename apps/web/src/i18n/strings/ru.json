@@ -600,6 +600,7 @@
         },
         "close_sticker_picker": "Скрыть стикеры",
         "edit_composer_label": "Редактировать сообщение",
+        "editing_title": "Редактирование",
         "format_bold": "Жирный",
         "format_code_block": "Блок кода",
         "format_decrease_indent": "Пункт",

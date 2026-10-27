@@ -255,6 +255,7 @@ export default class TimelineCard extends React.Component<IProps, IState> {
                                 relation={this.props.composerRelation}
                                 resizeNotifier={this.props.resizeNotifier}
                                 replyToEvent={this.state.replyToEvent}
+                                editState={this.state.editState}
                                 permalinkCreator={this.props.permalinkCreator}
                                 e2eStatus={this.props.e2eStatus}
                                 compact={true}

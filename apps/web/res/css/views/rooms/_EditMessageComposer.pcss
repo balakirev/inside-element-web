@@ -42,3 +42,85 @@ Please see LICENSE files in the repository root for full details.
         }
     }
 }
+
+/* Inside: the editor in place of the main composer, laid out like mx_SendMessageComposer. */
+.mx_EditMessageComposer.mx_EditMessageComposer_inComposer {
+    flex: 1;
+    justify-content: center;
+    gap: 0;
+    padding: 0;
+    margin-right: 6px;
+    min-width: 0;
+    font: var(--cpd-font-body-md-regular);
+    line-height: $font-18px;
+
+    .mx_BasicMessageComposer {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-height: 55px;
+
+        .mx_BasicMessageComposer_input {
+            border: none;
+            border-radius: 0;
+            background: none;
+            padding: 3px 0;
+            margin: auto 0;
+            max-height: 140px;
+            overflow-y: auto;
+        }
+    }
+}
+
+/* Inside: "Editing" bar above the composer, see EditPreview. */
+.mx_EditPreview {
+    display: flex;
+    align-items: center;
+    column-gap: var(--cpd-space-3x);
+    padding: var(--cpd-space-2x) var(--cpd-space-1x) 0 var(--cpd-space-1x);
+
+    .mx_EditPreview_icon {
+        flex-shrink: 0;
+        width: 22px;
+        height: 22px;
+        color: var(--cpd-color-icon-accent-primary);
+    }
+
+    .mx_EditPreview_content {
+        flex: 1;
+        min-width: 0;
+        padding-inline-start: var(--cpd-space-2x);
+        border-inline-start: 2px solid var(--cpd-color-text-action-accent);
+        font: var(--cpd-font-body-sm-regular);
+    }
+
+    .mx_EditPreview_title {
+        color: var(--cpd-color-text-action-accent);
+        font-weight: var(--cpd-font-weight-semibold);
+    }
+
+    .mx_EditPreview_text {
+        color: var(--cpd-color-text-secondary);
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+
+    .mx_EditPreview_cancel {
+        flex-shrink: 0;
+        display: flex;
+
+        svg {
+            width: 20px;
+            height: 20px;
+            color: var(--cpd-color-icon-secondary);
+        }
+    }
+}
+
+.mx_MessageComposer_row > .mx_EditMessageComposerWrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}

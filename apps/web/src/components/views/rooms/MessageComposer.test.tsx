@@ -29,6 +29,7 @@ import MessageComposer from "./MessageComposer";
 import MatrixClientContext from "../../../contexts/MatrixClientContext";
 import { MatrixClientPeg } from "../../../MatrixClientPeg";
 import ResizeNotifier from "../../../utils/ResizeNotifier";
+import EditorStateTransfer from "../../../utils/EditorStateTransfer";
 import { RoomPermalinkCreator } from "../../../utils/permalinks/Permalinks";
 import { LocalRoom } from "../../../models/LocalRoom";
 import SettingsStore from "../../../settings/SettingsStore";
@@ -260,6 +261,42 @@ describe("MessageComposer", () => {
         it("should render the voice message button in place of send while the composer is empty", () => {
             wrapAndRender({ room });
             expect(screen.getByTestId("voicemessagebtn")).toBeInTheDocument();
+        });
+
+        describe("when editing a message", () => {
+            beforeEach(() => {
+                const editedEvent = mkEvent({
+                    type: EventType.RoomMessage,
+                    room: room.roomId,
+                    user: cli.getSafeUserId(),
+                    content: { msgtype: "m.text", body: "Original text" },
+                    event: true,
+                });
+                wrapAndRender({ room, editState: new EditorStateTransfer(editedEvent) });
+            });
+
+            it("should edit the message in place of the composer", () => {
+                expect(screen.getByText("Editing")).toBeInTheDocument();
+                expect(screen.getByRole("textbox", { name: "Edit message" })).toHaveTextContent("Original text");
+                expect(screen.queryByLabelText("Send an unencrypted message…")).not.toBeInTheDocument();
+            });
+
+            it("should render the save button in place of send and voice message", () => {
+                expect(screen.getByTestId("saveeditbtn")).toBeInTheDocument();
+                expect(screen.queryByTestId("voicemessagebtn")).not.toBeInTheDocument();
+                expect(screen.queryByLabelText("Send message")).not.toBeInTheDocument();
+            });
+
+            it.each([
+                ["the close button", "Cancel"],
+                ["save with unchanged text", "Save"],
+            ])("should stop editing on %s", async (_, buttonName) => {
+                const dispatchSpy = vi.spyOn(dis, "dispatch");
+                await userEvent.click(screen.getByRole("button", { name: buttonName }));
+                expect(dispatchSpy).toHaveBeenCalledWith(
+                    expect.objectContaining({ action: Action.EditEvent, event: null }),
+                );
+            });
         });
 
         describe("when clicking the voice message button", () => {

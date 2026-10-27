@@ -73,6 +73,7 @@ export function TextualBodyFactory(props: Readonly<IBodyProps>): JSX.Element {
 
     const urlPreviewBundleEnabled = useSettingValue("feature_msc4095_url_preview_bundle");
     const e2eeBundledUrlPreviewsOnly = useSettingValue("urlPreviewsEnabled_e2ee_bundled_only");
+    const isWysiwygComposerEnabled = useSettingValue("feature_wysiwyg_composer");
 
     let urlPreviewKind: UrlPreviewKind;
 
@@ -305,7 +306,9 @@ export function TextualBodyFactory(props: Readonly<IBodyProps>): JSX.Element {
         PosthogTrackers.instance.trackUrlPreview(props.mxEvent.getId()!, props.mxEvent.isEncrypted(), previews);
     }, [props.mxEvent, previews]);
 
-    if (props.editState) {
+    // Inside: the classic composer edits the message in place of itself (see MessageComposer), so the body
+    // stays as it is. The rich text editor (labs) still edits in the timeline.
+    if (props.editState && isWysiwygComposerEnabled) {
         return (
             <EditMessageComposerWrapper
                 editState={props.editState}

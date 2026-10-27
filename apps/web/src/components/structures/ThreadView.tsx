@@ -448,6 +448,7 @@ export default class ThreadView extends React.Component<IProps, IState> {
                                 resizeNotifier={this.props.resizeNotifier}
                                 relation={threadRelation}
                                 replyToEvent={this.state.replyToEvent}
+                                editState={this.state.editState}
                                 permalinkCreator={this.props.permalinkCreator}
                                 e2eStatus={this.props.e2eStatus}
                                 compact={true}
