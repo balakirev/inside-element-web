@@ -8,11 +8,13 @@ Please see LICENSE files in the repository root for full details.
 // @vitest-environment happy-dom
 
 import React from "react";
-import { render, waitFor } from "test-utils-rtl";
+import { fireEvent, render, waitFor } from "test-utils-rtl";
 import { secureRandomString } from "matrix-js-sdk/src/randomstring";
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 
 import UploadConfirmDialog from "./UploadConfirmDialog.tsx";
+import Modal from "../../../Modal";
+import QuestionDialog from "./QuestionDialog";
 
 /**
  * The shared media preview tile hides the image until it has loaded it once out of band, which jsdom
@@ -109,5 +111,71 @@ describe("<UploadConfirmDialog />", () => {
 
         expect(getByText("notes.txt")).toBeInTheDocument();
         expect(container.querySelector("img, video, audio")).toBeNull();
+    });
+
+    describe("caption", () => {
+        const file = new File(["hello"], "notes.txt", { type: "text/plain" });
+
+        it("sends the typed caption on Enter", () => {
+            const onFinished = vi.fn();
+            const { getByRole } = render(<UploadConfirmDialog file={file} onFinished={onFinished} />);
+            const caption = getByRole("textbox", { name: "Caption" });
+
+            fireEvent.change(caption, { target: { value: "  Signed contract  " } });
+            fireEvent.keyDown(caption, { key: "Enter" });
+
+            expect(onFinished).toHaveBeenCalledWith(true, false, "Signed contract");
+        });
+
+        it("does not send on Shift+Enter", () => {
+            const onFinished = vi.fn();
+            const { getByRole } = render(<UploadConfirmDialog file={file} onFinished={onFinished} />);
+            const caption = getByRole("textbox", { name: "Caption" });
+
+            fireEvent.change(caption, { target: { value: "first line" } });
+            fireEvent.keyDown(caption, { key: "Enter", shiftKey: true });
+
+            expect(onFinished).not.toHaveBeenCalled();
+        });
+
+        it("sends without a caption when the field is left empty", () => {
+            const onFinished = vi.fn();
+            const { getByRole } = render(<UploadConfirmDialog file={file} onFinished={onFinished} />);
+
+            fireEvent.click(getByRole("button", { name: "Upload" }));
+
+            expect(onFinished).toHaveBeenCalledWith(true, false, undefined);
+        });
+
+        it("closes straight away when there is no caption to lose", async () => {
+            const createDialog = vi.spyOn(Modal, "createDialog");
+            const onFinished = vi.fn();
+            const { getByRole } = render(<UploadConfirmDialog file={file} onFinished={onFinished} />);
+
+            fireEvent.click(getByRole("button", { name: "Close dialog" }));
+
+            await waitFor(() => expect(onFinished).toHaveBeenCalledWith(false));
+            expect(createDialog).not.toHaveBeenCalled();
+            createDialog.mockRestore();
+        });
+
+        it.each([
+            [true, 1],
+            [false, 0],
+        ])("asks before discarding a typed caption (discard: %s)", async (discard, closeCalls) => {
+            const createDialog = vi
+                .spyOn(Modal, "createDialog")
+                .mockReturnValue({ finished: Promise.resolve([discard]), close: vi.fn() } as any);
+            const onFinished = vi.fn();
+            const { getByRole } = render(<UploadConfirmDialog file={file} onFinished={onFinished} />);
+
+            fireEvent.change(getByRole("textbox", { name: "Caption" }), { target: { value: "draft" } });
+            fireEvent.click(getByRole("button", { name: "Close dialog" }));
+
+            await waitFor(() => expect(createDialog).toHaveBeenCalledWith(QuestionDialog, expect.any(Object)));
+            await new Promise((resolve) => setTimeout(resolve, 0));
+            expect(onFinished).toHaveBeenCalledTimes(closeCalls);
+            createDialog.mockRestore();
+        });
     });
 });

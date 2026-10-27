@@ -123,6 +123,38 @@ describe("ContentMessages", () => {
             );
         });
 
+        it("should send a caption in body and move the file name to filename", async () => {
+            vi.mocked(client.uploadContent).mockResolvedValue({ content_uri: "mxc://server/file" });
+            const file = new File([], "photo.jpg", { type: "image/jpeg" });
+            await contentMessages.sendContentToRoom(
+                file,
+                roomId,
+                undefined,
+                client,
+                undefined,
+                undefined,
+                "  Look at this view  ",
+            );
+            expect(client.sendMessage).toHaveBeenCalledWith(
+                roomId,
+                null,
+                expect.objectContaining({
+                    body: "Look at this view",
+                    filename: "photo.jpg",
+                    msgtype: "m.image",
+                }),
+            );
+        });
+
+        it("should keep the file name in body when the caption is blank", async () => {
+            vi.mocked(client.uploadContent).mockResolvedValue({ content_uri: "mxc://server/file" });
+            const file = new File([], "photo.jpg", { type: "image/jpeg" });
+            await contentMessages.sendContentToRoom(file, roomId, undefined, client, undefined, undefined, "   ");
+            const content = vi.mocked(client.sendMessage).mock.calls[0][2] as unknown as Record<string, unknown>;
+            expect(content.body).toBe("photo.jpg");
+            expect(content.filename).toBeUndefined();
+        });
+
         it("should use m.image for PNG files which cannot be parsed but successfully thumbnail", async () => {
             vi.mocked(client.uploadContent).mockResolvedValue({ content_uri: "mxc://server/file" });
             const file = new File([], "fileName", { type: "image/png" });
@@ -538,6 +570,23 @@ describe("sendContentListToRoom analytics", () => {
                 inThread: true,
             }),
         );
+    });
+
+    it("passes the caption from the confirmation dialog to the first file only", async () => {
+        vi.spyOn(Modal, "createDialog").mockImplementation((component: unknown) => {
+            if (component === UploadConfirmDialog) {
+                return { finished: Promise.resolve([true, true, "Our new office"]) } as any;
+            }
+            return { finished: new Promise(() => {}), close: vi.fn() } as any;
+        });
+        const files = [mkFile("image/png", "a.png"), mkFile("image/png", "b.png")];
+        await contentMessages.sendContentListToRoom(files, roomId, undefined, undefined, client);
+
+        const calls = vi.mocked(contentMessages.sendContentToRoom).mock.calls;
+        expect(calls[0][0].name).toBe("a.png");
+        expect(calls[0][6]).toBe("Our new office");
+        expect(calls[1][0].name).toBe("b.png");
+        expect(calls[1][6]).toBeUndefined();
     });
 
     it("tracks AttachmentCancel when the user cancels at the confirmation dialog", async () => {

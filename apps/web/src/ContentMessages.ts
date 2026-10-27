@@ -491,6 +491,7 @@ export default class ContentMessages {
         }
 
         let uploadAll = false;
+        let caption: string | undefined;
         // Promise to complete before sending next file into room, used for synchronisation of file-sending
         // to match the order the files were specified in
         let promBefore: Promise<any> = Promise.resolve();
@@ -505,12 +506,17 @@ export default class ContentMessages {
                     currentIndex: i,
                     totalFiles: okFiles.length,
                 });
-                const [shouldContinue, shouldUploadAll] = await finished;
+                const [shouldContinue, shouldUploadAll, dialogCaption] = await finished;
                 if (!shouldContinue) break;
                 if (shouldUploadAll) {
                     uploadAll = true;
                 }
+                caption = dialogCaption;
+            } else {
+                // Files sent with "upload all" go without the caption typed for the first one.
+                caption = undefined;
             }
+            const fileCaption = caption;
             sentFileTypes.push(file.type.split("/")[0]);
 
             promBefore = doMaybeLocalRoomAction(
@@ -523,6 +529,7 @@ export default class ContentMessages {
                         matrixClient,
                         replyToEvent ?? undefined,
                         loopPromiseBefore,
+                        fileCaption,
                     ),
                 matrixClient,
             );
@@ -591,6 +598,7 @@ export default class ContentMessages {
         matrixClient: MatrixClient,
         replyToEvent: MatrixEvent | undefined,
         promBefore?: Promise<any>,
+        caption?: string,
     ): Promise<void> {
         const fileName = file.name || _t("common|attachment");
         const content: Omit<MediaEventContent, "info"> & { info: Partial<MediaEventInfo> } = {
@@ -600,6 +608,12 @@ export default class ContentMessages {
             },
             msgtype: MsgType.File, // set more specifically later
         };
+        // Media captions (Matrix spec v1.10): the caption goes in `body` and the real name moves to
+        // `filename`. Clients that predate captions still show the text, just as a file name.
+        if (caption?.trim()) {
+            content.body = caption.trim();
+            content.filename = fileName;
+        }
 
         // Attach mentions, which really only applies if there's a replyToEvent.
         attachMentions(matrixClient.getSafeUserId(), content, null, replyToEvent);

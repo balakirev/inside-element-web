@@ -17,6 +17,8 @@ Please see LICENSE files in the repository root for full details.
     display: inline-block;
     text-align: left;
     width: var(--MediaPreview-width);
+    /* The preview width is fixed, but it must never overflow a narrow dialog. */
+    max-width: 100%;
 }
 
 .mx_UploadConfirmDialog_imagePreview {
@@ -24,4 +26,30 @@ Please see LICENSE files in the repository root for full details.
     max-width: 100%;
     border-radius: 4px;
     border: 1px solid $dialog-close-fg-color;
+}
+
+.mx_UploadConfirmDialog_caption {
+    display: block;
+    box-sizing: border-box;
+    width: 100%;
+    margin-top: var(--cpd-space-3x);
+    padding: var(--cpd-space-2x) var(--cpd-space-4x);
+    min-height: 42px;
+    max-height: 160px;
+    resize: none;
+    field-sizing: content;
+    font: var(--cpd-font-body-md-regular);
+    color: var(--cpd-color-text-primary);
+    background-color: var(--cpd-color-bg-subtle-secondary);
+    border: 1px solid transparent;
+    border-radius: 21px;
+    outline: none;
+
+    &:focus {
+        border-color: var(--cpd-color-border-interactive-hovered);
+    }
+
+    &::placeholder {
+        color: var(--cpd-color-text-secondary);
+    }
 }

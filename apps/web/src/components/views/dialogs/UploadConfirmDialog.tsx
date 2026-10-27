@@ -7,11 +7,13 @@ SPDX-License-Identifier: AGPL-3.0-only OR GPL-3.0-only OR LicenseRef-Element-Com
 Please see LICENSE files in the repository root for full details.
 */
 
-import React, { useCallback, type JSX } from "react";
+import React, { useCallback, useState, type ChangeEvent, type JSX, type KeyboardEvent } from "react";
 
 import { _t } from "../../../languageHandler";
 import BaseDialog from "./BaseDialog";
 import DialogButtons from "../elements/DialogButtons";
+import Modal from "../../../Modal";
+import QuestionDialog from "./QuestionDialog";
 import { fileSize } from "../../../utils/FileUtils";
 import {
     attachmentIcon,
@@ -28,7 +30,13 @@ interface IProps {
     currentIndex?: number;
     /** Defaults to 1. */
     totalFiles?: number;
-    onFinished: (uploadConfirmed: boolean, uploadAll?: boolean) => void;
+    /**
+     * Called when the dialog closes.
+     * @param uploadConfirmed - whether the user chose to send the file
+     * @param uploadAll - whether the remaining files should be sent without asking again
+     * @param caption - text the user typed to send together with the file, if any
+     */
+    onFinished: (uploadConfirmed: boolean, uploadAll?: boolean, caption?: string) => void;
 }
 
 const previewableFormats = ["video", "audio", "image"];
@@ -115,17 +123,46 @@ export default function UploadConfirmDialog({
         title = _t("upload_file|title");
     }
 
-    const onCancelClick = useCallback((): void => {
+    const [caption, setCaption] = useState("");
+    const trimmedCaption = caption.trim();
+
+    const onCaptionChange = useCallback((ev: ChangeEvent<HTMLTextAreaElement>): void => {
+        setCaption(ev.target.value);
+    }, []);
+
+    const onCancelClick = useCallback(async (): Promise<void> => {
+        // Closing the dialog throws the typed caption away, so confirm first, like other messengers do.
+        if (trimmedCaption) {
+            const { finished } = Modal.createDialog(QuestionDialog, {
+                title: _t("upload_file|discard_caption_title"),
+                description: _t("upload_file|discard_caption_description"),
+                button: _t("upload_file|discard_caption_button"),
+                danger: true,
+            });
+            const [discard] = await finished;
+            if (!discard) return;
+        }
         onFinished(false);
-    }, [onFinished]);
+    }, [onFinished, trimmedCaption]);
 
     const onUploadClick = useCallback((): void => {
-        onFinished(true);
-    }, [onFinished]);
+        onFinished(true, false, trimmedCaption || undefined);
+    }, [onFinished, trimmedCaption]);
 
     const onUploadAllClick = useCallback((): void => {
-        onFinished(true, true);
-    }, [onFinished]);
+        onFinished(true, true, trimmedCaption || undefined);
+    }, [onFinished, trimmedCaption]);
+
+    const onCaptionKeyDown = useCallback(
+        (ev: KeyboardEvent<HTMLTextAreaElement>): void => {
+            // Enter sends, Shift+Enter starts a new line; ignore Enter that confirms an IME composition.
+            if (ev.key === "Enter" && !ev.shiftKey && !ev.nativeEvent.isComposing) {
+                ev.preventDefault();
+                onUploadClick();
+            }
+        },
+        [onUploadClick],
+    );
 
     let uploadAllButton: JSX.Element | undefined;
     if (currentIndex + 1 < totalFiles) {
@@ -150,14 +187,20 @@ export default function UploadConfirmDialog({
                         <MediaPreviewGroupPreview vm={vm} />
                     </div>
                 </div>
+                <textarea
+                    className="mx_UploadConfirmDialog_caption"
+                    aria-label={_t("upload_file|caption_label")}
+                    placeholder={_t("upload_file|caption_placeholder")}
+                    value={caption}
+                    onChange={onCaptionChange}
+                    onKeyDown={onCaptionKeyDown}
+                    rows={1}
+                    // The caption is the natural next step after picking a file, as in other messengers.
+                    autoFocus={true}
+                />
             </div>
 
-            <DialogButtons
-                primaryButton={_t("action|upload")}
-                hasCancel={false}
-                onPrimaryButtonClick={onUploadClick}
-                focus={true}
-            >
+            <DialogButtons primaryButton={_t("action|upload")} hasCancel={false} onPrimaryButtonClick={onUploadClick}>
                 {uploadAllButton}
             </DialogButtons>
         </BaseDialog>

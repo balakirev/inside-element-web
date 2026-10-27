@@ -90,6 +90,12 @@ exports[`<UploadConfirmDialog /> > should display image preview 1`] = `
           </div>
         </div>
       </div>
+      <textarea
+        aria-label="Caption"
+        class="mx_UploadConfirmDialog_caption"
+        placeholder="Add a caption…"
+        rows="1"
+      />
     </div>
     <div
       class="mx_Dialog_buttons"
