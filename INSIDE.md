@@ -24,7 +24,8 @@ the next upstream release with `git rebase --onto <new-tag> <old-tag> inside/mai
 
 ## Build
 
-`.github/workflows/inside-docker.yaml` runs the tests related to our changes and builds
+`.github/workflows/inside-docker.yaml` runs the unit and browser tests related to our changes (not the Storybook
+visual suite: its baselines are Element's) and builds
 `ghcr.io/balakirev/inside-element-web` from the stock `apps/web/Dockerfile`.
 
 ## Licence

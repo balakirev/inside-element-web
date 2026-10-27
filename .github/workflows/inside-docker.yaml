@@ -57,17 +57,12 @@ jobs:
 
             # Only the tests related to files we changed since the upstream release we are based on.
             # The full upstream suite is Element's job and already passed for that release.
+            # The Storybook visual project is left out: its screenshot baselines are Element's, rendered
+            # in Element's CI; how our changes look is checked on screenshots of the running app.
             - name: Run tests touched by Inside changes
               run: |
                   base=$(cat .inside-base)
-                  pnpm vitest run --changed "$base" --passWithNoTests
-
-            # The root vitest config excludes shared-components: its tests run in a real browser.
-            - name: Run shared-components tests touched by Inside changes
-              working-directory: packages/shared-components
-              run: |
-                  base=$(cat ../../.inside-base)
-                  pnpm exec vitest run --project=unit --changed "$base" --passWithNoTests
+                  pnpm vitest run --changed "$base" --project '!*storybook*' --passWithNoTests
 
     image:
         name: Build and push image
