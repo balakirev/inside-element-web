@@ -73,6 +73,17 @@ export interface RoomListItemViewSnapshot {
     isBold: boolean;
     /** Optional message preview text */
     messagePreview?: string;
+    /**
+     * Who sent the previewed message, shown on its own line above the preview in group rooms.
+     * When set, `messagePreview` is the message text only, without the sender prefix.
+     */
+    messagePreviewSender?: string;
+    /** When the latest message was sent, already formatted for the room list (e.g. "20:20", "Mon") */
+    timestamp?: string;
+    /** The full date and time of the latest message, for the tooltip of `timestamp` */
+    timestampTitle?: string;
+    /** Delivery state of the latest message when the user sent it: sent, or read by someone else */
+    lastMessageStatus?: "sent" | "read";
     /** The MSC4426 user status of the other user in a DM room, if any */
     userStatus?: UserStatus;
     /** Notification decoration data */
@@ -220,7 +231,14 @@ export const RoomListItemView = memo(function RoomListItemView({
     };
 
     // Generate a11y label from notification state and room name
-    const a11yLabel = getA11yLabel(item.name, item.notification);
+    // The row's label replaces its content for screen readers, so the delivery state goes in it too.
+    const a11yLabel = [
+        getA11yLabel(item.name, item.notification),
+        item.lastMessageStatus === "read" && _t("room_list|a11y|last_message_read"),
+        item.lastMessageStatus === "sent" && _t("room_list|a11y|last_message_sent"),
+    ]
+        .filter(Boolean)
+        .join(", ");
 
     return (
         <RoomListItemContextMenu vm={vm}>

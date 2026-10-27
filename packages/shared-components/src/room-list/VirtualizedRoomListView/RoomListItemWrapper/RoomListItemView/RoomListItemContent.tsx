@@ -7,6 +7,7 @@
 
 import React, { type JSX, memo, type ReactNode } from "react";
 import { Text, Tooltip } from "@vector-im/compound-web";
+import { NotificationsOffSolidIcon } from "@vector-im/compound-design-tokens/assets/web/icons";
 import classNames from "classnames";
 
 import { Flex } from "../../../../core/utils/Flex";
@@ -14,6 +15,7 @@ import { useViewModel } from "../../../../core/viewmodel";
 import { NotificationDecoration } from "./NotificationDecoration";
 import { RoomListItemHoverMenu } from "./RoomListItemHoverMenu";
 import { type Room, type RoomListItemViewModel } from "./RoomListItemView";
+import { MessageStatusIcon } from "./MessageStatusIcon";
 import styles from "./RoomListItemView.module.css";
 
 /**
@@ -51,20 +53,48 @@ export const RoomListItemContent = memo(function RoomListItemContent({
             {renderAvatar(item.room)}
             <Flex className={styles.content} gap="var(--cpd-space-2x)" align="center" justify="space-between">
                 {/* We truncate the room name when too long. Title here is to show the full name on hover */}
-                <div className={styles.ellipsis}>
-                    <div className={styles.roomName} title={item.name} data-testid="room-name">
-                        {item.name}
-                        {item.userStatus && (
-                            <Tooltip description={item.userStatus.text} maxWidth="30ch" maxLines={1}>
-                                <Text as="span" className={styles.userStatusEmoji}>
-                                    {item.userStatus.emoji}
-                                </Text>
-                            </Tooltip>
+                <div className={styles.text}>
+                    <div className={styles.topRow}>
+                        <div className={styles.roomName} title={item.name} data-testid="room-name">
+                            {item.name}
+                            {item.userStatus && (
+                                <Tooltip description={item.userStatus.text} maxWidth="30ch" maxLines={1}>
+                                    <Text as="span" className={styles.userStatusEmoji}>
+                                        {item.userStatus.emoji}
+                                    </Text>
+                                </Tooltip>
+                            )}
+                        </div>
+                        {item.notification.muted && (
+                            <NotificationsOffSolidIcon className={styles.mutedIcon} aria-hidden={true} />
+                        )}
+                        {(item.timestamp || item.lastMessageStatus) && (
+                            <div className={styles.meta} aria-hidden={true}>
+                                {item.lastMessageStatus && <MessageStatusIcon status={item.lastMessageStatus} />}
+                                {item.timestamp && (
+                                    <span className={styles.timestamp} title={item.timestampTitle}>
+                                        {item.timestamp}
+                                    </span>
+                                )}
+                            </div>
                         )}
                     </div>
 
+                    {item.messagePreviewSender && (
+                        <Text as="div" size="sm" className={classNames(styles.ellipsis, styles.previewSender)}>
+                            {item.messagePreviewSender}
+                        </Text>
+                    )}
                     {item.messagePreview && (
-                        <Text as="div" size="sm" className={styles.ellipsis} title={item.messagePreview}>
+                        <Text
+                            as="div"
+                            size="sm"
+                            className={classNames(styles.preview, {
+                                // Two lines of text when there is no sender line, as in other messengers.
+                                [styles.previewTwoLines]: !item.messagePreviewSender,
+                            })}
+                            title={item.messagePreview}
+                        >
                             {item.messagePreview}
                         </Text>
                     )}

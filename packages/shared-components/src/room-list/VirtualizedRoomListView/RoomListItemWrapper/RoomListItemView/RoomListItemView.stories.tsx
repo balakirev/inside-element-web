@@ -116,6 +116,57 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
 
+export const WithTimestampAndSender: Story = {
+    args: {
+        messagePreviewSender: "Alice",
+        messagePreview: "Hey everyone! The viewing moved to Friday, 16:00.",
+        timestamp: "20:20",
+        timestampTitle: "Tue, 27 Oct 2026, 20:20",
+    },
+};
+
+export const DirectMessageTwoLinePreview: Story = {
+    args: {
+        name: "Alice",
+        isDm: true,
+        messagePreview: "The client confirmed Friday at 16:00, I will send the profile tonight so you can prepare.",
+        timestamp: "Mon",
+    },
+};
+
+export const OwnMessageRead: Story = {
+    args: {
+        messagePreview: "Signed, sending the scan now",
+        timestamp: "18:14",
+        lastMessageStatus: "read",
+    },
+};
+
+export const OwnMessageSent: Story = {
+    args: {
+        messagePreview: "Signed, sending the scan now",
+        timestamp: "18:14",
+        lastMessageStatus: "sent",
+    },
+};
+
+export const Muted: Story = {
+    args: {
+        timestamp: "24/08/26",
+        notification: {
+            hasAnyNotificationOrActivity: true,
+            isUnsentMessage: false,
+            invited: false,
+            isMention: false,
+            isActivityNotification: false,
+            isNotification: true,
+            hasUnreadCount: true,
+            count: 111,
+            muted: true,
+        },
+    },
+};
+
 export const LongContent: Story = {
     args: {
         name: "Loooooooooooooooooooooooooooooooooooooong name",

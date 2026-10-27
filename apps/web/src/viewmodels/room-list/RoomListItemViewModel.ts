@@ -44,6 +44,8 @@ import RoomListStoreV3 from "../../stores/room-list-v3/RoomListStoreV3";
 import { getCustomSectionData, isDefaultSectionTag } from "../../stores/room-list-v3/section";
 import { _t } from "../../languageHandler";
 import { fetchUserStatus } from "../../utils/userStatus";
+import { formatFullDate, formatRoomListTimestamp } from "../../DateUtils";
+import { getSenderName } from "../../stores/message-preview/previews/utils";
 
 /**
  * View section type without `isSelected` field
@@ -60,6 +62,12 @@ interface RoomItemProps {
  * Manages per-room subscriptions and updates only when this specific room's data changes.
  * Implements RoomListItemViewActions to provide interaction callbacks.
  */
+/** The parts of a room list item that come from its latest message, loaded asynchronously. */
+type MessagePreviewFields = Pick<
+    RoomListItemViewSnapshot,
+    "messagePreview" | "messagePreviewSender" | "timestamp" | "timestampTitle" | "lastMessageStatus"
+>;
+
 export class RoomListItemViewModel
     extends BaseViewModel<RoomListItemViewSnapshot, RoomItemProps>
     implements RoomListItemViewActions
@@ -133,6 +141,8 @@ export class RoomListItemViewModel
 
         // Subscribe to room-specific events
         this.disposables.trackListener(props.room, RoomEvent.Name, this.onRoomChanged);
+        // Read receipts turn the tick next to the user's own latest message from "sent" into "read"
+        this.disposables.trackListener(props.room, RoomEvent.Receipt, this.onMessagePreviewChanged);
         this.disposables.trackListener(props.room, RoomEvent.Tags, this.onRoomChanged);
 
         // Rebuild the available sections when their order changes or when one is created/renamed/removed
@@ -256,6 +266,10 @@ export class RoomListItemViewModel
             sections: keepIfSame(this.snapshot.current.sections, newItem.sections),
             // Preserve message preview - it's managed separately by loadAndSetMessagePreview
             messagePreview: this.snapshot.current.messagePreview,
+            messagePreviewSender: this.snapshot.current.messagePreviewSender,
+            timestamp: this.snapshot.current.timestamp,
+            timestampTitle: this.snapshot.current.timestampTitle,
+            lastMessageStatus: this.snapshot.current.lastMessageStatus,
         });
     }
 
@@ -268,23 +282,57 @@ export class RoomListItemViewModel
      * Load the message preview for this room if enabled.
      * Returns undefined if previews are disabled or couldn't be loaded.
      */
-    private async loadMessagePreview(): Promise<string | undefined> {
+    private async loadMessagePreview(): Promise<MessagePreviewFields> {
+        const room = this.props.room;
+        const showTwelveHour = SettingsStore.getValue("showTwelveHourTimestamps");
+
+        // The time of the latest activity is shown even when message previews are turned off.
+        const lastActive = room.getLastActiveTimestamp();
+        const fields: MessagePreviewFields = {
+            messagePreview: undefined,
+            messagePreviewSender: undefined,
+            timestamp: lastActive > 0 ? formatRoomListTimestamp(new Date(lastActive), showTwelveHour) : undefined,
+            timestampTitle: lastActive > 0 ? formatFullDate(new Date(lastActive), showTwelveHour) : undefined,
+            lastMessageStatus: undefined,
+        };
+
         const shouldShowMessagePreview = SettingsStore.getValue("RoomList.showMessagePreview");
         if (!shouldShowMessagePreview) {
-            return undefined;
+            return fields;
         }
 
         const messagePreviewTag = this.getMessagePreviewTag();
-        const preview = await MessagePreviewStore.instance.getPreviewForRoom(this.props.room, messagePreviewTag);
-        return preview?.text;
+        const preview = await MessagePreviewStore.instance.getPreviewForRoom(room, messagePreviewTag);
+        if (!preview) return fields;
+
+        fields.messagePreview = preview.text;
+        const event = preview.event;
+        if (!event) return fields;
+        const ownUserId = this.props.client.getSafeUserId();
+
+        if (event.getSender() === ownUserId) {
+            // Only events the server has accepted get ticks; local echoes are still being sent.
+            if (event.status === null) {
+                const readBySomeoneElse = room.getUsersReadUpTo(event).some((userId) => userId !== ownUserId);
+                fields.lastMessageStatus = readBySomeoneElse ? "read" : "sent";
+            }
+        } else {
+            // In group rooms the preview reads "Sender: text"; show the sender on a line of its own instead.
+            const prefix = `${getSenderName(event)}: `;
+            if (getSenderName(event) && preview.text.startsWith(prefix)) {
+                fields.messagePreviewSender = getSenderName(event);
+                fields.messagePreview = preview.text.slice(prefix.length);
+            }
+        }
+        return fields;
     }
 
     /**
      * Load and set the message preview if it differs from current.
      */
     private async loadAndSetMessagePreview(): Promise<void> {
-        const messagePreview = await this.loadMessagePreview();
-        this.snapshot.merge({ messagePreview });
+        const fields = await this.loadMessagePreview();
+        this.snapshot.merge(fields);
     }
 
     /**

@@ -177,6 +177,8 @@
             "drag_over_original": "%(source)s will return to its original position",
             "drag_start": "Dragging %(source)s",
             "invitation": "Open room %(roomName)s invitation.",
+            "last_message_read": "your last message was read",
+            "last_message_sent": "your last message was sent",
             "mention": {
                 "one": "Open room %(roomName)s with 1 unread mention.",
                 "other": "Open room %(roomName)s with %(count)s unread mentions."

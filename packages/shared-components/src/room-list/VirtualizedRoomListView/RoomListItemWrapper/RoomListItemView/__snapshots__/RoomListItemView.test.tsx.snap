@@ -1,5 +1,149 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
+exports[`<RoomListItemView /> > allows two preview lines when there is no sender line 1`] = `
+<div>
+  <div
+    aria-label="Room list"
+    role="listbox"
+    style="width: 320px; padding: 8px;"
+  >
+    <button
+      aria-haspopup="menu"
+      aria-label="Open room Alice"
+      aria-selected="false"
+      class="Flex-module_flex RoomListItemView-module_roomListItem mx_RoomListItemView"
+      data-state="closed"
+      role="option"
+      style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: stretch; --mx-flex-justify: start; --mx-flex-gap: var(--cpd-space-3x); --mx-flex-wrap: nowrap;"
+      tabindex="-1"
+      type="button"
+    >
+      <div
+        class="Flex-module_flex RoomListItemView-module_container"
+        style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: start; --mx-flex-gap: var(--cpd-space-3x); --mx-flex-wrap: nowrap;"
+      >
+        <div
+          aria-label="General avatar"
+          role="img"
+          style="width: 32px; height: 32px; border-radius: 50%; background-color: rgb(11, 127, 103); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 12px;"
+        >
+          GE
+        </div>
+        <div
+          class="Flex-module_flex RoomListItemView-module_content"
+          style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
+        >
+          <div
+            class="RoomListItemView-module_text"
+          >
+            <div
+              class="RoomListItemView-module_topRow"
+            >
+              <div
+                class="RoomListItemView-module_roomName"
+                data-testid="room-name"
+                title="Alice"
+              >
+                Alice
+              </div>
+              <div
+                aria-hidden="true"
+                class="RoomListItemView-module_meta"
+              >
+                <span
+                  class="RoomListItemView-module_timestamp"
+                >
+                  Mon
+                </span>
+              </div>
+            </div>
+            <div
+              class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
+              title="The client confirmed Friday at 16:00, I will send the profile tonight so you can prepare."
+            >
+              The client confirmed Friday at 16:00, I will send the profile tonight so you can prepare.
+            </div>
+          </div>
+          <div
+            class="Flex-module_flex RoomListItemView-module_hoverMenu"
+            style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: start; --mx-flex-gap: var(--cpd-space-1x); --mx-flex-wrap: nowrap;"
+          >
+            <button
+              aria-disabled="false"
+              aria-expanded="false"
+              aria-haspopup="menu"
+              aria-label="More Options"
+              aria-labelledby="react-use-id-1"
+              class="_icon-button_1215g_8"
+              data-kind="primary"
+              data-state="closed"
+              id="radix-react-use-id-2"
+              role="button"
+              style="--cpd-icon-button-size: 24px; padding: 2px;"
+              tabindex="0"
+              type="button"
+            >
+              <div
+                class="_indicator-icon_147l5_17"
+                style="--cpd-icon-button-size: 100%;"
+              >
+                <svg
+                  fill="currentColor"
+                  height="1em"
+                  viewBox="0 0 24 24"
+                  width="1em"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M6 14q-.824 0-1.412-.588A1.93 1.93 0 0 1 4 12q0-.825.588-1.412A1.93 1.93 0 0 1 6 10q.824 0 1.412.588Q8 11.175 8 12t-.588 1.412A1.93 1.93 0 0 1 6 14m6 0q-.825 0-1.412-.588A1.93 1.93 0 0 1 10 12q0-.825.588-1.412A1.93 1.93 0 0 1 12 10q.825 0 1.412.588Q14 11.175 14 12t-.588 1.412A1.93 1.93 0 0 1 12 14m6 0q-.824 0-1.413-.588A1.93 1.93 0 0 1 16 12q0-.825.587-1.412A1.93 1.93 0 0 1 18 10q.824 0 1.413.588Q20 11.175 20 12t-.587 1.412A1.93 1.93 0 0 1 18 14"
+                  />
+                </svg>
+              </div>
+            </button>
+            <button
+              aria-disabled="false"
+              aria-expanded="false"
+              aria-haspopup="menu"
+              aria-label="Notification options"
+              aria-labelledby="react-use-id-3"
+              class="_icon-button_1215g_8"
+              data-kind="primary"
+              data-state="closed"
+              id="radix-react-use-id-4"
+              role="button"
+              style="--cpd-icon-button-size: 24px; padding: 2px;"
+              tabindex="0"
+              type="button"
+            >
+              <div
+                class="_indicator-icon_147l5_17"
+                style="--cpd-icon-button-size: 100%;"
+              >
+                <svg
+                  fill="currentColor"
+                  height="1em"
+                  viewBox="0 0 24 24"
+                  width="1em"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M20.293 17.293c.63.63.184 1.707-.707 1.707H4.414c-.89 0-1.337-1.077-.707-1.707L5 16v-6s0-7 7-7 7 7 7 7v6zM12 22a2 2 0 0 1-2-2h4a2 2 0 0 1-2 2"
+                  />
+                </svg>
+              </div>
+            </button>
+          </div>
+          <div
+            aria-hidden="true"
+            class="RoomListItemView-module_notificationDecoration"
+          />
+        </div>
+      </div>
+    </button>
+  </div>
+</div>
+`;
+
 exports[`<RoomListItemView /> > renders Bold story 1`] = `
 <div>
   <div
@@ -34,17 +178,21 @@ exports[`<RoomListItemView /> > renders Bold story 1`] = `
           style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
         >
           <div
-            class="RoomListItemView-module_ellipsis"
+            class="RoomListItemView-module_text"
           >
             <div
-              class="RoomListItemView-module_roomName"
-              data-testid="room-name"
-              title="Team Updates"
+              class="RoomListItemView-module_topRow"
             >
-              Team Updates
+              <div
+                class="RoomListItemView-module_roomName"
+                data-testid="room-name"
+                title="Team Updates"
+              >
+                Team Updates
+              </div>
             </div>
             <div
-              class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+              class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
               title="Alice: Hey everyone!"
             >
               Alice: Hey everyone!
@@ -164,17 +312,21 @@ exports[`<RoomListItemView /> > renders Default story 1`] = `
           style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
         >
           <div
-            class="RoomListItemView-module_ellipsis"
+            class="RoomListItemView-module_text"
           >
             <div
-              class="RoomListItemView-module_roomName"
-              data-testid="room-name"
-              title="General"
+              class="RoomListItemView-module_topRow"
             >
-              General
+              <div
+                class="RoomListItemView-module_roomName"
+                data-testid="room-name"
+                title="General"
+              >
+                General
+              </div>
             </div>
             <div
-              class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+              class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
               title="Alice: Hey everyone!"
             >
               Alice: Hey everyone!
@@ -294,17 +446,21 @@ exports[`<RoomListItemView /> > renders Invitation story 1`] = `
           style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
         >
           <div
-            class="RoomListItemView-module_ellipsis"
+            class="RoomListItemView-module_text"
           >
             <div
-              class="RoomListItemView-module_roomName"
-              data-testid="room-name"
-              title="Secret Project"
+              class="RoomListItemView-module_topRow"
             >
-              Secret Project
+              <div
+                class="RoomListItemView-module_roomName"
+                data-testid="room-name"
+                title="Secret Project"
+              >
+                Secret Project
+              </div>
             </div>
             <div
-              class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+              class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
               title="Bob invited you"
             >
               Bob invited you
@@ -442,14 +598,18 @@ exports[`<RoomListItemView /> > renders NoMessagePreview story 1`] = `
           style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
         >
           <div
-            class="RoomListItemView-module_ellipsis"
+            class="RoomListItemView-module_text"
           >
             <div
-              class="RoomListItemView-module_roomName"
-              data-testid="room-name"
-              title="General"
+              class="RoomListItemView-module_topRow"
             >
-              General
+              <div
+                class="RoomListItemView-module_roomName"
+                data-testid="room-name"
+                title="General"
+              >
+                General
+              </div>
             </div>
           </div>
           <div
@@ -566,17 +726,21 @@ exports[`<RoomListItemView /> > renders Selected story 1`] = `
           style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
         >
           <div
-            class="RoomListItemView-module_ellipsis"
+            class="RoomListItemView-module_text"
           >
             <div
-              class="RoomListItemView-module_roomName"
-              data-testid="room-name"
-              title="General"
+              class="RoomListItemView-module_topRow"
             >
-              General
+              <div
+                class="RoomListItemView-module_roomName"
+                data-testid="room-name"
+                title="General"
+              >
+                General
+              </div>
             </div>
             <div
-              class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+              class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
               title="Alice: Hey everyone!"
             >
               Alice: Hey everyone!
@@ -696,17 +860,21 @@ exports[`<RoomListItemView /> > renders UnsentMessage story 1`] = `
           style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
         >
           <div
-            class="RoomListItemView-module_ellipsis"
+            class="RoomListItemView-module_text"
           >
             <div
-              class="RoomListItemView-module_roomName"
-              data-testid="room-name"
-              title="General"
+              class="RoomListItemView-module_topRow"
             >
-              General
+              <div
+                class="RoomListItemView-module_roomName"
+                data-testid="room-name"
+                title="General"
+              >
+                General
+              </div>
             </div>
             <div
-              class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+              class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
               title="Failed to send message"
             >
               Failed to send message
@@ -844,17 +1012,21 @@ exports[`<RoomListItemView /> > renders WithHoverMenu story 1`] = `
           style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
         >
           <div
-            class="RoomListItemView-module_ellipsis"
+            class="RoomListItemView-module_text"
           >
             <div
-              class="RoomListItemView-module_roomName"
-              data-testid="room-name"
-              title="General"
+              class="RoomListItemView-module_topRow"
             >
-              General
+              <div
+                class="RoomListItemView-module_roomName"
+                data-testid="room-name"
+                title="General"
+              >
+                General
+              </div>
             </div>
             <div
-              class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+              class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
               title="Alice: Hey everyone!"
             >
               Alice: Hey everyone!
@@ -974,17 +1146,21 @@ exports[`<RoomListItemView /> > renders WithMention story 1`] = `
           style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
         >
           <div
-            class="RoomListItemView-module_ellipsis"
+            class="RoomListItemView-module_text"
           >
             <div
-              class="RoomListItemView-module_roomName"
-              data-testid="room-name"
-              title="General"
+              class="RoomListItemView-module_topRow"
             >
-              General
+              <div
+                class="RoomListItemView-module_roomName"
+                data-testid="room-name"
+                title="General"
+              >
+                General
+              </div>
             </div>
             <div
-              class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+              class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
               title="Alice: Hey everyone!"
             >
               Alice: Hey everyone!
@@ -1127,17 +1303,21 @@ exports[`<RoomListItemView /> > renders WithNotification story 1`] = `
           style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
         >
           <div
-            class="RoomListItemView-module_ellipsis"
+            class="RoomListItemView-module_text"
           >
             <div
-              class="RoomListItemView-module_roomName"
-              data-testid="room-name"
-              title="General"
+              class="RoomListItemView-module_topRow"
             >
-              General
+              <div
+                class="RoomListItemView-module_roomName"
+                data-testid="room-name"
+                title="General"
+              >
+                General
+              </div>
             </div>
             <div
-              class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+              class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
               title="Alice: Hey everyone!"
             >
               Alice: Hey everyone!
@@ -1235,6 +1415,156 @@ exports[`<RoomListItemView /> > renders WithNotification story 1`] = `
 </div>
 `;
 
+exports[`<RoomListItemView /> > renders WithTimestampAndSender story 1`] = `
+<div>
+  <div
+    aria-label="Room list"
+    role="listbox"
+    style="width: 320px; padding: 8px;"
+  >
+    <button
+      aria-haspopup="menu"
+      aria-label="Open room General"
+      aria-selected="false"
+      class="Flex-module_flex RoomListItemView-module_roomListItem mx_RoomListItemView"
+      data-state="closed"
+      role="option"
+      style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: stretch; --mx-flex-justify: start; --mx-flex-gap: var(--cpd-space-3x); --mx-flex-wrap: nowrap;"
+      tabindex="-1"
+      type="button"
+    >
+      <div
+        class="Flex-module_flex RoomListItemView-module_container"
+        style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: start; --mx-flex-gap: var(--cpd-space-3x); --mx-flex-wrap: nowrap;"
+      >
+        <div
+          aria-label="General avatar"
+          role="img"
+          style="width: 32px; height: 32px; border-radius: 50%; background-color: rgb(11, 127, 103); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 12px;"
+        >
+          GE
+        </div>
+        <div
+          class="Flex-module_flex RoomListItemView-module_content"
+          style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
+        >
+          <div
+            class="RoomListItemView-module_text"
+          >
+            <div
+              class="RoomListItemView-module_topRow"
+            >
+              <div
+                class="RoomListItemView-module_roomName"
+                data-testid="room-name"
+                title="General"
+              >
+                General
+              </div>
+              <div
+                aria-hidden="true"
+                class="RoomListItemView-module_meta"
+              >
+                <span
+                  class="RoomListItemView-module_timestamp"
+                  title="Tue, 27 Oct 2026, 20:20"
+                >
+                  20:20
+                </span>
+              </div>
+            </div>
+            <div
+              class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis RoomListItemView-module_previewSender"
+            >
+              Alice
+            </div>
+            <div
+              class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview"
+              title="Hey everyone! The viewing moved to Friday, 16:00."
+            >
+              Hey everyone! The viewing moved to Friday, 16:00.
+            </div>
+          </div>
+          <div
+            class="Flex-module_flex RoomListItemView-module_hoverMenu"
+            style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: start; --mx-flex-gap: var(--cpd-space-1x); --mx-flex-wrap: nowrap;"
+          >
+            <button
+              aria-disabled="false"
+              aria-expanded="false"
+              aria-haspopup="menu"
+              aria-label="More Options"
+              aria-labelledby="react-use-id-1"
+              class="_icon-button_1215g_8"
+              data-kind="primary"
+              data-state="closed"
+              id="radix-react-use-id-2"
+              role="button"
+              style="--cpd-icon-button-size: 24px; padding: 2px;"
+              tabindex="0"
+              type="button"
+            >
+              <div
+                class="_indicator-icon_147l5_17"
+                style="--cpd-icon-button-size: 100%;"
+              >
+                <svg
+                  fill="currentColor"
+                  height="1em"
+                  viewBox="0 0 24 24"
+                  width="1em"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M6 14q-.824 0-1.412-.588A1.93 1.93 0 0 1 4 12q0-.825.588-1.412A1.93 1.93 0 0 1 6 10q.824 0 1.412.588Q8 11.175 8 12t-.588 1.412A1.93 1.93 0 0 1 6 14m6 0q-.825 0-1.412-.588A1.93 1.93 0 0 1 10 12q0-.825.588-1.412A1.93 1.93 0 0 1 12 10q.825 0 1.412.588Q14 11.175 14 12t-.588 1.412A1.93 1.93 0 0 1 12 14m6 0q-.824 0-1.413-.588A1.93 1.93 0 0 1 16 12q0-.825.587-1.412A1.93 1.93 0 0 1 18 10q.824 0 1.413.588Q20 11.175 20 12t-.587 1.412A1.93 1.93 0 0 1 18 14"
+                  />
+                </svg>
+              </div>
+            </button>
+            <button
+              aria-disabled="false"
+              aria-expanded="false"
+              aria-haspopup="menu"
+              aria-label="Notification options"
+              aria-labelledby="react-use-id-3"
+              class="_icon-button_1215g_8"
+              data-kind="primary"
+              data-state="closed"
+              id="radix-react-use-id-4"
+              role="button"
+              style="--cpd-icon-button-size: 24px; padding: 2px;"
+              tabindex="0"
+              type="button"
+            >
+              <div
+                class="_indicator-icon_147l5_17"
+                style="--cpd-icon-button-size: 100%;"
+              >
+                <svg
+                  fill="currentColor"
+                  height="1em"
+                  viewBox="0 0 24 24"
+                  width="1em"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M20.293 17.293c.63.63.184 1.707-.707 1.707H4.414c-.89 0-1.337-1.077-.707-1.707L5 16v-6s0-7 7-7 7 7 7 7v6zM12 22a2 2 0 0 1-2-2h4a2 2 0 0 1-2 2"
+                  />
+                </svg>
+              </div>
+            </button>
+          </div>
+          <div
+            aria-hidden="true"
+            class="RoomListItemView-module_notificationDecoration"
+          />
+        </div>
+      </div>
+    </button>
+  </div>
+</div>
+`;
+
 exports[`<RoomListItemView /> > renders WithVideoCall story 1`] = `
 <div>
   <div
@@ -1269,17 +1599,21 @@ exports[`<RoomListItemView /> > renders WithVideoCall story 1`] = `
           style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
         >
           <div
-            class="RoomListItemView-module_ellipsis"
+            class="RoomListItemView-module_text"
           >
             <div
-              class="RoomListItemView-module_roomName"
-              data-testid="room-name"
-              title="General"
+              class="RoomListItemView-module_topRow"
             >
-              General
+              <div
+                class="RoomListItemView-module_roomName"
+                data-testid="room-name"
+                title="General"
+              >
+                General
+              </div>
             </div>
             <div
-              class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+              class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
               title="Alice: Hey everyone!"
             >
               Alice: Hey everyone!
@@ -1417,17 +1751,21 @@ exports[`<RoomListItemView /> > renders WithVoiceCall story 1`] = `
           style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
         >
           <div
-            class="RoomListItemView-module_ellipsis"
+            class="RoomListItemView-module_text"
           >
             <div
-              class="RoomListItemView-module_roomName"
-              data-testid="room-name"
-              title="General"
+              class="RoomListItemView-module_topRow"
             >
-              General
+              <div
+                class="RoomListItemView-module_roomName"
+                data-testid="room-name"
+                title="General"
+              >
+                General
+              </div>
             </div>
             <div
-              class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+              class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
               title="Alice: Hey everyone!"
             >
               Alice: Hey everyone!
@@ -1520,6 +1858,192 @@ exports[`<RoomListItemView /> > renders WithVoiceCall story 1`] = `
               >
                 <path
                   d="m20.958 16.374.039 3.527q0 .427-.33.756-.33.33-.756.33a16 16 0 0 1-6.57-1.105 16.2 16.2 0 0 1-5.563-3.663 16.1 16.1 0 0 1-3.653-5.573 16.3 16.3 0 0 1-1.115-6.56q0-.427.33-.757T4.095 3l3.528.039a1.07 1.07 0 0 1 1.085.93l.543 3.954q.039.271-.039.504a1.1 1.1 0 0 1-.271.426l-1.64 1.64q.505 1.008 1.154 1.909c.433.6 1.444 1.696 1.444 1.696s1.095 1.01 1.696 1.444q.9.65 1.909 1.153l1.64-1.64q.193-.193.426-.27t.504-.04l3.954.543q.406.059.668.359t.262.727"
+                />
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+    </button>
+  </div>
+</div>
+`;
+
+exports[`<RoomListItemView /> > shows the muted icon for muted rooms 1`] = `
+<div>
+  <div
+    aria-label="Room list"
+    role="listbox"
+    style="width: 320px; padding: 8px;"
+  >
+    <button
+      aria-haspopup="menu"
+      aria-label="Open room General with 111 unread messages."
+      aria-selected="false"
+      class="Flex-module_flex RoomListItemView-module_roomListItem mx_RoomListItemView"
+      data-state="closed"
+      role="option"
+      style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: stretch; --mx-flex-justify: start; --mx-flex-gap: var(--cpd-space-3x); --mx-flex-wrap: nowrap;"
+      tabindex="-1"
+      type="button"
+    >
+      <div
+        class="Flex-module_flex RoomListItemView-module_container"
+        style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: start; --mx-flex-gap: var(--cpd-space-3x); --mx-flex-wrap: nowrap;"
+      >
+        <div
+          aria-label="General avatar"
+          role="img"
+          style="width: 32px; height: 32px; border-radius: 50%; background-color: rgb(11, 127, 103); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 12px;"
+        >
+          GE
+        </div>
+        <div
+          class="Flex-module_flex RoomListItemView-module_content"
+          style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
+        >
+          <div
+            class="RoomListItemView-module_text"
+          >
+            <div
+              class="RoomListItemView-module_topRow"
+            >
+              <div
+                class="RoomListItemView-module_roomName"
+                data-testid="room-name"
+                title="General"
+              >
+                General
+              </div>
+              <svg
+                aria-hidden="true"
+                class="RoomListItemView-module_mutedIcon"
+                fill="currentColor"
+                height="1em"
+                viewBox="0 0 24 24"
+                width="1em"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="m4.917 2.083 17 17a1 1 0 0 1-1.414 1.414L19.006 19H4.414c-.89 0-1.337-1.077-.707-1.707L5 16v-6s0-2.034 1.096-3.91L3.504 3.498a1 1 0 0 1 1.414-1.414M19 13.35 9.136 3.484C9.93 3.181 10.874 3 12 3c7 0 7 7 7 7z"
+                />
+                <path
+                  d="M10 20h4a2 2 0 0 1-4 0"
+                />
+              </svg>
+              <div
+                aria-hidden="true"
+                class="RoomListItemView-module_meta"
+              >
+                <span
+                  class="RoomListItemView-module_timestamp"
+                >
+                  24/08/26
+                </span>
+              </div>
+            </div>
+            <div
+              class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
+              title="Alice: Hey everyone!"
+            >
+              Alice: Hey everyone!
+            </div>
+          </div>
+          <div
+            class="Flex-module_flex RoomListItemView-module_hoverMenu"
+            style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: start; --mx-flex-gap: var(--cpd-space-1x); --mx-flex-wrap: nowrap;"
+          >
+            <button
+              aria-disabled="false"
+              aria-expanded="false"
+              aria-haspopup="menu"
+              aria-label="More Options"
+              aria-labelledby="react-use-id-1"
+              class="_icon-button_1215g_8"
+              data-kind="primary"
+              data-state="closed"
+              id="radix-react-use-id-2"
+              role="button"
+              style="--cpd-icon-button-size: 24px; padding: 2px;"
+              tabindex="0"
+              type="button"
+            >
+              <div
+                class="_indicator-icon_147l5_17"
+                style="--cpd-icon-button-size: 100%;"
+              >
+                <svg
+                  fill="currentColor"
+                  height="1em"
+                  viewBox="0 0 24 24"
+                  width="1em"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M6 14q-.824 0-1.412-.588A1.93 1.93 0 0 1 4 12q0-.825.588-1.412A1.93 1.93 0 0 1 6 10q.824 0 1.412.588Q8 11.175 8 12t-.588 1.412A1.93 1.93 0 0 1 6 14m6 0q-.825 0-1.412-.588A1.93 1.93 0 0 1 10 12q0-.825.588-1.412A1.93 1.93 0 0 1 12 10q.825 0 1.412.588Q14 11.175 14 12t-.588 1.412A1.93 1.93 0 0 1 12 14m6 0q-.824 0-1.413-.588A1.93 1.93 0 0 1 16 12q0-.825.587-1.412A1.93 1.93 0 0 1 18 10q.824 0 1.413.588Q20 11.175 20 12t-.587 1.412A1.93 1.93 0 0 1 18 14"
+                  />
+                </svg>
+              </div>
+            </button>
+            <button
+              aria-disabled="false"
+              aria-expanded="false"
+              aria-haspopup="menu"
+              aria-label="Notification options"
+              aria-labelledby="react-use-id-3"
+              class="_icon-button_1215g_8"
+              data-kind="primary"
+              data-state="closed"
+              id="radix-react-use-id-4"
+              role="button"
+              style="--cpd-icon-button-size: 24px; padding: 2px;"
+              tabindex="0"
+              type="button"
+            >
+              <div
+                class="_indicator-icon_147l5_17"
+                style="--cpd-icon-button-size: 100%;"
+              >
+                <svg
+                  fill="currentColor"
+                  height="1em"
+                  viewBox="0 0 24 24"
+                  width="1em"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M20.293 17.293c.63.63.184 1.707-.707 1.707H4.414c-.89 0-1.337-1.077-.707-1.707L5 16v-6s0-7 7-7 7 7 7 7v6zM12 22a2 2 0 0 1-2-2h4a2 2 0 0 1-2 2"
+                  />
+                </svg>
+              </div>
+            </button>
+          </div>
+          <div
+            aria-hidden="true"
+            class="RoomListItemView-module_notificationDecoration"
+          >
+            <div
+              class="Flex-module_flex"
+              data-testid="notification-decoration"
+              style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: center; --mx-flex-gap: var(--cpd-space-1x); --mx-flex-wrap: nowrap;"
+            >
+              <span
+                class="_unread-counter_1147r_8"
+              >
+                111
+              </span>
+              <svg
+                fill="var(--cpd-color-icon-tertiary)"
+                height="20px"
+                viewBox="0 0 24 24"
+                width="20px"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="m4.917 2.083 17 17a1 1 0 0 1-1.414 1.414L19.006 19H4.414c-.89 0-1.337-1.077-.707-1.707L5 16v-6s0-2.034 1.096-3.91L3.504 3.498a1 1 0 0 1 1.414-1.414M19 13.35 9.136 3.484C9.93 3.181 10.874 3 12 3c7 0 7 7 7 7z"
+                />
+                <path
+                  d="M10 20h4a2 2 0 0 1-4 0"
                 />
               </svg>
             </div>

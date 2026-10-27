@@ -17,9 +17,10 @@ import {
     RoomEvent,
     PendingEventOrdering,
     type RoomMember,
+    EventStatus,
 } from "matrix-js-sdk/src/matrix";
 import { CallType } from "matrix-js-sdk/src/webrtc/call";
-import { createTestClient, flushPromises } from "test-utils";
+import { createTestClient, flushPromises, mkMessage } from "test-utils";
 
 import { RoomNotificationState } from "../../stores/notifications/RoomNotificationState";
 import { RoomNotificationStateStore } from "../../stores/notifications/RoomNotificationStateStore";
@@ -241,6 +242,85 @@ describe("RoomListItemViewModel", () => {
 
             await flushPromises();
             expect(viewModel.getSnapshot().messagePreview).toBe("Test message");
+        });
+    });
+
+    describe("Latest message details", () => {
+        const ownUserId = "@userId:matrix.org";
+
+        function mockPreview(text: string, sender: string): MatrixEvent {
+            const event = mkMessage({ room: room.roomId, user: sender, msg: text, event: true });
+            vi.spyOn(MessagePreviewStore.instance, "getPreviewForRoom").mockResolvedValue({
+                text,
+                event,
+                isThreadReply: false,
+            } as MessagePreview);
+            return event;
+        }
+
+        beforeEach(() => {
+            vi.spyOn(SettingsStore, "getValue").mockImplementation((setting) => {
+                if (setting === "RoomList.showMessagePreview") return true;
+                if (setting === "RoomList.OrderedCustomSections") return [];
+                if (setting === "RoomList.CustomSectionData") return {};
+                return false;
+            });
+            vi.spyOn(matrixClient, "getSafeUserId").mockReturnValue(ownUserId);
+        });
+
+        it("shows the time of the latest activity", async () => {
+            vi.spyOn(room, "getLastActiveTimestamp").mockReturnValue(Date.now());
+            viewModel = new RoomListItemViewModel({ room, client: matrixClient });
+            await flushPromises();
+
+            expect(viewModel.getSnapshot().timestamp).toMatch(/^\d{1,2}:\d{2}$/);
+            expect(viewModel.getSnapshot().timestampTitle).toBeTruthy();
+        });
+
+        it("moves the sender of a group message to its own line", async () => {
+            const event = mkMessage({ room: room.roomId, user: "@alice:server", msg: "x", event: true });
+            vi.spyOn(event, "sender", "get").mockReturnValue({ name: "Alice" } as RoomMember);
+            vi.spyOn(MessagePreviewStore.instance, "getPreviewForRoom").mockResolvedValue({
+                text: "Alice: The viewing moved to Friday",
+                event,
+                isThreadReply: false,
+            } as MessagePreview);
+
+            viewModel = new RoomListItemViewModel({ room, client: matrixClient });
+            await flushPromises();
+
+            expect(viewModel.getSnapshot().messagePreviewSender).toBe("Alice");
+            expect(viewModel.getSnapshot().messagePreview).toBe("The viewing moved to Friday");
+            expect(viewModel.getSnapshot().lastMessageStatus).toBeUndefined();
+        });
+
+        it("marks the user's own latest message as sent until someone else reads it", async () => {
+            const event = mockPreview("Signed, sending the scan now", ownUserId);
+            const readers = vi.spyOn(room, "getUsersReadUpTo").mockReturnValue([ownUserId]);
+            // The room's notification state also reacts to receipts, through the global client this
+            // test does not set up; only the view model's reaction is under test here.
+            room.removeAllListeners(RoomEvent.Receipt);
+
+            viewModel = new RoomListItemViewModel({ room, client: matrixClient });
+            await flushPromises();
+            expect(viewModel.getSnapshot().lastMessageStatus).toBe("sent");
+            expect(viewModel.getSnapshot().messagePreviewSender).toBeUndefined();
+
+            // A read receipt from another member arrives
+            readers.mockReturnValue([ownUserId, "@alice:server"]);
+            room.emit(RoomEvent.Receipt, event, room);
+            await flushPromises();
+            expect(viewModel.getSnapshot().lastMessageStatus).toBe("read");
+        });
+
+        it("shows no ticks for a message that is still being sent", async () => {
+            const event = mockPreview("Still sending", ownUserId);
+            event.setStatus(EventStatus.SENDING);
+
+            viewModel = new RoomListItemViewModel({ room, client: matrixClient });
+            await flushPromises();
+
+            expect(viewModel.getSnapshot().lastMessageStatus).toBeUndefined();
         });
     });
 

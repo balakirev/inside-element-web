@@ -161,6 +161,8 @@
             "drag_over_after": "%(source)s будет удален после %(target)s",
             "drag_start": "Перетаскивание %(source)s",
             "invitation": "Открыть приглашение в комнату %(roomName)s.",
+            "last_message_read": "ваше последнее сообщение прочитано",
+            "last_message_sent": "ваше последнее сообщение отправлено",
             "mention": {
                 "one": "Открыть чат %(roomName)s с 1 непрочитанным упоминанием.",
                 "few": "Открыть чат %(roomName)s с %(count)s непрочитанными упоминаниями.",

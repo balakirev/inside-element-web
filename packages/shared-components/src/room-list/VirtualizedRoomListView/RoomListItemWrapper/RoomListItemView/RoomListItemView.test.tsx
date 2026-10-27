@@ -26,6 +26,11 @@ const {
     NoMessagePreview,
     WithHoverMenu,
     WithoutHoverMenu,
+    WithTimestampAndSender,
+    DirectMessageTwoLinePreview,
+    OwnMessageRead,
+    OwnMessageSent,
+    Muted,
 } = composeStories(stories);
 
 describe("<RoomListItemView />", () => {
@@ -81,6 +86,37 @@ describe("<RoomListItemView />", () => {
 
     it("renders WithHoverMenu story", () => {
         const { container } = render(<WithHoverMenu />);
+        expect(container).toMatchSnapshot();
+    });
+
+    it("renders WithTimestampAndSender story", () => {
+        const { container } = render(<WithTimestampAndSender />);
+        expect(container).toMatchSnapshot();
+    });
+
+    it("shows the time and the sender on its own line", () => {
+        render(<WithTimestampAndSender />);
+        expect(screen.getByText("20:20")).toHaveAttribute("title", "Tue, 27 Oct 2026, 20:20");
+        expect(screen.getByText("Alice")).toBeInTheDocument();
+        expect(screen.getByText("Hey everyone! The viewing moved to Friday, 16:00.")).toBeInTheDocument();
+    });
+
+    it("allows two preview lines when there is no sender line", () => {
+        const { container } = render(<DirectMessageTwoLinePreview />);
+        expect(container).toMatchSnapshot();
+    });
+
+    it.each([
+        ["read", OwnMessageRead, "Open room General, your last message was read"],
+        ["sent", OwnMessageSent, "Open room General, your last message was sent"],
+    ])("shows the %s ticks and announces them", (status, Story, label) => {
+        render(<Story />);
+        expect(screen.getByTestId(`message-status-${status}`)).toBeInTheDocument();
+        expect(screen.getByRole("option", { name: label })).toBeInTheDocument();
+    });
+
+    it("shows the muted icon for muted rooms", () => {
+        const { container } = render(<Muted />);
         expect(container).toMatchSnapshot();
     });
 

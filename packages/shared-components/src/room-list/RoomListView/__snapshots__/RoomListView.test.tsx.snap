@@ -108,17 +108,21 @@ exports[`<RoomListView /> > renders Default story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="General"
+                          class="RoomListItemView-module_topRow"
                         >
-                          General
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="General"
+                          >
+                            General
+                          </div>
                         </div>
                         <div
-                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                           title="Last message in General"
                         >
                           Last message in General
@@ -257,14 +261,18 @@ exports[`<RoomListView /> > renders Default story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Random"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Random
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Random"
+                          >
+                            Random
+                          </div>
                         </div>
                       </div>
                       <div
@@ -379,17 +387,21 @@ exports[`<RoomListView /> > renders Default story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Engineering"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Engineering
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Engineering"
+                          >
+                            Engineering
+                          </div>
                         </div>
                         <div
-                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                           title="Last message in Engineering"
                         >
                           Last message in Engineering
@@ -507,14 +519,18 @@ exports[`<RoomListView /> > renders Default story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Design"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Design
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Design"
+                          >
+                            Design
+                          </div>
                         </div>
                       </div>
                       <div
@@ -629,17 +645,21 @@ exports[`<RoomListView /> > renders Default story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Product"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Product
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Product"
+                          >
+                            Product
+                          </div>
                         </div>
                         <div
-                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                           title="Last message in Product"
                         >
                           Last message in Product
@@ -757,14 +777,18 @@ exports[`<RoomListView /> > renders Default story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Marketing"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Marketing
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Marketing"
+                          >
+                            Marketing
+                          </div>
                         </div>
                       </div>
                       <div
@@ -902,17 +926,21 @@ exports[`<RoomListView /> > renders Default story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Sales"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Sales
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Sales"
+                          >
+                            Sales
+                          </div>
                         </div>
                         <div
-                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                           title="Last message in Sales"
                         >
                           Last message in Sales
@@ -1030,14 +1058,18 @@ exports[`<RoomListView /> > renders Default story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Support"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Support
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Support"
+                          >
+                            Support
+                          </div>
                         </div>
                       </div>
                       <div
@@ -1152,17 +1184,21 @@ exports[`<RoomListView /> > renders Default story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Announcements"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Announcements
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Announcements"
+                          >
+                            Announcements
+                          </div>
                         </div>
                         <div
-                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                           title="Last message in Announcements"
                         >
                           Last message in Announcements
@@ -1280,14 +1316,18 @@ exports[`<RoomListView /> > renders Default story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Off-topic"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Off-topic
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Off-topic"
+                          >
+                            Off-topic
+                          </div>
                         </div>
                       </div>
                       <div
@@ -1402,17 +1442,21 @@ exports[`<RoomListView /> > renders Default story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Team Alpha"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Team Alpha
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Team Alpha"
+                          >
+                            Team Alpha
+                          </div>
                         </div>
                         <div
-                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                           title="Last message in Team Alpha"
                         >
                           Last message in Team Alpha
@@ -1553,14 +1597,18 @@ exports[`<RoomListView /> > renders Default story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Team Beta"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Team Beta
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Team Beta"
+                          >
+                            Team Beta
+                          </div>
                         </div>
                       </div>
                       <div
@@ -1675,17 +1723,21 @@ exports[`<RoomListView /> > renders Default story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Project X"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Project X
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Project X"
+                          >
+                            Project X
+                          </div>
                         </div>
                         <div
-                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                           title="Last message in Project X"
                         >
                           Last message in Project X
@@ -1803,14 +1855,18 @@ exports[`<RoomListView /> > renders Default story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Project Y"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Project Y
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Project Y"
+                          >
+                            Project Y
+                          </div>
                         </div>
                       </div>
                       <div
@@ -1925,17 +1981,21 @@ exports[`<RoomListView /> > renders Default story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Water Cooler"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Water Cooler
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Water Cooler"
+                          >
+                            Water Cooler
+                          </div>
                         </div>
                         <div
-                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                           title="Last message in Water Cooler"
                         >
                           Last message in Water Cooler
@@ -2053,14 +2113,18 @@ exports[`<RoomListView /> > renders Default story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Feedback"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Feedback
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Feedback"
+                          >
+                            Feedback
+                          </div>
                         </div>
                       </div>
                       <div
@@ -2198,17 +2262,21 @@ exports[`<RoomListView /> > renders Default story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Ideas"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Ideas
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Ideas"
+                          >
+                            Ideas
+                          </div>
                         </div>
                         <div
-                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                           title="Last message in Ideas"
                         >
                           Last message in Ideas
@@ -2326,14 +2394,18 @@ exports[`<RoomListView /> > renders Default story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Bugs"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Bugs
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Bugs"
+                          >
+                            Bugs
+                          </div>
                         </div>
                       </div>
                       <div
@@ -2448,17 +2520,21 @@ exports[`<RoomListView /> > renders Default story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Features"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Features
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Features"
+                          >
+                            Features
+                          </div>
                         </div>
                         <div
-                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                           title="Last message in Features"
                         >
                           Last message in Features
@@ -2576,14 +2652,18 @@ exports[`<RoomListView /> > renders Default story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Releases"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Releases
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Releases"
+                          >
+                            Releases
+                          </div>
                         </div>
                       </div>
                       <div
@@ -3366,17 +3446,21 @@ exports[`<RoomListView /> > renders LargeFlatList story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="General"
+                          class="RoomListItemView-module_topRow"
                         >
-                          General
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="General"
+                          >
+                            General
+                          </div>
                         </div>
                         <div
-                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                           title="Last message in General"
                         >
                           Last message in General
@@ -3515,14 +3599,18 @@ exports[`<RoomListView /> > renders LargeFlatList story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Random"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Random
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Random"
+                          >
+                            Random
+                          </div>
                         </div>
                       </div>
                       <div
@@ -3637,17 +3725,21 @@ exports[`<RoomListView /> > renders LargeFlatList story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Engineering"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Engineering
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Engineering"
+                          >
+                            Engineering
+                          </div>
                         </div>
                         <div
-                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                           title="Last message in Engineering"
                         >
                           Last message in Engineering
@@ -3765,14 +3857,18 @@ exports[`<RoomListView /> > renders LargeFlatList story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Design"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Design
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Design"
+                          >
+                            Design
+                          </div>
                         </div>
                       </div>
                       <div
@@ -3887,17 +3983,21 @@ exports[`<RoomListView /> > renders LargeFlatList story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Product"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Product
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Product"
+                          >
+                            Product
+                          </div>
                         </div>
                         <div
-                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                           title="Last message in Product"
                         >
                           Last message in Product
@@ -4015,14 +4115,18 @@ exports[`<RoomListView /> > renders LargeFlatList story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Marketing"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Marketing
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Marketing"
+                          >
+                            Marketing
+                          </div>
                         </div>
                       </div>
                       <div
@@ -4160,17 +4264,21 @@ exports[`<RoomListView /> > renders LargeFlatList story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Sales"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Sales
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Sales"
+                          >
+                            Sales
+                          </div>
                         </div>
                         <div
-                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                           title="Last message in Sales"
                         >
                           Last message in Sales
@@ -4288,14 +4396,18 @@ exports[`<RoomListView /> > renders LargeFlatList story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Support"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Support
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Support"
+                          >
+                            Support
+                          </div>
                         </div>
                       </div>
                       <div
@@ -4410,17 +4522,21 @@ exports[`<RoomListView /> > renders LargeFlatList story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Announcements"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Announcements
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Announcements"
+                          >
+                            Announcements
+                          </div>
                         </div>
                         <div
-                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                           title="Last message in Announcements"
                         >
                           Last message in Announcements
@@ -4538,14 +4654,18 @@ exports[`<RoomListView /> > renders LargeFlatList story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Off-topic"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Off-topic
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Off-topic"
+                          >
+                            Off-topic
+                          </div>
                         </div>
                       </div>
                       <div
@@ -4660,17 +4780,21 @@ exports[`<RoomListView /> > renders LargeFlatList story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Team Alpha"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Team Alpha
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Team Alpha"
+                          >
+                            Team Alpha
+                          </div>
                         </div>
                         <div
-                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                           title="Last message in Team Alpha"
                         >
                           Last message in Team Alpha
@@ -4811,14 +4935,18 @@ exports[`<RoomListView /> > renders LargeFlatList story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Team Beta"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Team Beta
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Team Beta"
+                          >
+                            Team Beta
+                          </div>
                         </div>
                       </div>
                       <div
@@ -4933,17 +5061,21 @@ exports[`<RoomListView /> > renders LargeFlatList story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Project X"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Project X
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Project X"
+                          >
+                            Project X
+                          </div>
                         </div>
                         <div
-                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                           title="Last message in Project X"
                         >
                           Last message in Project X
@@ -5061,14 +5193,18 @@ exports[`<RoomListView /> > renders LargeFlatList story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Project Y"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Project Y
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Project Y"
+                          >
+                            Project Y
+                          </div>
                         </div>
                       </div>
                       <div
@@ -5183,17 +5319,21 @@ exports[`<RoomListView /> > renders LargeFlatList story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Water Cooler"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Water Cooler
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Water Cooler"
+                          >
+                            Water Cooler
+                          </div>
                         </div>
                         <div
-                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                           title="Last message in Water Cooler"
                         >
                           Last message in Water Cooler
@@ -5311,14 +5451,18 @@ exports[`<RoomListView /> > renders LargeFlatList story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Feedback"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Feedback
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Feedback"
+                          >
+                            Feedback
+                          </div>
                         </div>
                       </div>
                       <div
@@ -5456,17 +5600,21 @@ exports[`<RoomListView /> > renders LargeFlatList story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Ideas"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Ideas
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Ideas"
+                          >
+                            Ideas
+                          </div>
                         </div>
                         <div
-                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                           title="Last message in Ideas"
                         >
                           Last message in Ideas
@@ -5584,14 +5732,18 @@ exports[`<RoomListView /> > renders LargeFlatList story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Bugs"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Bugs
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Bugs"
+                          >
+                            Bugs
+                          </div>
                         </div>
                       </div>
                       <div
@@ -5706,17 +5858,21 @@ exports[`<RoomListView /> > renders LargeFlatList story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Features"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Features
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Features"
+                          >
+                            Features
+                          </div>
                         </div>
                         <div
-                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                           title="Last message in Features"
                         >
                           Last message in Features
@@ -5834,14 +5990,18 @@ exports[`<RoomListView /> > renders LargeFlatList story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Releases"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Releases
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Releases"
+                          >
+                            Releases
+                          </div>
                         </div>
                       </div>
                       <div
@@ -5956,17 +6116,21 @@ exports[`<RoomListView /> > renders LargeFlatList story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="General"
+                          class="RoomListItemView-module_topRow"
                         >
-                          General
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="General"
+                          >
+                            General
+                          </div>
                         </div>
                         <div
-                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                           title="Last message in General"
                         >
                           Last message in General
@@ -6107,14 +6271,18 @@ exports[`<RoomListView /> > renders LargeFlatList story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Random"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Random
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Random"
+                          >
+                            Random
+                          </div>
                         </div>
                       </div>
                       <div
@@ -6229,17 +6397,21 @@ exports[`<RoomListView /> > renders LargeFlatList story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Engineering"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Engineering
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Engineering"
+                          >
+                            Engineering
+                          </div>
                         </div>
                         <div
-                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                           title="Last message in Engineering"
                         >
                           Last message in Engineering
@@ -6357,14 +6529,18 @@ exports[`<RoomListView /> > renders LargeFlatList story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Design"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Design
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Design"
+                          >
+                            Design
+                          </div>
                         </div>
                       </div>
                       <div
@@ -6479,17 +6655,21 @@ exports[`<RoomListView /> > renders LargeFlatList story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Product"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Product
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Product"
+                          >
+                            Product
+                          </div>
                         </div>
                         <div
-                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                           title="Last message in Product"
                         >
                           Last message in Product
@@ -6607,14 +6787,18 @@ exports[`<RoomListView /> > renders LargeFlatList story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Marketing"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Marketing
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Marketing"
+                          >
+                            Marketing
+                          </div>
                         </div>
                       </div>
                       <div
@@ -6752,17 +6936,21 @@ exports[`<RoomListView /> > renders LargeFlatList story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Sales"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Sales
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Sales"
+                          >
+                            Sales
+                          </div>
                         </div>
                         <div
-                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                           title="Last message in Sales"
                         >
                           Last message in Sales
@@ -6880,14 +7068,18 @@ exports[`<RoomListView /> > renders LargeFlatList story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Support"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Support
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Support"
+                          >
+                            Support
+                          </div>
                         </div>
                       </div>
                       <div
@@ -7002,17 +7194,21 @@ exports[`<RoomListView /> > renders LargeFlatList story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Announcements"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Announcements
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Announcements"
+                          >
+                            Announcements
+                          </div>
                         </div>
                         <div
-                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                           title="Last message in Announcements"
                         >
                           Last message in Announcements
@@ -7130,14 +7326,18 @@ exports[`<RoomListView /> > renders LargeFlatList story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Off-topic"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Off-topic
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Off-topic"
+                          >
+                            Off-topic
+                          </div>
                         </div>
                       </div>
                       <div
@@ -7252,17 +7452,21 @@ exports[`<RoomListView /> > renders LargeFlatList story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Team Alpha"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Team Alpha
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Team Alpha"
+                          >
+                            Team Alpha
+                          </div>
                         </div>
                         <div
-                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                           title="Last message in Team Alpha"
                         >
                           Last message in Team Alpha
@@ -7403,14 +7607,18 @@ exports[`<RoomListView /> > renders LargeFlatList story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Team Beta"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Team Beta
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Team Beta"
+                          >
+                            Team Beta
+                          </div>
                         </div>
                       </div>
                       <div
@@ -7525,17 +7733,21 @@ exports[`<RoomListView /> > renders LargeFlatList story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Project X"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Project X
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Project X"
+                          >
+                            Project X
+                          </div>
                         </div>
                         <div
-                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                           title="Last message in Project X"
                         >
                           Last message in Project X
@@ -7653,14 +7865,18 @@ exports[`<RoomListView /> > renders LargeFlatList story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Project Y"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Project Y
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Project Y"
+                          >
+                            Project Y
+                          </div>
                         </div>
                       </div>
                       <div
@@ -7775,17 +7991,21 @@ exports[`<RoomListView /> > renders LargeFlatList story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Water Cooler"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Water Cooler
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Water Cooler"
+                          >
+                            Water Cooler
+                          </div>
                         </div>
                         <div
-                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                           title="Last message in Water Cooler"
                         >
                           Last message in Water Cooler
@@ -7903,14 +8123,18 @@ exports[`<RoomListView /> > renders LargeFlatList story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Feedback"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Feedback
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Feedback"
+                          >
+                            Feedback
+                          </div>
                         </div>
                       </div>
                       <div
@@ -8048,17 +8272,21 @@ exports[`<RoomListView /> > renders LargeFlatList story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Ideas"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Ideas
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Ideas"
+                          >
+                            Ideas
+                          </div>
                         </div>
                         <div
-                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                           title="Last message in Ideas"
                         >
                           Last message in Ideas
@@ -8373,17 +8601,21 @@ exports[`<RoomListView /> > renders LargeSectionList story 1`] = `
                             style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                           >
                             <div
-                              class="RoomListItemView-module_ellipsis"
+                              class="RoomListItemView-module_text"
                             >
                               <div
-                                class="RoomListItemView-module_roomName"
-                                data-testid="room-name"
-                                title="General"
+                                class="RoomListItemView-module_topRow"
                               >
-                                General
+                                <div
+                                  class="RoomListItemView-module_roomName"
+                                  data-testid="room-name"
+                                  title="General"
+                                >
+                                  General
+                                </div>
                               </div>
                               <div
-                                class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                                class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                                 title="Last message in General"
                               >
                                 Last message in General
@@ -8531,14 +8763,18 @@ exports[`<RoomListView /> > renders LargeSectionList story 1`] = `
                             style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                           >
                             <div
-                              class="RoomListItemView-module_ellipsis"
+                              class="RoomListItemView-module_text"
                             >
                               <div
-                                class="RoomListItemView-module_roomName"
-                                data-testid="room-name"
-                                title="Random"
+                                class="RoomListItemView-module_topRow"
                               >
-                                Random
+                                <div
+                                  class="RoomListItemView-module_roomName"
+                                  data-testid="room-name"
+                                  title="Random"
+                                >
+                                  Random
+                                </div>
                               </div>
                             </div>
                             <div
@@ -8662,17 +8898,21 @@ exports[`<RoomListView /> > renders LargeSectionList story 1`] = `
                             style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                           >
                             <div
-                              class="RoomListItemView-module_ellipsis"
+                              class="RoomListItemView-module_text"
                             >
                               <div
-                                class="RoomListItemView-module_roomName"
-                                data-testid="room-name"
-                                title="Engineering"
+                                class="RoomListItemView-module_topRow"
                               >
-                                Engineering
+                                <div
+                                  class="RoomListItemView-module_roomName"
+                                  data-testid="room-name"
+                                  title="Engineering"
+                                >
+                                  Engineering
+                                </div>
                               </div>
                               <div
-                                class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                                class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                                 title="Last message in Engineering"
                               >
                                 Last message in Engineering
@@ -8799,14 +9039,18 @@ exports[`<RoomListView /> > renders LargeSectionList story 1`] = `
                             style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                           >
                             <div
-                              class="RoomListItemView-module_ellipsis"
+                              class="RoomListItemView-module_text"
                             >
                               <div
-                                class="RoomListItemView-module_roomName"
-                                data-testid="room-name"
-                                title="Design"
+                                class="RoomListItemView-module_topRow"
                               >
-                                Design
+                                <div
+                                  class="RoomListItemView-module_roomName"
+                                  data-testid="room-name"
+                                  title="Design"
+                                >
+                                  Design
+                                </div>
                               </div>
                             </div>
                             <div
@@ -8930,17 +9174,21 @@ exports[`<RoomListView /> > renders LargeSectionList story 1`] = `
                             style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                           >
                             <div
-                              class="RoomListItemView-module_ellipsis"
+                              class="RoomListItemView-module_text"
                             >
                               <div
-                                class="RoomListItemView-module_roomName"
-                                data-testid="room-name"
-                                title="Product"
+                                class="RoomListItemView-module_topRow"
                               >
-                                Product
+                                <div
+                                  class="RoomListItemView-module_roomName"
+                                  data-testid="room-name"
+                                  title="Product"
+                                >
+                                  Product
+                                </div>
                               </div>
                               <div
-                                class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                                class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                                 title="Last message in Product"
                               >
                                 Last message in Product
@@ -9067,14 +9315,18 @@ exports[`<RoomListView /> > renders LargeSectionList story 1`] = `
                             style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                           >
                             <div
-                              class="RoomListItemView-module_ellipsis"
+                              class="RoomListItemView-module_text"
                             >
                               <div
-                                class="RoomListItemView-module_roomName"
-                                data-testid="room-name"
-                                title="Marketing"
+                                class="RoomListItemView-module_topRow"
                               >
-                                Marketing
+                                <div
+                                  class="RoomListItemView-module_roomName"
+                                  data-testid="room-name"
+                                  title="Marketing"
+                                >
+                                  Marketing
+                                </div>
                               </div>
                             </div>
                             <div
@@ -9221,17 +9473,21 @@ exports[`<RoomListView /> > renders LargeSectionList story 1`] = `
                             style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                           >
                             <div
-                              class="RoomListItemView-module_ellipsis"
+                              class="RoomListItemView-module_text"
                             >
                               <div
-                                class="RoomListItemView-module_roomName"
-                                data-testid="room-name"
-                                title="Sales"
+                                class="RoomListItemView-module_topRow"
                               >
-                                Sales
+                                <div
+                                  class="RoomListItemView-module_roomName"
+                                  data-testid="room-name"
+                                  title="Sales"
+                                >
+                                  Sales
+                                </div>
                               </div>
                               <div
-                                class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                                class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                                 title="Last message in Sales"
                               >
                                 Last message in Sales
@@ -9358,14 +9614,18 @@ exports[`<RoomListView /> > renders LargeSectionList story 1`] = `
                             style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                           >
                             <div
-                              class="RoomListItemView-module_ellipsis"
+                              class="RoomListItemView-module_text"
                             >
                               <div
-                                class="RoomListItemView-module_roomName"
-                                data-testid="room-name"
-                                title="Support"
+                                class="RoomListItemView-module_topRow"
                               >
-                                Support
+                                <div
+                                  class="RoomListItemView-module_roomName"
+                                  data-testid="room-name"
+                                  title="Support"
+                                >
+                                  Support
+                                </div>
                               </div>
                             </div>
                             <div
@@ -9489,17 +9749,21 @@ exports[`<RoomListView /> > renders LargeSectionList story 1`] = `
                             style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                           >
                             <div
-                              class="RoomListItemView-module_ellipsis"
+                              class="RoomListItemView-module_text"
                             >
                               <div
-                                class="RoomListItemView-module_roomName"
-                                data-testid="room-name"
-                                title="Announcements"
+                                class="RoomListItemView-module_topRow"
                               >
-                                Announcements
+                                <div
+                                  class="RoomListItemView-module_roomName"
+                                  data-testid="room-name"
+                                  title="Announcements"
+                                >
+                                  Announcements
+                                </div>
                               </div>
                               <div
-                                class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                                class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                                 title="Last message in Announcements"
                               >
                                 Last message in Announcements
@@ -9626,14 +9890,18 @@ exports[`<RoomListView /> > renders LargeSectionList story 1`] = `
                             style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                           >
                             <div
-                              class="RoomListItemView-module_ellipsis"
+                              class="RoomListItemView-module_text"
                             >
                               <div
-                                class="RoomListItemView-module_roomName"
-                                data-testid="room-name"
-                                title="Off-topic"
+                                class="RoomListItemView-module_topRow"
                               >
-                                Off-topic
+                                <div
+                                  class="RoomListItemView-module_roomName"
+                                  data-testid="room-name"
+                                  title="Off-topic"
+                                >
+                                  Off-topic
+                                </div>
                               </div>
                             </div>
                             <div
@@ -9757,17 +10025,21 @@ exports[`<RoomListView /> > renders LargeSectionList story 1`] = `
                             style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                           >
                             <div
-                              class="RoomListItemView-module_ellipsis"
+                              class="RoomListItemView-module_text"
                             >
                               <div
-                                class="RoomListItemView-module_roomName"
-                                data-testid="room-name"
-                                title="Team Alpha"
+                                class="RoomListItemView-module_topRow"
                               >
-                                Team Alpha
+                                <div
+                                  class="RoomListItemView-module_roomName"
+                                  data-testid="room-name"
+                                  title="Team Alpha"
+                                >
+                                  Team Alpha
+                                </div>
                               </div>
                               <div
-                                class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                                class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                                 title="Last message in Team Alpha"
                               >
                                 Last message in Team Alpha
@@ -9917,14 +10189,18 @@ exports[`<RoomListView /> > renders LargeSectionList story 1`] = `
                             style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                           >
                             <div
-                              class="RoomListItemView-module_ellipsis"
+                              class="RoomListItemView-module_text"
                             >
                               <div
-                                class="RoomListItemView-module_roomName"
-                                data-testid="room-name"
-                                title="Team Beta"
+                                class="RoomListItemView-module_topRow"
                               >
-                                Team Beta
+                                <div
+                                  class="RoomListItemView-module_roomName"
+                                  data-testid="room-name"
+                                  title="Team Beta"
+                                >
+                                  Team Beta
+                                </div>
                               </div>
                             </div>
                             <div
@@ -10048,17 +10324,21 @@ exports[`<RoomListView /> > renders LargeSectionList story 1`] = `
                             style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                           >
                             <div
-                              class="RoomListItemView-module_ellipsis"
+                              class="RoomListItemView-module_text"
                             >
                               <div
-                                class="RoomListItemView-module_roomName"
-                                data-testid="room-name"
-                                title="Project X"
+                                class="RoomListItemView-module_topRow"
                               >
-                                Project X
+                                <div
+                                  class="RoomListItemView-module_roomName"
+                                  data-testid="room-name"
+                                  title="Project X"
+                                >
+                                  Project X
+                                </div>
                               </div>
                               <div
-                                class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                                class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                                 title="Last message in Project X"
                               >
                                 Last message in Project X
@@ -10185,14 +10465,18 @@ exports[`<RoomListView /> > renders LargeSectionList story 1`] = `
                             style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                           >
                             <div
-                              class="RoomListItemView-module_ellipsis"
+                              class="RoomListItemView-module_text"
                             >
                               <div
-                                class="RoomListItemView-module_roomName"
-                                data-testid="room-name"
-                                title="Project Y"
+                                class="RoomListItemView-module_topRow"
                               >
-                                Project Y
+                                <div
+                                  class="RoomListItemView-module_roomName"
+                                  data-testid="room-name"
+                                  title="Project Y"
+                                >
+                                  Project Y
+                                </div>
                               </div>
                             </div>
                             <div
@@ -10316,17 +10600,21 @@ exports[`<RoomListView /> > renders LargeSectionList story 1`] = `
                             style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                           >
                             <div
-                              class="RoomListItemView-module_ellipsis"
+                              class="RoomListItemView-module_text"
                             >
                               <div
-                                class="RoomListItemView-module_roomName"
-                                data-testid="room-name"
-                                title="Water Cooler"
+                                class="RoomListItemView-module_topRow"
                               >
-                                Water Cooler
+                                <div
+                                  class="RoomListItemView-module_roomName"
+                                  data-testid="room-name"
+                                  title="Water Cooler"
+                                >
+                                  Water Cooler
+                                </div>
                               </div>
                               <div
-                                class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                                class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                                 title="Last message in Water Cooler"
                               >
                                 Last message in Water Cooler
@@ -10453,14 +10741,18 @@ exports[`<RoomListView /> > renders LargeSectionList story 1`] = `
                             style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                           >
                             <div
-                              class="RoomListItemView-module_ellipsis"
+                              class="RoomListItemView-module_text"
                             >
                               <div
-                                class="RoomListItemView-module_roomName"
-                                data-testid="room-name"
-                                title="Feedback"
+                                class="RoomListItemView-module_topRow"
                               >
-                                Feedback
+                                <div
+                                  class="RoomListItemView-module_roomName"
+                                  data-testid="room-name"
+                                  title="Feedback"
+                                >
+                                  Feedback
+                                </div>
                               </div>
                             </div>
                             <div
@@ -10607,17 +10899,21 @@ exports[`<RoomListView /> > renders LargeSectionList story 1`] = `
                             style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                           >
                             <div
-                              class="RoomListItemView-module_ellipsis"
+                              class="RoomListItemView-module_text"
                             >
                               <div
-                                class="RoomListItemView-module_roomName"
-                                data-testid="room-name"
-                                title="Ideas"
+                                class="RoomListItemView-module_topRow"
                               >
-                                Ideas
+                                <div
+                                  class="RoomListItemView-module_roomName"
+                                  data-testid="room-name"
+                                  title="Ideas"
+                                >
+                                  Ideas
+                                </div>
                               </div>
                               <div
-                                class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                                class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                                 title="Last message in Ideas"
                               >
                                 Last message in Ideas
@@ -10744,14 +11040,18 @@ exports[`<RoomListView /> > renders LargeSectionList story 1`] = `
                             style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                           >
                             <div
-                              class="RoomListItemView-module_ellipsis"
+                              class="RoomListItemView-module_text"
                             >
                               <div
-                                class="RoomListItemView-module_roomName"
-                                data-testid="room-name"
-                                title="Bugs"
+                                class="RoomListItemView-module_topRow"
                               >
-                                Bugs
+                                <div
+                                  class="RoomListItemView-module_roomName"
+                                  data-testid="room-name"
+                                  title="Bugs"
+                                >
+                                  Bugs
+                                </div>
                               </div>
                             </div>
                             <div
@@ -10875,17 +11175,21 @@ exports[`<RoomListView /> > renders LargeSectionList story 1`] = `
                             style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                           >
                             <div
-                              class="RoomListItemView-module_ellipsis"
+                              class="RoomListItemView-module_text"
                             >
                               <div
-                                class="RoomListItemView-module_roomName"
-                                data-testid="room-name"
-                                title="Features"
+                                class="RoomListItemView-module_topRow"
                               >
-                                Features
+                                <div
+                                  class="RoomListItemView-module_roomName"
+                                  data-testid="room-name"
+                                  title="Features"
+                                >
+                                  Features
+                                </div>
                               </div>
                               <div
-                                class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                                class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                                 title="Last message in Features"
                               >
                                 Last message in Features
@@ -11012,14 +11316,18 @@ exports[`<RoomListView /> > renders LargeSectionList story 1`] = `
                             style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                           >
                             <div
-                              class="RoomListItemView-module_ellipsis"
+                              class="RoomListItemView-module_text"
                             >
                               <div
-                                class="RoomListItemView-module_roomName"
-                                data-testid="room-name"
-                                title="Releases"
+                                class="RoomListItemView-module_topRow"
                               >
-                                Releases
+                                <div
+                                  class="RoomListItemView-module_roomName"
+                                  data-testid="room-name"
+                                  title="Releases"
+                                >
+                                  Releases
+                                </div>
                               </div>
                             </div>
                             <div
@@ -11143,17 +11451,21 @@ exports[`<RoomListView /> > renders LargeSectionList story 1`] = `
                             style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                           >
                             <div
-                              class="RoomListItemView-module_ellipsis"
+                              class="RoomListItemView-module_text"
                             >
                               <div
-                                class="RoomListItemView-module_roomName"
-                                data-testid="room-name"
-                                title="General"
+                                class="RoomListItemView-module_topRow"
                               >
-                                General
+                                <div
+                                  class="RoomListItemView-module_roomName"
+                                  data-testid="room-name"
+                                  title="General"
+                                >
+                                  General
+                                </div>
                               </div>
                               <div
-                                class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                                class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                                 title="Last message in General"
                               >
                                 Last message in General
@@ -11303,14 +11615,18 @@ exports[`<RoomListView /> > renders LargeSectionList story 1`] = `
                             style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                           >
                             <div
-                              class="RoomListItemView-module_ellipsis"
+                              class="RoomListItemView-module_text"
                             >
                               <div
-                                class="RoomListItemView-module_roomName"
-                                data-testid="room-name"
-                                title="Random"
+                                class="RoomListItemView-module_topRow"
                               >
-                                Random
+                                <div
+                                  class="RoomListItemView-module_roomName"
+                                  data-testid="room-name"
+                                  title="Random"
+                                >
+                                  Random
+                                </div>
                               </div>
                             </div>
                             <div
@@ -11434,17 +11750,21 @@ exports[`<RoomListView /> > renders LargeSectionList story 1`] = `
                             style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                           >
                             <div
-                              class="RoomListItemView-module_ellipsis"
+                              class="RoomListItemView-module_text"
                             >
                               <div
-                                class="RoomListItemView-module_roomName"
-                                data-testid="room-name"
-                                title="Engineering"
+                                class="RoomListItemView-module_topRow"
                               >
-                                Engineering
+                                <div
+                                  class="RoomListItemView-module_roomName"
+                                  data-testid="room-name"
+                                  title="Engineering"
+                                >
+                                  Engineering
+                                </div>
                               </div>
                               <div
-                                class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                                class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                                 title="Last message in Engineering"
                               >
                                 Last message in Engineering
@@ -11629,14 +11949,18 @@ exports[`<RoomListView /> > renders LargeSectionList story 1`] = `
                             style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                           >
                             <div
-                              class="RoomListItemView-module_ellipsis"
+                              class="RoomListItemView-module_text"
                             >
                               <div
-                                class="RoomListItemView-module_roomName"
-                                data-testid="room-name"
-                                title="Design"
+                                class="RoomListItemView-module_topRow"
                               >
-                                Design
+                                <div
+                                  class="RoomListItemView-module_roomName"
+                                  data-testid="room-name"
+                                  title="Design"
+                                >
+                                  Design
+                                </div>
                               </div>
                             </div>
                             <div
@@ -11760,17 +12084,21 @@ exports[`<RoomListView /> > renders LargeSectionList story 1`] = `
                             style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                           >
                             <div
-                              class="RoomListItemView-module_ellipsis"
+                              class="RoomListItemView-module_text"
                             >
                               <div
-                                class="RoomListItemView-module_roomName"
-                                data-testid="room-name"
-                                title="Product"
+                                class="RoomListItemView-module_topRow"
                               >
-                                Product
+                                <div
+                                  class="RoomListItemView-module_roomName"
+                                  data-testid="room-name"
+                                  title="Product"
+                                >
+                                  Product
+                                </div>
                               </div>
                               <div
-                                class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                                class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                                 title="Last message in Product"
                               >
                                 Last message in Product
@@ -11897,14 +12225,18 @@ exports[`<RoomListView /> > renders LargeSectionList story 1`] = `
                             style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                           >
                             <div
-                              class="RoomListItemView-module_ellipsis"
+                              class="RoomListItemView-module_text"
                             >
                               <div
-                                class="RoomListItemView-module_roomName"
-                                data-testid="room-name"
-                                title="Marketing"
+                                class="RoomListItemView-module_topRow"
                               >
-                                Marketing
+                                <div
+                                  class="RoomListItemView-module_roomName"
+                                  data-testid="room-name"
+                                  title="Marketing"
+                                >
+                                  Marketing
+                                </div>
                               </div>
                             </div>
                             <div
@@ -12051,17 +12383,21 @@ exports[`<RoomListView /> > renders LargeSectionList story 1`] = `
                             style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                           >
                             <div
-                              class="RoomListItemView-module_ellipsis"
+                              class="RoomListItemView-module_text"
                             >
                               <div
-                                class="RoomListItemView-module_roomName"
-                                data-testid="room-name"
-                                title="Sales"
+                                class="RoomListItemView-module_topRow"
                               >
-                                Sales
+                                <div
+                                  class="RoomListItemView-module_roomName"
+                                  data-testid="room-name"
+                                  title="Sales"
+                                >
+                                  Sales
+                                </div>
                               </div>
                               <div
-                                class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                                class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                                 title="Last message in Sales"
                               >
                                 Last message in Sales
@@ -12188,14 +12524,18 @@ exports[`<RoomListView /> > renders LargeSectionList story 1`] = `
                             style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                           >
                             <div
-                              class="RoomListItemView-module_ellipsis"
+                              class="RoomListItemView-module_text"
                             >
                               <div
-                                class="RoomListItemView-module_roomName"
-                                data-testid="room-name"
-                                title="Support"
+                                class="RoomListItemView-module_topRow"
                               >
-                                Support
+                                <div
+                                  class="RoomListItemView-module_roomName"
+                                  data-testid="room-name"
+                                  title="Support"
+                                >
+                                  Support
+                                </div>
                               </div>
                             </div>
                             <div
@@ -12319,17 +12659,21 @@ exports[`<RoomListView /> > renders LargeSectionList story 1`] = `
                             style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                           >
                             <div
-                              class="RoomListItemView-module_ellipsis"
+                              class="RoomListItemView-module_text"
                             >
                               <div
-                                class="RoomListItemView-module_roomName"
-                                data-testid="room-name"
-                                title="Announcements"
+                                class="RoomListItemView-module_topRow"
                               >
-                                Announcements
+                                <div
+                                  class="RoomListItemView-module_roomName"
+                                  data-testid="room-name"
+                                  title="Announcements"
+                                >
+                                  Announcements
+                                </div>
                               </div>
                               <div
-                                class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                                class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                                 title="Last message in Announcements"
                               >
                                 Last message in Announcements
@@ -12456,14 +12800,18 @@ exports[`<RoomListView /> > renders LargeSectionList story 1`] = `
                             style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                           >
                             <div
-                              class="RoomListItemView-module_ellipsis"
+                              class="RoomListItemView-module_text"
                             >
                               <div
-                                class="RoomListItemView-module_roomName"
-                                data-testid="room-name"
-                                title="Off-topic"
+                                class="RoomListItemView-module_topRow"
                               >
-                                Off-topic
+                                <div
+                                  class="RoomListItemView-module_roomName"
+                                  data-testid="room-name"
+                                  title="Off-topic"
+                                >
+                                  Off-topic
+                                </div>
                               </div>
                             </div>
                             <div
@@ -12587,17 +12935,21 @@ exports[`<RoomListView /> > renders LargeSectionList story 1`] = `
                             style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                           >
                             <div
-                              class="RoomListItemView-module_ellipsis"
+                              class="RoomListItemView-module_text"
                             >
                               <div
-                                class="RoomListItemView-module_roomName"
-                                data-testid="room-name"
-                                title="Team Alpha"
+                                class="RoomListItemView-module_topRow"
                               >
-                                Team Alpha
+                                <div
+                                  class="RoomListItemView-module_roomName"
+                                  data-testid="room-name"
+                                  title="Team Alpha"
+                                >
+                                  Team Alpha
+                                </div>
                               </div>
                               <div
-                                class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                                class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                                 title="Last message in Team Alpha"
                               >
                                 Last message in Team Alpha
@@ -12747,14 +13099,18 @@ exports[`<RoomListView /> > renders LargeSectionList story 1`] = `
                             style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                           >
                             <div
-                              class="RoomListItemView-module_ellipsis"
+                              class="RoomListItemView-module_text"
                             >
                               <div
-                                class="RoomListItemView-module_roomName"
-                                data-testid="room-name"
-                                title="Team Beta"
+                                class="RoomListItemView-module_topRow"
                               >
-                                Team Beta
+                                <div
+                                  class="RoomListItemView-module_roomName"
+                                  data-testid="room-name"
+                                  title="Team Beta"
+                                >
+                                  Team Beta
+                                </div>
                               </div>
                             </div>
                             <div
@@ -12878,17 +13234,21 @@ exports[`<RoomListView /> > renders LargeSectionList story 1`] = `
                             style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                           >
                             <div
-                              class="RoomListItemView-module_ellipsis"
+                              class="RoomListItemView-module_text"
                             >
                               <div
-                                class="RoomListItemView-module_roomName"
-                                data-testid="room-name"
-                                title="Project X"
+                                class="RoomListItemView-module_topRow"
                               >
-                                Project X
+                                <div
+                                  class="RoomListItemView-module_roomName"
+                                  data-testid="room-name"
+                                  title="Project X"
+                                >
+                                  Project X
+                                </div>
                               </div>
                               <div
-                                class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                                class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                                 title="Last message in Project X"
                               >
                                 Last message in Project X
@@ -13015,14 +13375,18 @@ exports[`<RoomListView /> > renders LargeSectionList story 1`] = `
                             style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                           >
                             <div
-                              class="RoomListItemView-module_ellipsis"
+                              class="RoomListItemView-module_text"
                             >
                               <div
-                                class="RoomListItemView-module_roomName"
-                                data-testid="room-name"
-                                title="Project Y"
+                                class="RoomListItemView-module_topRow"
                               >
-                                Project Y
+                                <div
+                                  class="RoomListItemView-module_roomName"
+                                  data-testid="room-name"
+                                  title="Project Y"
+                                >
+                                  Project Y
+                                </div>
                               </div>
                             </div>
                             <div
@@ -13146,17 +13510,21 @@ exports[`<RoomListView /> > renders LargeSectionList story 1`] = `
                             style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                           >
                             <div
-                              class="RoomListItemView-module_ellipsis"
+                              class="RoomListItemView-module_text"
                             >
                               <div
-                                class="RoomListItemView-module_roomName"
-                                data-testid="room-name"
-                                title="Water Cooler"
+                                class="RoomListItemView-module_topRow"
                               >
-                                Water Cooler
+                                <div
+                                  class="RoomListItemView-module_roomName"
+                                  data-testid="room-name"
+                                  title="Water Cooler"
+                                >
+                                  Water Cooler
+                                </div>
                               </div>
                               <div
-                                class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                                class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                                 title="Last message in Water Cooler"
                               >
                                 Last message in Water Cooler
@@ -13424,17 +13792,21 @@ exports[`<RoomListView /> > renders SmallFlatList story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="General"
+                          class="RoomListItemView-module_topRow"
                         >
-                          General
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="General"
+                          >
+                            General
+                          </div>
                         </div>
                         <div
-                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                           title="Last message in General"
                         >
                           Last message in General
@@ -13573,14 +13945,18 @@ exports[`<RoomListView /> > renders SmallFlatList story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Random"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Random
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Random"
+                          >
+                            Random
+                          </div>
                         </div>
                       </div>
                       <div
@@ -13892,17 +14268,21 @@ exports[`<RoomListView /> > renders SmallSectionList story 1`] = `
                             style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                           >
                             <div
-                              class="RoomListItemView-module_ellipsis"
+                              class="RoomListItemView-module_text"
                             >
                               <div
-                                class="RoomListItemView-module_roomName"
-                                data-testid="room-name"
-                                title="General"
+                                class="RoomListItemView-module_topRow"
                               >
-                                General
+                                <div
+                                  class="RoomListItemView-module_roomName"
+                                  data-testid="room-name"
+                                  title="General"
+                                >
+                                  General
+                                </div>
                               </div>
                               <div
-                                class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                                class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                                 title="Last message in General"
                               >
                                 Last message in General
@@ -14050,14 +14430,18 @@ exports[`<RoomListView /> > renders SmallSectionList story 1`] = `
                             style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                           >
                             <div
-                              class="RoomListItemView-module_ellipsis"
+                              class="RoomListItemView-module_text"
                             >
                               <div
-                                class="RoomListItemView-module_roomName"
-                                data-testid="room-name"
-                                title="Random"
+                                class="RoomListItemView-module_topRow"
                               >
-                                Random
+                                <div
+                                  class="RoomListItemView-module_roomName"
+                                  data-testid="room-name"
+                                  title="Random"
+                                >
+                                  Random
+                                </div>
                               </div>
                             </div>
                             <div
@@ -14315,17 +14699,21 @@ exports[`<RoomListView /> > renders Toast story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="General"
+                          class="RoomListItemView-module_topRow"
                         >
-                          General
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="General"
+                          >
+                            General
+                          </div>
                         </div>
                         <div
-                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                           title="Last message in General"
                         >
                           Last message in General
@@ -14464,14 +14852,18 @@ exports[`<RoomListView /> > renders Toast story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Random"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Random
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Random"
+                          >
+                            Random
+                          </div>
                         </div>
                       </div>
                       <div
@@ -14586,17 +14978,21 @@ exports[`<RoomListView /> > renders Toast story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Engineering"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Engineering
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Engineering"
+                          >
+                            Engineering
+                          </div>
                         </div>
                         <div
-                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                           title="Last message in Engineering"
                         >
                           Last message in Engineering
@@ -14714,14 +15110,18 @@ exports[`<RoomListView /> > renders Toast story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Design"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Design
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Design"
+                          >
+                            Design
+                          </div>
                         </div>
                       </div>
                       <div
@@ -14836,17 +15236,21 @@ exports[`<RoomListView /> > renders Toast story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Product"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Product
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Product"
+                          >
+                            Product
+                          </div>
                         </div>
                         <div
-                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                           title="Last message in Product"
                         >
                           Last message in Product
@@ -14964,14 +15368,18 @@ exports[`<RoomListView /> > renders Toast story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Marketing"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Marketing
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Marketing"
+                          >
+                            Marketing
+                          </div>
                         </div>
                       </div>
                       <div
@@ -15109,17 +15517,21 @@ exports[`<RoomListView /> > renders Toast story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Sales"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Sales
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Sales"
+                          >
+                            Sales
+                          </div>
                         </div>
                         <div
-                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                           title="Last message in Sales"
                         >
                           Last message in Sales
@@ -15237,14 +15649,18 @@ exports[`<RoomListView /> > renders Toast story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Support"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Support
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Support"
+                          >
+                            Support
+                          </div>
                         </div>
                       </div>
                       <div
@@ -15359,17 +15775,21 @@ exports[`<RoomListView /> > renders Toast story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Announcements"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Announcements
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Announcements"
+                          >
+                            Announcements
+                          </div>
                         </div>
                         <div
-                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                           title="Last message in Announcements"
                         >
                           Last message in Announcements
@@ -15487,14 +15907,18 @@ exports[`<RoomListView /> > renders Toast story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Off-topic"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Off-topic
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Off-topic"
+                          >
+                            Off-topic
+                          </div>
                         </div>
                       </div>
                       <div
@@ -15609,17 +16033,21 @@ exports[`<RoomListView /> > renders Toast story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Team Alpha"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Team Alpha
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Team Alpha"
+                          >
+                            Team Alpha
+                          </div>
                         </div>
                         <div
-                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                           title="Last message in Team Alpha"
                         >
                           Last message in Team Alpha
@@ -15760,14 +16188,18 @@ exports[`<RoomListView /> > renders Toast story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Team Beta"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Team Beta
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Team Beta"
+                          >
+                            Team Beta
+                          </div>
                         </div>
                       </div>
                       <div
@@ -15882,17 +16314,21 @@ exports[`<RoomListView /> > renders Toast story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Project X"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Project X
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Project X"
+                          >
+                            Project X
+                          </div>
                         </div>
                         <div
-                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                           title="Last message in Project X"
                         >
                           Last message in Project X
@@ -16010,14 +16446,18 @@ exports[`<RoomListView /> > renders Toast story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Project Y"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Project Y
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Project Y"
+                          >
+                            Project Y
+                          </div>
                         </div>
                       </div>
                       <div
@@ -16132,17 +16572,21 @@ exports[`<RoomListView /> > renders Toast story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Water Cooler"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Water Cooler
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Water Cooler"
+                          >
+                            Water Cooler
+                          </div>
                         </div>
                         <div
-                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                           title="Last message in Water Cooler"
                         >
                           Last message in Water Cooler
@@ -16260,14 +16704,18 @@ exports[`<RoomListView /> > renders Toast story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Feedback"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Feedback
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Feedback"
+                          >
+                            Feedback
+                          </div>
                         </div>
                       </div>
                       <div
@@ -16405,17 +16853,21 @@ exports[`<RoomListView /> > renders Toast story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Ideas"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Ideas
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Ideas"
+                          >
+                            Ideas
+                          </div>
                         </div>
                         <div
-                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                           title="Last message in Ideas"
                         >
                           Last message in Ideas
@@ -16533,14 +16985,18 @@ exports[`<RoomListView /> > renders Toast story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Bugs"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Bugs
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Bugs"
+                          >
+                            Bugs
+                          </div>
                         </div>
                       </div>
                       <div
@@ -16655,17 +17111,21 @@ exports[`<RoomListView /> > renders Toast story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Features"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Features
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Features"
+                          >
+                            Features
+                          </div>
                         </div>
                         <div
-                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                           title="Last message in Features"
                         >
                           Last message in Features
@@ -16783,14 +17243,18 @@ exports[`<RoomListView /> > renders Toast story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Releases"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Releases
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Releases"
+                          >
+                            Releases
+                          </div>
                         </div>
                       </div>
                       <div
@@ -17021,17 +17485,21 @@ exports[`<RoomListView /> > renders WithActiveFilter story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="General"
+                          class="RoomListItemView-module_topRow"
                         >
-                          General
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="General"
+                          >
+                            General
+                          </div>
                         </div>
                         <div
-                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                           title="Last message in General"
                         >
                           Last message in General
@@ -17170,14 +17638,18 @@ exports[`<RoomListView /> > renders WithActiveFilter story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Random"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Random
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Random"
+                          >
+                            Random
+                          </div>
                         </div>
                       </div>
                       <div
@@ -17292,17 +17764,21 @@ exports[`<RoomListView /> > renders WithActiveFilter story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Engineering"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Engineering
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Engineering"
+                          >
+                            Engineering
+                          </div>
                         </div>
                         <div
-                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                           title="Last message in Engineering"
                         >
                           Last message in Engineering
@@ -17420,14 +17896,18 @@ exports[`<RoomListView /> > renders WithActiveFilter story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Design"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Design
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Design"
+                          >
+                            Design
+                          </div>
                         </div>
                       </div>
                       <div
@@ -17542,17 +18022,21 @@ exports[`<RoomListView /> > renders WithActiveFilter story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Product"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Product
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Product"
+                          >
+                            Product
+                          </div>
                         </div>
                         <div
-                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                           title="Last message in Product"
                         >
                           Last message in Product
@@ -17670,14 +18154,18 @@ exports[`<RoomListView /> > renders WithActiveFilter story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Marketing"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Marketing
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Marketing"
+                          >
+                            Marketing
+                          </div>
                         </div>
                       </div>
                       <div
@@ -17815,17 +18303,21 @@ exports[`<RoomListView /> > renders WithActiveFilter story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Sales"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Sales
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Sales"
+                          >
+                            Sales
+                          </div>
                         </div>
                         <div
-                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                           title="Last message in Sales"
                         >
                           Last message in Sales
@@ -17943,14 +18435,18 @@ exports[`<RoomListView /> > renders WithActiveFilter story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Support"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Support
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Support"
+                          >
+                            Support
+                          </div>
                         </div>
                       </div>
                       <div
@@ -18065,17 +18561,21 @@ exports[`<RoomListView /> > renders WithActiveFilter story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Announcements"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Announcements
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Announcements"
+                          >
+                            Announcements
+                          </div>
                         </div>
                         <div
-                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                           title="Last message in Announcements"
                         >
                           Last message in Announcements
@@ -18193,14 +18693,18 @@ exports[`<RoomListView /> > renders WithActiveFilter story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Off-topic"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Off-topic
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Off-topic"
+                          >
+                            Off-topic
+                          </div>
                         </div>
                       </div>
                       <div
@@ -18315,17 +18819,21 @@ exports[`<RoomListView /> > renders WithActiveFilter story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Team Alpha"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Team Alpha
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Team Alpha"
+                          >
+                            Team Alpha
+                          </div>
                         </div>
                         <div
-                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                           title="Last message in Team Alpha"
                         >
                           Last message in Team Alpha
@@ -18466,14 +18974,18 @@ exports[`<RoomListView /> > renders WithActiveFilter story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Team Beta"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Team Beta
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Team Beta"
+                          >
+                            Team Beta
+                          </div>
                         </div>
                       </div>
                       <div
@@ -18588,17 +19100,21 @@ exports[`<RoomListView /> > renders WithActiveFilter story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Project X"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Project X
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Project X"
+                          >
+                            Project X
+                          </div>
                         </div>
                         <div
-                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                           title="Last message in Project X"
                         >
                           Last message in Project X
@@ -18716,14 +19232,18 @@ exports[`<RoomListView /> > renders WithActiveFilter story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Project Y"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Project Y
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Project Y"
+                          >
+                            Project Y
+                          </div>
                         </div>
                       </div>
                       <div
@@ -18838,17 +19358,21 @@ exports[`<RoomListView /> > renders WithActiveFilter story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Water Cooler"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Water Cooler
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Water Cooler"
+                          >
+                            Water Cooler
+                          </div>
                         </div>
                         <div
-                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                           title="Last message in Water Cooler"
                         >
                           Last message in Water Cooler
@@ -18966,14 +19490,18 @@ exports[`<RoomListView /> > renders WithActiveFilter story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Feedback"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Feedback
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Feedback"
+                          >
+                            Feedback
+                          </div>
                         </div>
                       </div>
                       <div
@@ -19111,17 +19639,21 @@ exports[`<RoomListView /> > renders WithActiveFilter story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Ideas"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Ideas
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Ideas"
+                          >
+                            Ideas
+                          </div>
                         </div>
                         <div
-                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                           title="Last message in Ideas"
                         >
                           Last message in Ideas
@@ -19239,14 +19771,18 @@ exports[`<RoomListView /> > renders WithActiveFilter story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Bugs"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Bugs
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Bugs"
+                          >
+                            Bugs
+                          </div>
                         </div>
                       </div>
                       <div
@@ -19361,17 +19897,21 @@ exports[`<RoomListView /> > renders WithActiveFilter story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Features"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Features
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Features"
+                          >
+                            Features
+                          </div>
                         </div>
                         <div
-                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_ellipsis"
+                          class="_typography_6v6n8_153 _font-body-sm-regular_6v6n8_31 RoomListItemView-module_preview RoomListItemView-module_previewTwoLines"
                           title="Last message in Features"
                         >
                           Last message in Features
@@ -19489,14 +20029,18 @@ exports[`<RoomListView /> > renders WithActiveFilter story 1`] = `
                       style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: space-between; --mx-flex-gap: var(--cpd-space-2x); --mx-flex-wrap: nowrap;"
                     >
                       <div
-                        class="RoomListItemView-module_ellipsis"
+                        class="RoomListItemView-module_text"
                       >
                         <div
-                          class="RoomListItemView-module_roomName"
-                          data-testid="room-name"
-                          title="Releases"
+                          class="RoomListItemView-module_topRow"
                         >
-                          Releases
+                          <div
+                            class="RoomListItemView-module_roomName"
+                            data-testid="room-name"
+                            title="Releases"
+                          >
+                            Releases
+                          </div>
                         </div>
                       </div>
                       <div
