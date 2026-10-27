@@ -25,10 +25,16 @@ permissions: {}
 
 jobs:
     tests:
-        name: Unit tests for our changes
+        name: Unit tests for our changes (${{ matrix.shard }}/3)
         runs-on: ubuntu-24.04
         permissions:
             contents: read
+        strategy:
+            fail-fast: false
+            matrix:
+                # Three parallel parts, as Element's own CI runs them: one worker pool running every
+                # test touched by a change to shared UI hit a vitest teardown race on the runner.
+                shard: [1, 2, 3]
         steps:
             - uses: actions/checkout@v4
               with:
@@ -62,7 +68,7 @@ jobs:
             - name: Run tests touched by Inside changes
               run: |
                   base=$(cat .inside-base)
-                  pnpm vitest run --changed "$base" --project '!*storybook*' --passWithNoTests
+                  pnpm vitest run --changed "$base" --project '!*storybook*' --passWithNoTests --shard "${{ matrix.shard }}/3"
 
     image:
         name: Build and push image
