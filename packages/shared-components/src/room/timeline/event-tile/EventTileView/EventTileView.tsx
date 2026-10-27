@@ -236,7 +236,23 @@ export function EventTileView({
         );
     }
 
-    // Group and bubble layouts: sender details precede the line content.
+    // Bubble layout: reactions sit inside the bubble under the message, with the time on their right,
+    // as in other messengers.
+    if (layout === "bubble") {
+        return renderRoot(
+            <>
+                {renderSlots("sender", "avatar")}
+                <div id={root.id} data-testid="event-tile-line" className={lineClassName} onContextMenu={onContextMenu}>
+                    {renderSlots("contextMenu", "timestamp", "padlock", "replyChain", "body", "footer", "actionBar")}
+                </div>
+                {renderSlots("threadInfo", "receipt")}
+            </>,
+            undefined,
+            -1,
+        );
+    }
+
+    // Group layout: sender details precede the line content.
     return renderRoot(
         <>
             {renderSlots("sender", "avatar")}

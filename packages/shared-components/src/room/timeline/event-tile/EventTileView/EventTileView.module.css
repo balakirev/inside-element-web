@@ -947,6 +947,24 @@
         inset-inline-end: 0;
     }
 
+    /* Reactions inside the bubble, under the message (see EventTileView). A bubble with a footer is laid
+       out as a column, as bubbles with a reply already are, so it keeps the width of its text instead of
+       growing to the maximum. Every other bubble keeps its layout. */
+    .line:has(> .slotFooter) {
+        flex-direction: column;
+    }
+
+    .line > .slotFooter {
+        align-self: flex-start;
+        margin: var(--cpd-space-1x) 0 0;
+        justify-content: flex-start;
+    }
+
+    &.stateOwnEvent .line > .slotFooter {
+        justify-content: flex-start;
+        --event-tile-reactions-add-button-order: initial;
+    }
+
     &.stateOwnEvent .slotFooter {
         justify-content: flex-end;
 

@@ -157,6 +157,25 @@ const groupRootSlotOrder = [
     "event-tile-slot-receipt",
 ];
 
+// Bubble layout keeps the footer (reactions) inside the bubble, under the message.
+const bubbleLineSlotOrder = [
+    "styling-contract-contextMenu",
+    "event-tile-slot-timestamp",
+    "event-tile-slot-padlock",
+    "event-tile-slot-replyChain",
+    "event-tile-slot-body",
+    "event-tile-slot-footer",
+    "event-tile-slot-actionBar",
+];
+
+const bubbleRootSlotOrder = [
+    "event-tile-slot-sender",
+    "event-tile-slot-avatar",
+    "event-tile-line",
+    "event-tile-slot-threadInfo",
+    "event-tile-slot-receipt",
+];
+
 const ircLineSlotOrder = [
     "styling-contract-contextMenu",
     "event-tile-slot-replyChain",
@@ -338,8 +357,10 @@ describe("EventTileView", () => {
                 throw new Error("Expected EventTile root and line to be present");
             }
 
-            const lineSlotOrder = layout === "irc" ? ircLineSlotOrder : groupLineSlotOrder;
-            const rootSlotOrder = layout === "irc" ? ircRootSlotOrder : groupRootSlotOrder;
+            const lineSlotOrder =
+                layout === "irc" ? ircLineSlotOrder : layout === "bubble" ? bubbleLineSlotOrder : groupLineSlotOrder;
+            const rootSlotOrder =
+                layout === "irc" ? ircRootSlotOrder : layout === "bubble" ? bubbleRootSlotOrder : groupRootSlotOrder;
 
             expect(Array.from(line.children).map((child) => child.getAttribute("data-testid"))).toEqual(lineSlotOrder);
             expect(Array.from(root.children).map((child) => child.getAttribute("data-testid") ?? child.id)).toEqual(
@@ -349,7 +370,9 @@ describe("EventTileView", () => {
             const containedLineSlots =
                 layout === "irc"
                     ? ["replyChain", "body", "actionBar", "footer", "threadInfo"]
-                    : ["timestamp", "padlock", "replyChain", "body", "actionBar"];
+                    : layout === "bubble"
+                      ? ["timestamp", "padlock", "replyChain", "body", "footer", "actionBar"]
+                      : ["timestamp", "padlock", "replyChain", "body", "actionBar"];
             for (const slotName of containedLineSlots) {
                 expect(root.querySelector(`[data-testid="event-tile-slot-${slotName}"]`)?.parentElement).toBe(line);
             }
@@ -809,11 +832,10 @@ describe("EventTileView bubble layout reactions", () => {
         return getByRole("button", { name: "Add reaction" });
     };
 
-    it("moves the add-reaction control ahead of the reactions in an own-message bubble", () => {
-        // The footer is right-aligned for own messages, so an add-reaction control
-        // left at the end of the row reserves space between the reactions and the
-        // bubble edge even while it is hidden.
-        expect(getComputedStyle(renderAddReactionButton(true)).order).toBe("-1");
+    it("keeps the add-reaction control after the reactions in an own-message bubble", () => {
+        // Reactions sit inside the bubble, left-aligned for every message, so the control
+        // stays after them as in another user's bubble.
+        expect(getComputedStyle(renderAddReactionButton(true)).order).toBe("0");
     });
 
     it("keeps the add-reaction control after the reactions in another user's bubble", () => {
