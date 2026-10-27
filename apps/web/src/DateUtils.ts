@@ -264,6 +264,36 @@ export function formatRelativeTime(date: Date, showTwelveHour = false, locale?: 
 }
 
 /**
+ * Formats the time of a room's latest event for the room list, the way messengers do: the time for
+ * today, the short weekday within the last week, and a short numeric date for anything older.
+ * @param date - when the latest event happened
+ * @param showTwelveHour - whether to use a 12-hour clock for today's events
+ * @param locale - the locale to format for; defaults to the user's language
+ * @param now - the current time, for tests
+ */
+export function formatRoomListTimestamp(
+    date: Date,
+    showTwelveHour = false,
+    locale?: string,
+    now: Date = new Date(),
+): string {
+    const _locale = locale ?? getUserLanguage();
+    if (withinCurrentDay(date, now)) {
+        return formatTime(date, showTwelveHour, _locale);
+    }
+    // "Within the last week" means fewer than 6 days back, so a weekday name is never ambiguous.
+    if (now.getTime() - date.getTime() < 6 * DAY_MS) {
+        return new Intl.DateTimeFormat(_locale, { weekday: "short", timeZone: getUserTimezone() }).format(date);
+    }
+    return new Intl.DateTimeFormat(_locale, {
+        day: "2-digit",
+        month: "2-digit",
+        year: "2-digit",
+        timeZone: getUserTimezone(),
+    }).format(date);
+}
+
+/**
  * Formats duration in ms to human-readable string
  * Returns value in the biggest possible unit (day, hour, min, second)
  * Rounds values up until unit threshold

@@ -14,6 +14,7 @@ import { REPEATABLE_DATE } from "test-utils";
 import {
     formatSeconds,
     formatRelativeTime,
+    formatRoomListTimestamp,
     formatDuration,
     formatFullDateNoDayISO,
     formatTimeLeft,
@@ -160,6 +161,27 @@ describe("formatSeconds", () => {
         expect(formatSeconds(60 * 60 * 0 + 60 * 0 + 55)).toBe("00:55");
         expect(formatSeconds(60 * 60 * 0 + 60 * 31 + 0)).toBe("31:00");
         expect(formatSeconds(-(60 * 60 * 0 + 60 * 31 + 0))).toBe("-31:00");
+    });
+});
+
+describe("formatRoomListTimestamp", () => {
+    // Tuesday, 2 November 2021 11:18:03 UTC
+    const now = new Date(1635851883000);
+
+    it("returns the time for events of the same day", () => {
+        expect(formatRoomListTimestamp(new Date(Date.UTC(2021, 10, 2, 9, 5)), false, "en-GB", now)).toBe("9:05");
+    });
+
+    it("returns the short weekday for events of the last few days", () => {
+        // Saturday, 30 October 2021
+        expect(formatRoomListTimestamp(new Date(Date.UTC(2021, 9, 30, 20, 0)), false, "en-GB", now)).toBe("Sat");
+        expect(formatRoomListTimestamp(new Date(Date.UTC(2021, 9, 30, 20, 0)), false, "ru", now)).toBe("сб");
+    });
+
+    it("returns a short numeric date for older events", () => {
+        // Monday, 25 October 2021, more than six days before now
+        expect(formatRoomListTimestamp(new Date(Date.UTC(2021, 9, 25, 20, 0)), false, "en-GB", now)).toBe("25/10/21");
+        expect(formatRoomListTimestamp(new Date(Date.UTC(2021, 9, 25, 20, 0)), false, "ru", now)).toBe("25.10.21");
     });
 });
 
