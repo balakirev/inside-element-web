@@ -1,0 +1,102 @@
+# Inside Chat: tests and Docker image of our Element Web fork.
+#
+# Upstream workflows stay untouched and none of them runs on our branches
+# (they trigger on develop/master/staging and on `v*` tags only).
+#
+#   push to inside/main     -> tests + image ghcr.io/<owner>/inside-element-web:main and :sha-<short>
+#   tag inside-v1.12.32-N   -> tests + image tagged with the same name (what production pins to)
+#   manual run              -> same as a push
+#
+# The production stack (balakirev/inside-chat, compose.yml) pins an exact tag; a new image never
+# reaches users until that pin is changed and deployed.
+name: Inside / tests and image
+
+on:
+    push:
+        branches: [inside/main]
+        tags: ["inside-v*"]
+    workflow_dispatch:
+
+concurrency:
+    group: inside-docker-${{ github.ref }}
+    cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+    tests:
+        name: Unit tests for our changes
+        runs-on: ubuntu-24.04
+        permissions:
+            contents: read
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  # Full history and tags: tests are picked by the diff against the upstream release tag.
+                  fetch-depth: 0
+                  fetch-tags: true
+
+            - uses: pnpm/action-setup@v4
+              with:
+                  # package.json declares pnpm as an object, which the action does not read.
+                  version: 11.23.0
+
+            - uses: actions/setup-node@v4
+              with:
+                  node-version-file: .node-version
+                  cache: pnpm
+
+            - run: pnpm install --frozen-lockfile
+
+            - name: Prepare shared components
+              run: pnpm exec nx run-many -t test:unit:prepare -p
+
+            # Only the tests related to files we changed since the upstream release we are based on.
+            # The full upstream suite is Element's job and already passed for that release.
+            - name: Run tests touched by Inside changes
+              run: |
+                  base=$(cat .inside-base)
+                  pnpm vitest run --changed "$base" --passWithNoTests
+
+    image:
+        name: Build and push image
+        needs: tests
+        runs-on: ubuntu-24.04
+        permissions:
+            contents: read
+            packages: write
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  # docker-package.sh derives the version shown in the app from git.
+                  fetch-depth: 0
+                  fetch-tags: true
+
+            - uses: docker/setup-buildx-action@v3
+
+            - uses: docker/login-action@v3
+              with:
+                  registry: ghcr.io
+                  username: ${{ github.actor }}
+                  password: ${{ secrets.GITHUB_TOKEN }}
+
+            - id: meta
+              uses: docker/metadata-action@v5
+              with:
+                  images: ghcr.io/${{ github.repository_owner }}/inside-element-web
+                  tags: |
+                      type=ref,event=tag
+                      type=raw,value=main,enable=${{ github.ref == 'refs/heads/inside/main' }}
+                      type=sha,prefix=sha-
+
+            - uses: docker/build-push-action@v6
+              with:
+                  context: .
+                  file: apps/web/Dockerfile
+                  target: element_web
+                  platforms: linux/amd64
+                  push: true
+                  tags: ${{ steps.meta.outputs.tags }}
+                  labels: ${{ steps.meta.outputs.labels }}
+                  cache-from: type=gha
+                  cache-to: type=gha,mode=max
