@@ -95,7 +95,7 @@ describe("pdfThumbnail", () => {
 
     it("draws older PDFs in the timeline only when small, and once", async () => {
         const blob = vi.fn(async () => new Blob(["hello"]));
-        expect(await lazyPdfThumbnailUrl("mxc://a/large", 6 * 1024 * 1024, blob)).toBeUndefined();
+        expect(await lazyPdfThumbnailUrl("mxc://a/large", 21 * 1024 * 1024, blob)).toBeUndefined();
         expect(blob).not.toHaveBeenCalled();
 
         const url = lazyPdfThumbnailUrl("mxc://a/small", 100, blob);
