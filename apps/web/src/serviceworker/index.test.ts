@@ -222,4 +222,113 @@ describe("serviceworker", () => {
             expect((await responded!).status).toBe(401);
         });
     });
+    it("waits more than a second for a busy tab to answer", async () => {
+        await persistTokens(undefined, { accessToken: "plain_text_token" });
+        tab.postMessage.mockImplementation(({ responseKey }: { responseKey: string }) => {
+            // At startup the tab may be busy and take a while to reply.
+            setTimeout(
+                () => emit("message", { data: { responseKey, userId: USER_ID, deviceId: DEVICE_ID, homeserver } }),
+                1500,
+            );
+        });
+
+        const { url, init } = await interceptMediaRequest();
+
+        expect(url).toEqual(`${homeserver}/_matrix/client/v1/media/download/example.com/abc123`);
+        expect(init).toEqual({ headers: { Authorization: `Bearer plain_text_token` } });
+    });
+
+    describe("when the request went out without an access token and was rejected", () => {
+        /** Media requests made to the network (not `/versions`), as [url, init]. */
+        function mediaFetches(): [string, RequestInit | undefined][] {
+            return fetchSpy.mock.calls
+                .filter(([input]) => !String(input).endsWith("/_matrix/client/versions"))
+                .map(([input, init]) => [String(input), init]);
+        }
+
+        beforeEach(() => {
+            fetchSpy.mockImplementation(async (input: URL | string, init?: RequestInit) => {
+                if (input.toString().endsWith("/_matrix/client/versions")) {
+                    return { json: async () => ({ versions: ["v1.11"] }) };
+                }
+                const auth = (init?.headers as Record<string, string> | undefined)?.Authorization;
+                return new Response("media", { status: auth === "Bearer good_token" ? 200 : 401 });
+            });
+        });
+
+        it("asks the tab again, refreshes the token and retries once with auth", async () => {
+            await persistTokens(undefined, { accessToken: "good_token" });
+            let userinfoRequests = 0;
+            tab.postMessage.mockImplementation(({ responseKey, type }: { responseKey: string; type?: string }) => {
+                // The first time, the tab isn't ready yet: it has no client, so no homeserver to report.
+                const ready = type !== "userinfo" || ++userinfoRequests > 1;
+                emit("message", {
+                    data: { responseKey, userId: USER_ID, deviceId: DEVICE_ID, homeserver: ready ? homeserver : null },
+                });
+            });
+
+            const { url, init } = await interceptMediaRequest();
+
+            expect(tab.postMessage).toHaveBeenCalledWith(expect.objectContaining({ type: "refresh_token" }));
+            expect(mediaFetches()).toEqual([
+                [mediaUrl, undefined],
+                [`${homeserver}/_matrix/client/v1/media/download/example.com/abc123`, expect.anything()],
+            ]);
+            expect(url).toEqual(`${homeserver}/_matrix/client/v1/media/download/example.com/abc123`);
+            expect(init).toEqual({ headers: { Authorization: `Bearer good_token` } });
+        });
+
+        it("returns the 401 without another request when there is still no token", async () => {
+            let responded: Promise<Response> | undefined;
+            emit("fetch", {
+                request: { method: "GET", url: mediaUrl },
+                clientId: "client-1",
+                respondWith: (response: Promise<Response>) => {
+                    responded = response;
+                },
+            });
+
+            expect((await responded!).status).toBe(401);
+            expect(tab.postMessage).toHaveBeenCalledWith(expect.objectContaining({ type: "refresh_token" }));
+            expect(mediaFetches()).toEqual([[mediaUrl, undefined]]);
+        });
+
+        it("asks the tab to refresh only once for a burst of rejected requests", async () => {
+            await persistTokens(undefined, { accessToken: "good_token" });
+            let tabReady = false;
+            const pendingRefreshes: (() => void)[] = [];
+            tab.postMessage.mockImplementation(({ responseKey, type }: { responseKey: string; type?: string }) => {
+                const reply = (): void =>
+                    emit("message", {
+                        data: {
+                            responseKey,
+                            userId: USER_ID,
+                            deviceId: DEVICE_ID,
+                            homeserver: tabReady ? homeserver : null,
+                        },
+                    });
+                if (type === "refresh_token") {
+                    pendingRefreshes.push(reply);
+                } else {
+                    reply();
+                }
+            });
+
+            const responses: Promise<Response>[] = [];
+            for (let i = 0; i < 3; i++) {
+                emit("fetch", {
+                    request: { method: "GET", url: mediaUrl },
+                    clientId: "client-1",
+                    respondWith: (response: Promise<Response>) => responses.push(response),
+                });
+            }
+            await vi.waitFor(() => expect(pendingRefreshes).toHaveLength(1));
+            tabReady = true;
+            pendingRefreshes[0]();
+
+            const statuses = (await Promise.all(responses)).map((r) => r.status);
+            expect(statuses).toEqual([200, 200, 200]);
+            expect(tab.postMessage.mock.calls.filter(([msg]) => msg.type === "refresh_token")).toHaveLength(1);
+        });
+    });
 });

@@ -58,62 +58,84 @@ global.addEventListener("fetch", (event: FetchEvent) => {
     // later on we need to proxy the request through if it turns out the server doesn't support authentication.
     event.respondWith(
         (async (): Promise<Response> => {
-            let auth: { accessToken?: string; homeserver: string } | undefined;
-            try {
-                // Figure out which homeserver we're communicating with
-                const csApi = url.origin;
+            // Add jitter to reduce request spam, particularly to `/versions` on initial page load
+            await new Promise<void>((resolve) => setTimeout(() => resolve(), Math.random() * 10));
 
-                // Add jitter to reduce request spam, particularly to `/versions` on initial page load
-                await new Promise<void>((resolve) => setTimeout(() => resolve(), Math.random() * 10));
-
-                // Locate the access token and homeserver url
-                // @ts-expect-error - service worker types are not available. See 'fetch' event handler.
-                const client = await global.clients.get(event.clientId);
-                auth = await getAuthData(client);
-
-                // Is this request actually going to the homeserver?
-                const isRequestToHomeServer = url.origin === new URL(auth.homeserver).origin;
-                if (!isRequestToHomeServer) {
-                    throw new Error("Request appears to be for media endpoint but wrong homeserver!");
-                }
-
-                // Update or populate the server support map using a (usually) authenticated `/versions` call.
-                await tryUpdateServerSupportMap(csApi, auth.accessToken);
-
-                // If we have server support (and a means of authentication), rewrite the URL to use MSC3916 endpoints.
-                if (serverSupportMap[csApi].supportsAuthedMedia && auth.accessToken) {
-                    url.href = url.href.replace(/\/media\/v3\/(.*)\//, "/client/v1/media/$1/");
-                } // else by default we make no changes
-            } catch (err) {
-                // In case of some error, we stay safe by not adding the access-token to the request.
-                auth = undefined;
-                console.error("SW: Error in request rewrite.", err);
-            }
+            let { url: requestUrl, auth } = await prepareRequest(url, event.clientId);
 
             // Add authentication and send the request. We add authentication even if MSC3916 endpoints aren't
             // being used to ensure patches like this work:
             // https://github.com/matrix-org/synapse/commit/2390b66bf0ec3ff5ffb0c7333f3c9b239eeb92bb
-            const response = await fetch(url, fetchConfigForToken(auth?.accessToken));
+            const response = await fetch(requestUrl, fetchConfigForToken(auth?.accessToken));
+            if (response.status !== 401) return response;
 
             // Inside: with OAuth (MAS) access tokens expire and the app refreshes them lazily, so the stored
-            // token we just used may be stale — typically right after reopening a tab. Ask the tab to refresh
-            // it and retry once, instead of leaving the image broken.
-            if (response.status === 401 && auth?.accessToken) {
-                try {
+            // token we just used may be stale — typically right after reopening a tab. And at startup the tab
+            // may be too busy to answer "userinfo" in time, so the request went out without any token at all.
+            // Either way, ask the tab to refresh the token, read it again and retry once with it, instead of
+            // leaving the image broken.
+            try {
+                const staleToken = auth?.accessToken;
+                await refreshTokenInTab(event.clientId);
+                if (staleToken) {
                     // @ts-expect-error - service worker types are not available. See 'fetch' event handler.
                     const client = await global.clients.get(event.clientId);
-                    const fresh = await getFreshAuthData(client, auth.accessToken);
-                    if (fresh.accessToken !== auth.accessToken) {
-                        return fetch(url, fetchConfigForToken(fresh.accessToken));
+                    auth = await waitForNewAuthData(client, staleToken);
+                    if (auth.accessToken !== staleToken) {
+                        return await fetch(requestUrl, fetchConfigForToken(auth.accessToken));
                     }
-                } catch (err) {
-                    console.error("SW: Error refreshing the access token.", err);
+                } else {
+                    ({ url: requestUrl, auth } = await prepareRequest(url, event.clientId));
+                    if (auth?.accessToken) {
+                        return await fetch(requestUrl, fetchConfigForToken(auth.accessToken));
+                    }
                 }
+            } catch (err) {
+                console.error("SW: Error retrying the media request with a fresh access token.", err);
             }
             return response;
         })(),
     );
 });
+
+/**
+ * Works out the access token for a media request and, where the server supports it, the authenticated
+ * (MSC3916) URL to send it to. On any failure, returns the original URL with no auth: we stay safe by not
+ * adding the access token to the request.
+ */
+async function prepareRequest(
+    originalUrl: URL,
+    clientId: string,
+): Promise<{ url: URL; auth?: { accessToken?: string; homeserver: string } }> {
+    const url = new URL(originalUrl.href);
+    try {
+        // Figure out which homeserver we're communicating with
+        const csApi = url.origin;
+
+        // Locate the access token and homeserver url
+        // @ts-expect-error - service worker types are not available. See 'fetch' event handler.
+        const client = await global.clients.get(clientId);
+        const auth = await getAuthData(client);
+
+        // Is this request actually going to the homeserver?
+        const isRequestToHomeServer = url.origin === new URL(auth.homeserver).origin;
+        if (!isRequestToHomeServer) {
+            throw new Error("Request appears to be for media endpoint but wrong homeserver!");
+        }
+
+        // Update or populate the server support map using a (usually) authenticated `/versions` call.
+        await tryUpdateServerSupportMap(csApi, auth.accessToken);
+
+        // If we have server support (and a means of authentication), rewrite the URL to use MSC3916 endpoints.
+        if (serverSupportMap[csApi].supportsAuthedMedia && auth.accessToken) {
+            url.href = url.href.replace(/\/media\/v3\/(.*)\//, "/client/v1/media/$1/");
+        } // else by default we make no changes
+        return { url, auth };
+    } catch (err) {
+        console.error("SW: Error in request rewrite.", err);
+        return { url: new URL(originalUrl.href) };
+    }
+}
 
 async function tryUpdateServerSupportMap(clientApiUrl: string, accessToken?: string): Promise<void> {
     // only update if we don't know about it, or if the data is stale
@@ -182,14 +204,42 @@ async function getAuthData(client: unknown): Promise<{ accessToken: string; home
 }
 
 /**
- * Inside: asks the tab to refresh its access token, then reads the stored one again. The tab persists a
- * refreshed token asynchronously, so give it a moment if the first read still returns the stale one.
+ * Inside: refresh requests in flight, per tab. A burst of media requests failing with 401 at once (e.g. the
+ * avatars of a whole room list) should make the tab refresh its token once, not once per image.
  */
-async function getFreshAuthData(
+const refreshesInFlight = new Map<string, Promise<void>>();
+
+/**
+ * Inside: asks the tab to refresh its access token and waits until it says it is done (or gives up).
+ * Never rejects: if the tab can't help, the caller just finds the same token (or none) in storage.
+ */
+function refreshTokenInTab(clientId: string): Promise<void> {
+    let refresh = refreshesInFlight.get(clientId);
+    if (!refresh) {
+        refresh = (async (): Promise<void> => {
+            try {
+                // @ts-expect-error - service worker types are not available. See 'fetch' event handler.
+                const client = await global.clients.get(clientId);
+                if (client) await askClient(client, "refresh_token", 10000);
+            } catch (err) {
+                console.error("SW: Error asking the tab to refresh the access token.", err);
+            } finally {
+                refreshesInFlight.delete(clientId);
+            }
+        })();
+        refreshesInFlight.set(clientId, refresh);
+    }
+    return refresh;
+}
+
+/**
+ * Inside: reads the stored access token again after a refresh. The tab persists a refreshed token
+ * asynchronously, so give it a moment if the first read still returns the stale one.
+ */
+async function waitForNewAuthData(
     client: unknown,
     staleToken: string,
 ): Promise<{ accessToken: string; homeserver: string }> {
-    await askClient(client, "refresh_token", 10000);
     let auth = await getAuthData(client);
     for (let i = 0; i < 5 && auth.accessToken === staleToken; i++) {
         await new Promise<void>((resolve) => setTimeout(() => resolve(), 200));
@@ -198,12 +248,17 @@ async function getFreshAuthData(
     return auth;
 }
 
+/** Inside: how long to wait for the tab to answer a "userinfo" request. */
+const USERINFO_TIMEOUT_MS = 5000;
+
 // Ideally we'd use the `Client` interface for `client`, but since it's not available (see 'fetch' listener), we use
 // unknown for now and force-cast it to something close enough inside the function.
 async function askClientForUserIdParams(
     client: unknown,
 ): Promise<{ userId: string; deviceId: string; homeserver: string }> {
-    return askClient(client, "userinfo", 1000);
+    // Inside: 5 s rather than upstream's 1 s. At startup the tab is busy (initial sync, rendering) and may take
+    // longer than a second to answer; timing out then sends media requests without auth, and they fail with 401.
+    return askClient(client, "userinfo", USERINFO_TIMEOUT_MS);
 }
 
 async function askClient<T>(client: unknown, type: string, timeoutMs: number): Promise<T> {
