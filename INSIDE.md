@@ -34,6 +34,7 @@ the next upstream release with `git rebase --onto <new-tag> <old-tag> inside/mai
 | No verify-this-device prompts         | With `inside_hide_device_verification` in config.json, the "verify this device" toast is not shown, and a fresh login skips the full-screen verify/key-setup views (encryption is off server-wide; remove the key if E2EE comes back). |
 | Robust media auth in the service worker | The worker waits up to 5 s for the tab's token, and on a 401 asks the tab to refresh once (shared by all requests of a burst) and retries with auth — no broken avatars right after start. |
 | Dust when deleting a message          | After the delete confirmation the message tile crumbles into dust, as in Telegram (`utils/DustEffect.ts`). |
+| Favicon badge in the brand red        | The unread counter drawn over the tab icon uses the Lobby signal red `#C8102E` instead of Element's `#d00`. |
 | Version script without `jq`            | Branch builds failed: the Docker builder image has no `jq`.                                                                                                                                                                                                                                                                                                               |
 
 ## Build

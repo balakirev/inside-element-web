@@ -19,7 +19,7 @@ interface IParams {
 }
 
 const defaults: IParams = {
-    bgColor: "#d00",
+    bgColor: "#C8102E", // INSIDE: signal red of the Lobby brand (was #d00)
     textColor: "#fff",
     fontFamily: "sans-serif", // Arial,Verdana,Times New Roman,serif,sans-serif,...
     fontWeight: "bold", // normal,italic,oblique,bold,bolder,lighter,100,200,300,400,500,600,700,800,900
