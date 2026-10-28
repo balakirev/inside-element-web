@@ -213,7 +213,9 @@ function PendingMedia({ upload, kind, onResize }: PendingUploadProps & { kind: "
             <div className="mx_InsidePendingUpload_overlay">{!upload.failed && <ProgressRing upload={upload} />}</div>
             {!upload.failed && (
                 <span className="mx_InsidePendingUpload_progressText">
-                    {formatUploadProgress(upload.loaded, upload.total)}
+                    {upload.compressing
+                        ? _t("upload_file|pending_compressing")
+                        : formatUploadProgress(upload.loaded, upload.total)}
                 </span>
             )}
         </div>

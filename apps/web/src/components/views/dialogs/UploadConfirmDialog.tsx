@@ -23,6 +23,10 @@ import {
     useCreateAutoDisposedViewModel,
 } from "@element-hq/web-shared-components";
 import { MediaPreviewGroupViewModel } from "../../../viewmodels/message-body/MediaPreviewGroupViewModel";
+import StyledCheckbox from "../elements/StyledCheckbox";
+import SettingsStore from "../../../settings/SettingsStore";
+import { SettingLevel } from "../../../settings/SettingLevel";
+import { mayCompressForUpload } from "../../../utils/compressPhoto";
 
 interface IProps {
     file: File;
@@ -35,8 +39,9 @@ interface IProps {
      * @param uploadConfirmed - whether the user chose to send the file
      * @param uploadAll - whether the remaining files should be sent without asking again
      * @param caption - text the user typed to send together with the file, if any
+     * @param sendOriginal - Inside: for photos and videos, whether to send them without compression
      */
-    onFinished: (uploadConfirmed: boolean, uploadAll?: boolean, caption?: string) => void;
+    onFinished: (uploadConfirmed: boolean, uploadAll?: boolean, caption?: string, sendOriginal?: boolean) => void;
 }
 
 const previewableFormats = ["video", "audio", "image"];
@@ -215,13 +220,25 @@ export default function UploadConfirmDialog({
         onFinished(false);
     }, [onFinished]);
 
-    const onUploadClick = useCallback((): void => {
-        onFinished(true, false, trimmedCaption || undefined);
-    }, [onFinished, trimmedCaption]);
+    // Inside: photos and videos are compressed unless "No compression" is on; the choice is kept on
+    // the device for the next time.
+    const offerOriginal = mayCompressForUpload(file);
+    const [sendOriginal, setSendOriginal] = useState(() => SettingsStore.getValue("Inside.uploadOriginals"));
+    const onSendOriginalChange = useCallback((ev: ChangeEvent<HTMLInputElement>): void => {
+        setSendOriginal(ev.target.checked);
+        void SettingsStore.setValue("Inside.uploadOriginals", null, SettingLevel.DEVICE, ev.target.checked);
+    }, []);
+    const finish = useCallback(
+        (uploadAll: boolean): void => {
+            if (offerOriginal) onFinished(true, uploadAll, trimmedCaption || undefined, sendOriginal);
+            else onFinished(true, uploadAll, trimmedCaption || undefined);
+        },
+        [offerOriginal, onFinished, sendOriginal, trimmedCaption],
+    );
 
-    const onUploadAllClick = useCallback((): void => {
-        onFinished(true, true, trimmedCaption || undefined);
-    }, [onFinished, trimmedCaption]);
+    const onUploadClick = useCallback((): void => finish(false), [finish]);
+
+    const onUploadAllClick = useCallback((): void => finish(true), [finish]);
 
     // Inside: the caption field gets the focus however the dialog was opened (attach button, drag
     // and drop, paste). `autoFocus` alone loses it when a dialog closing just before (the spinner
@@ -295,6 +312,16 @@ export default function UploadConfirmDialog({
                     autoFocus={true}
                     data-autofocus={true}
                 />
+                {offerOriginal && (
+                    <StyledCheckbox
+                        id="mx_UploadConfirmDialog_inside_original"
+                        className="mx_UploadConfirmDialog_inside_original"
+                        checked={sendOriginal}
+                        onChange={onSendOriginalChange}
+                    >
+                        {_t("upload_file|send_original")}
+                    </StyledCheckbox>
+                )}
             </div>
 
             <DialogButtons primaryButton={_t("action|upload")} hasCancel={false} onPrimaryButtonClick={onUploadClick}>

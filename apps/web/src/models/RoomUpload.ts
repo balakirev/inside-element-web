@@ -38,6 +38,10 @@ export class RoomUpload {
      * Inside: why the upload failed, for the user.
      */
     public failureReason?: string;
+    /**
+     * Inside: set while the photo or video is being compressed, before its upload starts.
+     */
+    public compressing = false;
 
     public constructor(
         public readonly roomId: string,

@@ -349,6 +349,7 @@ export interface Settings {
     "Images.size": IBaseSetting<ImageSize>;
     "showChatEffects": IBaseSetting<boolean>;
     "Performance.addSendMessageTimingMetadata": IBaseSetting<boolean>;
+    "Inside.uploadOriginals": IBaseSetting<boolean>;
     "Widgets.pinned": IBaseSetting<{ [widgetId: string]: boolean }>;
     "Widgets.layout": IBaseSetting<ILayoutSettings | null>;
     "Spaces.allRoomsInHome": IBaseSetting<boolean>;
@@ -1343,6 +1344,12 @@ export const SETTINGS: Settings = {
     },
     "Performance.addSendMessageTimingMetadata": {
         supportedLevels: [SettingLevel.CONFIG],
+        default: false,
+    },
+    // Inside: send photos and videos as they are rather than compressed; the "No compression" switch
+    // of the upload dialog, remembered on the device.
+    "Inside.uploadOriginals": {
+        supportedLevels: LEVELS_DEVICE_ONLY_SETTINGS,
         default: false,
     },
     "Widgets.pinned": {

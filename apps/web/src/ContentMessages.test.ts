@@ -36,6 +36,8 @@ import * as pdfThumbnail from "./utils/pdfThumbnail";
 import dispatcher from "./dispatcher/dispatcher";
 import { Action } from "./dispatcher/actions";
 import { type UploadFinishedPayload } from "./dispatcher/payloads/UploadPayload";
+import { compressPhotoForUpload } from "./utils/compressPhoto";
+import SettingsStore from "./settings/SettingsStore";
 
 vi.mock("matrix-encrypt-attachment", () => ({ default: { encryptAttachment: vi.fn().mockResolvedValue({}) } }));
 
@@ -49,6 +51,12 @@ vi.mock("./BlurhashEncoder", () => ({
 
 vi.mock("./utils/local-room", () => ({
     doMaybeLocalRoomAction: vi.fn(),
+}));
+
+// Inside: photos go out as they are unless a test makes them smaller.
+vi.mock("./utils/compressPhoto", async (importOriginal) => ({
+    ...(await importOriginal<typeof import("./utils/compressPhoto")>()),
+    compressPhotoForUpload: vi.fn(async (file: File) => file),
 }));
 
 const createElement = document.createElement.bind(document);
@@ -434,8 +442,9 @@ describe("ContentMessages", () => {
                 });
                 const progress: Array<[number, number]> = [];
                 const dispatchSpy = vi.spyOn(dispatcher, "dispatch").mockImplementation((payload) => {
-                    if (payload.action === Action.UploadProgress) {
-                        const { upload } = payload as UploadFinishedPayload;
+                    const { upload } = payload as UploadFinishedPayload;
+                    // Inside: the compressing phase dispatches progress too, before any bytes go out.
+                    if (payload.action === Action.UploadProgress && !upload.compressing && upload.total > 0) {
                         progress.push([upload.loaded, upload.total]);
                     }
                 });
@@ -498,6 +507,74 @@ describe("ContentMessages", () => {
                 expect(content.info.thumbnail_info).toBeUndefined();
                 expect(contentMessages.getFailedUploads(roomId)).toEqual([]);
                 spy.mockRestore();
+            });
+
+            it("sends a compressed photo with its own name, size and type", async () => {
+                const compressed = new File([new Uint8Array(1000)], "IMG_1.jpg", { type: "image/jpeg" });
+                vi.mocked(compressPhotoForUpload).mockResolvedValueOnce(compressed);
+                vi.mocked(client.uploadContent).mockResolvedValue({ content_uri: "mxc://server/file" });
+                const original = new File([new Uint8Array(5000)], "IMG_1.HEIC", { type: "image/heic" });
+                const dispatchSpy = vi.spyOn(dispatcher, "dispatch");
+
+                await contentMessages.sendContentToRoom(original, roomId, undefined, client, undefined);
+
+                expect(compressPhotoForUpload).toHaveBeenCalledWith(original);
+                expect(client.uploadContent).toHaveBeenCalledWith(compressed, expect.anything());
+                expect(client.sendMessage).toHaveBeenCalledWith(
+                    roomId,
+                    null,
+                    expect.objectContaining({
+                        body: "IMG_1.jpg",
+                        msgtype: "m.image",
+                        info: expect.objectContaining({ size: 1000, mimetype: "image/jpeg", w: 800, h: 600 }),
+                    }),
+                );
+                const finished = dispatchSpy.mock.calls.find(([payload]) => payload.action === Action.UploadFinished);
+                expect((finished![0] as UploadFinishedPayload).upload.file).toBe(compressed);
+                dispatchSpy.mockRestore();
+            });
+
+            it("says it is compressing while the photo is made smaller", async () => {
+                const { promise, resolve } = Promise.withResolvers<File>();
+                vi.mocked(compressPhotoForUpload).mockReturnValueOnce(promise);
+                vi.mocked(client.uploadContent).mockResolvedValue({ content_uri: "mxc://server/file" });
+                const original = new File([new Uint8Array(5000)], "IMG_1.jpg", { type: "image/jpeg" });
+
+                const sent = contentMessages.sendContentToRoom(original, roomId, undefined, client, undefined);
+                await flushPromises();
+                const [upload] = contentMessages.getCurrentUploads();
+                expect(upload.compressing).toBe(true);
+                expect(client.uploadContent).not.toHaveBeenCalled();
+
+                resolve(original);
+                await sent;
+                expect(upload.compressing).toBe(false);
+            });
+
+            it("sends the original with compression off, from the dialog or the device setting", async () => {
+                vi.mocked(compressPhotoForUpload).mockClear();
+                vi.mocked(client.uploadContent).mockResolvedValue({ content_uri: "mxc://server/file" });
+                const original = new File([new Uint8Array(5000)], "IMG_1.jpg", { type: "image/jpeg" });
+
+                await contentMessages.sendContentToRoom(
+                    original,
+                    roomId,
+                    undefined,
+                    client,
+                    undefined,
+                    undefined,
+                    undefined,
+                    false,
+                );
+                expect(compressPhotoForUpload).not.toHaveBeenCalled();
+
+                const settingSpy = vi
+                    .spyOn(SettingsStore, "getValue")
+                    .mockImplementation((name) => name === "Inside.uploadOriginals");
+                await contentMessages.sendContentToRoom(original, roomId, undefined, client, undefined);
+                expect(compressPhotoForUpload).not.toHaveBeenCalled();
+                expect(client.uploadContent).toHaveBeenCalledWith(original, expect.anything());
+                settingSpy.mockRestore();
             });
 
             it("forgets a failed upload on delete", async () => {
@@ -740,6 +817,26 @@ describe("sendContentListToRoom analytics", () => {
         expect(calls[0][6]).toBe("Our new office");
         expect(calls[1][0].name).toBe("b.png");
         expect(calls[1][6]).toBeUndefined();
+    });
+
+    it("passes the dialog's no-compression choice on to all files sent with it", async () => {
+        vi.spyOn(Modal, "createDialog").mockImplementation((component: unknown) => {
+            if (component === UploadConfirmDialog) {
+                return { finished: Promise.resolve([true, true, undefined, true]) } as any;
+            }
+            return { finished: new Promise(() => {}), close: vi.fn() } as any;
+        });
+        const files = [mkFile("image/jpeg", "a.jpg"), mkFile("image/jpeg", "b.jpg")];
+        await contentMessages.sendContentListToRoom(files, roomId, undefined, undefined, client);
+
+        const calls = vi.mocked(contentMessages.sendContentToRoom).mock.calls;
+        expect(calls.map((call) => call[7])).toEqual([false, false]);
+    });
+
+    it("compresses by default when the dialog does not ask", async () => {
+        const files = [mkFile("text/plain", "a.txt")];
+        await contentMessages.sendContentListToRoom(files, roomId, undefined, undefined, client);
+        expect(vi.mocked(contentMessages.sendContentToRoom).mock.calls[0][7]).toBe(true);
     });
 
     it("tracks AttachmentCancel when the user cancels at the confirmation dialog", async () => {

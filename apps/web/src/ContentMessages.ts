@@ -62,6 +62,8 @@ import { blobIsAnimated } from "./utils/Image.ts";
 import { PosthogAnalytics } from "./PosthogAnalytics.ts";
 import { cacheUploadedMedia } from "./utils/UploadedMediaCache";
 import { isPdfFile, pdfThumbnailForFile } from "./utils/pdfThumbnail";
+import { isCompressiblePhoto } from "./utils/photoCompression";
+import { compressPhotoForUpload } from "./utils/compressPhoto";
 
 // scraped out of a macOS hidpi (5660ppm) screenshot png
 //                  5669 px (x-axis)      , 5669 px (y-axis)      , per metre
@@ -545,6 +547,8 @@ export default class ContentMessages {
 
         let uploadAll = false;
         let caption: string | undefined;
+        // Inside: the "No compression" switch of the dialog, which also holds for "upload all".
+        let compress = !SettingsStore.getValue("Inside.uploadOriginals");
         // Promise to complete before sending next file into room, used for synchronisation of file-sending
         // to match the order the files were specified in
         let promBefore: Promise<any> = Promise.resolve();
@@ -559,17 +563,19 @@ export default class ContentMessages {
                     currentIndex: i,
                     totalFiles: okFiles.length,
                 });
-                const [shouldContinue, shouldUploadAll, dialogCaption] = await finished;
+                const [shouldContinue, shouldUploadAll, dialogCaption, sendOriginal] = await finished;
                 if (!shouldContinue) break;
                 if (shouldUploadAll) {
                     uploadAll = true;
                 }
                 caption = dialogCaption;
+                if (sendOriginal !== undefined) compress = !sendOriginal;
             } else {
                 // Files sent with "upload all" go without the caption typed for the first one.
                 caption = undefined;
             }
             const fileCaption = caption;
+            const fileCompress = compress;
             sentFileTypes.push(file.type.split("/")[0]);
 
             promBefore = doMaybeLocalRoomAction(
@@ -583,6 +589,7 @@ export default class ContentMessages {
                         replyToEvent ?? undefined,
                         loopPromiseBefore,
                         fileCaption,
+                        fileCompress,
                     ),
                 matrixClient,
             );
@@ -677,6 +684,80 @@ export default class ContentMessages {
         replyToEvent: MatrixEvent | undefined,
         promBefore?: Promise<any>,
         caption?: string,
+        // Inside: whether photos and videos may be compressed; by default as the device setting says.
+        compress = !SettingsStore.getValue("Inside.uploadOriginals"),
+    ): Promise<void> {
+        const upload = new RoomUpload(roomId, file.name || _t("common|attachment"), relation, file.size);
+        upload.file = file;
+        upload.caption = caption?.trim() || undefined;
+        this.inprogress.push(upload);
+        dis.dispatch<UploadStartedPayload>({ action: Action.UploadStarted, upload });
+
+        // Inside: the file that is actually sent, smaller than the one picked if it was compressed.
+        let sending = file;
+        try {
+            if (compress) {
+                sending = await this.compressForUpload(file, upload);
+                if (upload.cancelled) throw new UploadCanceledError();
+            }
+            await this.uploadAndSend(
+                sending,
+                upload,
+                roomId,
+                relation,
+                matrixClient,
+                replyToEvent,
+                promBefore,
+                caption,
+            );
+        } catch (error) {
+            this.onUploadError(error, upload, () =>
+                this.sendContentToRoom(
+                    sending,
+                    roomId,
+                    relation,
+                    matrixClient,
+                    replyToEvent,
+                    undefined,
+                    caption,
+                    false,
+                ),
+            );
+        } finally {
+            removeElement(this.inprogress, (e) => e.promise === upload.promise);
+        }
+    }
+
+    /**
+     * Inside: a smaller copy of a photo for sending, or the file itself. The pending bubble shows
+     * "Compressing…" meanwhile.
+     */
+    private async compressForUpload(file: File, upload: RoomUpload): Promise<File> {
+        if (!isCompressiblePhoto(file)) return file;
+        upload.compressing = true;
+        dis.dispatch<UploadProgressPayload>({ action: Action.UploadProgress, upload });
+        try {
+            const compressed = await compressPhotoForUpload(file);
+            if (compressed !== file) {
+                upload.file = compressed;
+                upload.fileSize = compressed.size;
+            }
+            return compressed;
+        } finally {
+            upload.compressing = false;
+            dis.dispatch<UploadProgressPayload>({ action: Action.UploadProgress, upload });
+        }
+    }
+
+    private async uploadAndSend(
+        file: File,
+        upload: RoomUpload,
+        roomId: string,
+        relation: IEventRelation | undefined,
+        matrixClient: MatrixClient,
+        replyToEvent: MatrixEvent | undefined,
+        promBefore: Promise<any> | undefined,
+        caption: string | undefined,
     ): Promise<void> {
         const fileName = file.name || _t("common|attachment");
         const content: Omit<MediaEventContent, "info"> & { info: Partial<MediaEventInfo> } = {
@@ -709,12 +790,6 @@ export default class ContentMessages {
             content.info.mimetype = file.type;
         }
 
-        const upload = new RoomUpload(roomId, fileName, relation, file.size);
-        upload.file = file;
-        upload.caption = caption?.trim() || undefined;
-        this.inprogress.push(upload);
-        dis.dispatch<UploadStartedPayload>({ action: Action.UploadStarted, upload });
-
         function onProgress(progress: UploadProgress): void {
             upload.onProgress(progress);
             dis.dispatch<UploadProgressPayload>({ action: Action.UploadProgress, upload });
@@ -726,129 +801,126 @@ export default class ContentMessages {
             dis.dispatch<UploadProgressPayload>({ action: Action.UploadProgress, upload });
         }
 
-        try {
-            if (file.type.startsWith("image/")) {
-                content.msgtype = MsgType.Image;
-                try {
-                    const imageInfo = await infoForImageFile(
-                        matrixClient,
-                        roomId,
-                        file,
-                        onThumbnailProgress,
-                        upload.abortController,
-                    );
-                    Object.assign(content.info, imageInfo);
-                } catch (e) {
-                    if (e instanceof UploadFailedError) {
-                        // re-throw to main upload error handler
-                        throw e;
-                    }
-                    // Otherwise we failed to thumbnail, fall back to uploading an m.file
-                    logger.error(`Expected file of type "${file.type}" to be an image, but got`, e);
-                    content.msgtype = MsgType.File;
+        if (file.type.startsWith("image/")) {
+            content.msgtype = MsgType.Image;
+            try {
+                const imageInfo = await infoForImageFile(
+                    matrixClient,
+                    roomId,
+                    file,
+                    onThumbnailProgress,
+                    upload.abortController,
+                );
+                Object.assign(content.info, imageInfo);
+            } catch (e) {
+                if (e instanceof UploadFailedError) {
+                    // re-throw to main upload error handler
+                    throw e;
                 }
-            } else if (file.type.startsWith("audio/")) {
-                content.msgtype = MsgType.Audio;
-                try {
-                    const audioInfo = await infoForAudioFile(file);
-                    Object.assign(content.info, audioInfo);
-                } catch (e) {
-                    // Failed to process audio file, fall back to uploading an m.file
-                    logger.error(e);
-                    content.msgtype = MsgType.File;
-                }
-            } else if (file.type.startsWith("video/")) {
-                content.msgtype = MsgType.Video;
-                try {
-                    const videoInfo = await infoForVideoFile(
-                        matrixClient,
-                        roomId,
-                        file,
-                        onThumbnailProgress,
-                        upload.abortController,
-                    );
-                    Object.assign(content.info, videoInfo);
-                } catch (e) {
-                    // Failed to thumbnail, fall back to uploading an m.file
-                    logger.error(e);
-                    content.msgtype = MsgType.File;
-                }
-            } else {
+                // Otherwise we failed to thumbnail, fall back to uploading an m.file
+                logger.error(`Expected file of type "${file.type}" to be an image, but got`, e);
                 content.msgtype = MsgType.File;
-                if (isPdfFile(file)) {
-                    // Inside: the first page as the thumbnail of the file, as in Telegram. Without it the
-                    // file is still sent, just with the document icon.
-                    const pdfInfo = await infoForPdfFile(
-                        matrixClient,
-                        roomId,
-                        file,
-                        onThumbnailProgress,
-                        upload.abortController,
-                    );
-                    Object.assign(content.info, pdfInfo);
-                }
             }
-
-            if (upload.cancelled) throw new UploadCanceledError();
-            const result = await uploadFile(matrixClient, roomId, file, onProgress, upload.abortController);
-            content.file = result.file;
-            content.url = result.url;
-            upload.contentUri = result.url ?? result.file?.url;
-
-            if (upload.cancelled) throw new UploadCanceledError();
-            // Await previous message being sent into the room
-            if (promBefore) await promBefore;
-
-            if (upload.cancelled) throw new UploadCanceledError();
-            const threadId = relation?.rel_type === THREAD_RELATION_TYPE.name ? relation.event_id : null;
-
-            const response = await matrixClient.sendMessage(roomId, threadId ?? null, content as MediaEventContent);
-
-            if (SettingsStore.getValue("Performance.addSendMessageTimingMetadata")) {
-                sendRoundTripMetric(matrixClient, roomId, response.event_id);
+        } else if (file.type.startsWith("audio/")) {
+            content.msgtype = MsgType.Audio;
+            try {
+                const audioInfo = await infoForAudioFile(file);
+                Object.assign(content.info, audioInfo);
+            } catch (e) {
+                // Failed to process audio file, fall back to uploading an m.file
+                logger.error(e);
+                content.msgtype = MsgType.File;
             }
+        } else if (file.type.startsWith("video/")) {
+            content.msgtype = MsgType.Video;
+            try {
+                const videoInfo = await infoForVideoFile(
+                    matrixClient,
+                    roomId,
+                    file,
+                    onThumbnailProgress,
+                    upload.abortController,
+                );
+                Object.assign(content.info, videoInfo);
+            } catch (e) {
+                // Failed to thumbnail, fall back to uploading an m.file
+                logger.error(e);
+                content.msgtype = MsgType.File;
+            }
+        } else {
+            content.msgtype = MsgType.File;
+            if (isPdfFile(file)) {
+                // Inside: the first page as the thumbnail of the file, as in Telegram. Without it the
+                // file is still sent, just with the document icon.
+                const pdfInfo = await infoForPdfFile(
+                    matrixClient,
+                    roomId,
+                    file,
+                    onThumbnailProgress,
+                    upload.abortController,
+                );
+                Object.assign(content.info, pdfInfo);
+            }
+        }
 
-            dis.dispatch<UploadFinishedPayload>({ action: Action.UploadFinished, upload });
-            dis.dispatch({ action: "message_sent" });
-        } catch (error) {
-            // Unwrap UploadFailedError to get the underlying error
-            const unwrappedError = error instanceof UploadFailedError && error.cause ? error.cause : error;
+        if (upload.cancelled) throw new UploadCanceledError();
+        const result = await uploadFile(matrixClient, roomId, file, onProgress, upload.abortController);
+        content.file = result.file;
+        content.url = result.url;
+        upload.contentUri = result.url ?? result.file?.url;
 
-            // 413: File was too big or upset the server in some way:
-            // clear the media size limit so we fetch it again next time we try to upload
+        if (upload.cancelled) throw new UploadCanceledError();
+        // Await previous message being sent into the room
+        if (promBefore) await promBefore;
+
+        if (upload.cancelled) throw new UploadCanceledError();
+        const threadId = relation?.rel_type === THREAD_RELATION_TYPE.name ? relation.event_id : null;
+
+        const response = await matrixClient.sendMessage(roomId, threadId ?? null, content as MediaEventContent);
+
+        if (SettingsStore.getValue("Performance.addSendMessageTimingMetadata")) {
+            sendRoundTripMetric(matrixClient, roomId, response.event_id);
+        }
+
+        dis.dispatch<UploadFinishedPayload>({ action: Action.UploadFinished, upload });
+        dis.dispatch({ action: "message_sent" });
+    }
+
+    /** Report a failed upload: in place in the main timeline (Inside), in a dialog in threads. */
+    private onUploadError(error: unknown, upload: RoomUpload, retry: () => Promise<void>): void {
+        // Unwrap UploadFailedError to get the underlying error
+        const unwrappedError = error instanceof UploadFailedError && error.cause ? error.cause : error;
+
+        // 413: File was too big or upset the server in some way:
+        // clear the media size limit so we fetch it again next time we try to upload
+        if (unwrappedError instanceof HTTPError && unwrappedError.httpStatus === 413) {
+            this.mediaConfig = null;
+        }
+
+        if (!upload.cancelled) {
+            let desc = _t("upload_failed_generic", { fileName: upload.fileName });
             if (unwrappedError instanceof HTTPError && unwrappedError.httpStatus === 413) {
-                this.mediaConfig = null;
+                desc = _t("upload_failed_size", {
+                    fileName: upload.fileName,
+                });
             }
-
-            if (!upload.cancelled) {
-                let desc = _t("upload_failed_generic", { fileName: upload.fileName });
-                if (unwrappedError instanceof HTTPError && unwrappedError.httpStatus === 413) {
-                    desc = _t("upload_failed_size", {
-                        fileName: upload.fileName,
-                    });
-                }
-                if (relation) {
-                    Modal.createDialog(ErrorDialog, {
-                        title: _t("upload_failed_title"),
-                        description: desc,
-                    });
-                } else if (upload.contentUri) {
-                    // Inside: the file is on the server and the event failed to send. Its local echo is in
-                    // the timeline as an unsent message (red mark, "resend" in the room status bar), which
-                    // resends it without uploading again; a failed bubble next to it would be a duplicate.
-                } else {
-                    // Inside: the main timeline shows the failed upload in place, with "retry" and
-                    // "delete" (InsidePendingUploads), so no dialog over it.
-                    upload.failed = true;
-                    upload.failureReason = desc;
-                    this.failed.set(upload, () =>
-                        this.sendContentToRoom(file, roomId, relation, matrixClient, replyToEvent, undefined, caption),
-                    );
-                }
-                dis.dispatch<UploadErrorPayload>({ action: Action.UploadFailed, upload, error });
+            if (upload.relation) {
+                Modal.createDialog(ErrorDialog, {
+                    title: _t("upload_failed_title"),
+                    description: desc,
+                });
+            } else if (upload.contentUri) {
+                // Inside: the file is on the server and the event failed to send. Its local echo is in
+                // the timeline as an unsent message (red mark, "resend" in the room status bar), which
+                // resends it without uploading again; a failed bubble next to it would be a duplicate.
+            } else {
+                // Inside: the main timeline shows the failed upload in place, with "retry" and
+                // "delete" (InsidePendingUploads), so no dialog over it.
+                upload.failed = true;
+                upload.failureReason = desc;
+                this.failed.set(upload, retry);
             }
-        } finally {
-            removeElement(this.inprogress, (e) => e.promise === upload.promise);
+            dis.dispatch<UploadErrorPayload>({ action: Action.UploadFailed, upload, error });
         }
     }
 

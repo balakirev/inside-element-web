@@ -84,6 +84,16 @@ describe("InsidePendingUploads", () => {
         expect(ContentMessages.sharedInstance().cancelUpload).toHaveBeenCalledWith(upload);
     });
 
+    it("says the photo is being compressed before its upload starts", () => {
+        const upload = makeUpload(room, "photo.jpg", "image/jpeg", 4 * 1024 * 1024, 0);
+        upload.compressing = true;
+        current = [upload];
+
+        const { container } = renderUploads();
+
+        expect(container.querySelector(".mx_InsidePendingUpload_progressText")).toHaveTextContent("Compressing…");
+    });
+
     it("shows a video upload with its first frame", () => {
         current = [makeUpload(room, "clip.mp4", "video/mp4", 2048, 0)];
 
