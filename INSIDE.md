@@ -28,6 +28,8 @@ the next upstream release with `git rebase --onto <new-tag> <old-tag> inside/mai
 | Media retry after a 401                | With MAS access tokens expire; the service worker used a stale stored token and avatars stayed broken. It now asks the tab to refresh the token and retries once. |
 | "Open here" on the other-tab screen    | The tab that lost the session to another tab gets a button to take it back in one click instead of only "close this tab". |
 | Notifications in the context menu       | Right-click on a room offers the notification options (mute and others), as Mute in other messengers; the Inside skin hides the hover buttons. |
+| Folders in the space panel             | Under "All chats": Groups, Colleagues, Clients, VIP, Favourites — room list filters, as folders of other messengers. Colleagues/clients: the other side of a DM is on our server, or on another server / a bridged network. |
+| VIP in the room context menu           | A private room tag (`u.inside.vip`) for the VIP folder, independent of the room list sections. |
 | Version script without `jq`            | Branch builds failed: the Docker builder image has no `jq`.                                                                                                                                                                                                                                                                                                               |
 
 ## Build
