@@ -32,6 +32,7 @@ import ErrorDialog from "./components/views/dialogs/ErrorDialog";
 import UploadConfirmDialog from "./components/views/dialogs/UploadConfirmDialog";
 import { _t } from "./languageHandler";
 import { PosthogAnalytics } from "./PosthogAnalytics";
+import * as pdfThumbnail from "./utils/pdfThumbnail";
 import dispatcher from "./dispatcher/dispatcher";
 import { Action } from "./dispatcher/actions";
 import { type UploadFinishedPayload } from "./dispatcher/payloads/UploadPayload";
@@ -451,6 +452,52 @@ describe("ContentMessages", () => {
                     [100, 200],
                 ]);
                 dispatchSpy.mockRestore();
+            });
+
+            it("sends the first page of a PDF as its thumbnail", async () => {
+                const thumbnail = { blob: new Blob(["jpeg"], { type: "image/jpeg" }), width: 226, height: 320 };
+                const spy = vi.spyOn(pdfThumbnail, "pdfThumbnailForFile").mockResolvedValue(thumbnail);
+                vi.mocked(client.uploadContent).mockImplementation(async (body) => ({
+                    content_uri: body === thumbnail.blob ? "mxc://server/thumb" : "mxc://server/file",
+                }));
+                const file = new File(["%PDF-1.7"], "spec.pdf", { type: "application/pdf" });
+
+                await contentMessages.sendContentToRoom(file, roomId, undefined, client, undefined);
+
+                expect(spy).toHaveBeenCalledWith(file);
+                expect(client.sendMessage).toHaveBeenCalledWith(
+                    roomId,
+                    null,
+                    expect.objectContaining({
+                        msgtype: "m.file",
+                        url: "mxc://server/file",
+                        info: expect.objectContaining({
+                            mimetype: "application/pdf",
+                            thumbnail_url: "mxc://server/thumb",
+                            thumbnail_info: { w: 226, h: 320, mimetype: "image/jpeg", size: 4 },
+                        }),
+                    }),
+                );
+                spy.mockRestore();
+            });
+
+            it("sends a PDF without a thumbnail when its page cannot be drawn or uploaded", async () => {
+                const thumbnail = { blob: new Blob(["jpeg"], { type: "image/jpeg" }), width: 226, height: 320 };
+                const spy = vi.spyOn(pdfThumbnail, "pdfThumbnailForFile").mockResolvedValue(thumbnail);
+                vi.mocked(client.uploadContent)
+                    .mockRejectedValueOnce(new Error("network"))
+                    .mockResolvedValue({ content_uri: "mxc://server/file" });
+                const file = new File(["%PDF-1.7"], "spec.pdf", { type: "application/pdf" });
+
+                await contentMessages.sendContentToRoom(file, roomId, undefined, client, undefined);
+
+                const content = vi.mocked(client.sendMessage).mock.calls.at(-1)![2] as unknown as {
+                    info: Record<string, unknown>;
+                };
+                expect(content.info.thumbnail_url).toBeUndefined();
+                expect(content.info.thumbnail_info).toBeUndefined();
+                expect(contentMessages.getFailedUploads(roomId)).toEqual([]);
+                spy.mockRestore();
             });
 
             it("forgets a failed upload on delete", async () => {

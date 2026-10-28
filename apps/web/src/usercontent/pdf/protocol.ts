@@ -42,7 +42,9 @@ export type PdfZoomDirection = "in" | "out";
 export type PdfHostMessage =
     | { type: "load"; data: ArrayBuffer; position?: PdfPosition }
     | { type: "go_to_page"; page: number }
-    | { type: "zoom"; direction: PdfZoomDirection };
+    | { type: "zoom"; direction: PdfZoomDirection }
+    /** Inside: render the first page of the document (transferred) to an image at most `maxSide` px long. */
+    | { type: "thumbnail"; data: ArrayBuffer; maxSide: number };
 
 /** Messages the iframe sends to the app. */
 export type PdfUsercontentMessage =
@@ -55,8 +57,16 @@ export type PdfUsercontentMessage =
     /** The zoom level changed. `scale` is a percentage. */
     | { type: "scale"; scale: number }
     | { type: "position"; position: PdfPosition }
+    /** Inside: the first page as an image, in answer to `thumbnail`. */
+    | { type: "thumbnail"; image: ArrayBuffer; mimetype: string; width: number; height: number }
     /** For the log, not the reader. */
     | { type: "error"; message: string };
+
+/** Inside: the largest thumbnail the iframe will draw, whatever the app asks for. */
+export const MAX_THUMBNAIL_SIDE = 1024;
+
+/** Inside: the image types a thumbnail may come back as. */
+const THUMBNAIL_MIMETYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 /** Cap on an error message from the iframe. */
 export const MAX_ERROR_MESSAGE_LENGTH = 500;
@@ -99,6 +109,10 @@ export function parsePdfHostMessage(data: unknown): PdfHostMessage | undefined {
         case "zoom":
             if (data.direction !== "in" && data.direction !== "out") return;
             return { type: "zoom", direction: data.direction };
+        case "thumbnail":
+            if (!(data.data instanceof ArrayBuffer)) return;
+            if (!isPositiveInteger(data.maxSide) || data.maxSide > MAX_THUMBNAIL_SIDE) return;
+            return { type: "thumbnail", data: data.data, maxSide: data.maxSide };
     }
 }
 
@@ -124,6 +138,18 @@ export function parsePdfUsercontentMessage(data: unknown): PdfUsercontentMessage
             const { page, scale, left, top } = data.position;
             return { type: "position", position: { page, scale, left, top } };
         }
+        case "thumbnail":
+            if (!(data.image instanceof ArrayBuffer) || data.image.byteLength === 0) return;
+            if (typeof data.mimetype !== "string" || !THUMBNAIL_MIMETYPES.has(data.mimetype)) return;
+            if (!isPositiveInteger(data.width) || !isPositiveInteger(data.height)) return;
+            if (data.width > MAX_THUMBNAIL_SIDE || data.height > MAX_THUMBNAIL_SIDE) return;
+            return {
+                type: "thumbnail",
+                image: data.image,
+                mimetype: data.mimetype,
+                width: data.width,
+                height: data.height,
+            };
         case "error":
             if (typeof data.message !== "string") return;
             return { type: "error", message: data.message.slice(0, MAX_ERROR_MESSAGE_LENGTH) };

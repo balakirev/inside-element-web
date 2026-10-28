@@ -350,6 +350,77 @@ function openDocument({ container, viewer, workerSource, post, data, position }:
     };
 }
 
+interface RenderThumbnailOptions {
+    doc: Document;
+    workerSource: string;
+    data: ArrayBuffer;
+    maxSide: number;
+}
+
+/** Inside: the quality of the JPEG a first-page thumbnail is encoded as. */
+const THUMBNAIL_QUALITY = 0.8;
+
+function canvasToBlob(canvas: HTMLCanvasElement, type: string, quality: number): Promise<Blob> {
+    return new Promise((resolve, reject) => {
+        canvas.toBlob(
+            (blob) => (blob ? resolve(blob) : reject(new Error("Unable to encode thumbnail"))),
+            type,
+            quality,
+        );
+    });
+}
+
+/**
+ * Inside: draw the first page of a document on white, at most `maxSide` px long, and encode it as a
+ * JPEG. Used for the thumbnail of a PDF sent as a file, and for the preview of one being sent.
+ */
+export async function renderFirstPage({
+    doc,
+    workerSource,
+    data,
+    maxSide,
+}: RenderThumbnailOptions): Promise<Extract<PdfUsercontentMessage, { type: "thumbnail" }>> {
+    const { worker, ready } = createPdfWorker(workerSource);
+    let pdfWorker: PDFWorker | undefined;
+    let loadingTask: PDFDocumentLoadingTask | undefined;
+    try {
+        await ready;
+        pdfWorker = new PDFWorker({ port: worker } as unknown as ConstructorParameters<typeof PDFWorker>[0]);
+        loadingTask = getDocument({
+            data: new Uint8Array(data),
+            worker: pdfWorker,
+            stopAtErrors: true,
+            maxImageSize: MAX_IMAGE_PIXELS,
+            enableXfa: false,
+            verbosity: VerbosityLevel.ERRORS,
+        });
+        const pdfDocument = await loadingTask.promise;
+        const page = await pdfDocument.getPage(1);
+        const natural = page.getViewport({ scale: 1 });
+        const scale = maxSide / Math.max(natural.width, natural.height, 1);
+        const viewport = page.getViewport({ scale });
+
+        const canvas = doc.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(viewport.width));
+        canvas.height = Math.max(1, Math.round(viewport.height));
+        await page.render({ canvas, viewport, background: "#ffffff" }).promise;
+
+        const mimetype = "image/jpeg";
+        const blob = await canvasToBlob(canvas, mimetype, THUMBNAIL_QUALITY);
+        return {
+            type: "thumbnail",
+            image: await blob.arrayBuffer(),
+            mimetype,
+            width: canvas.width,
+            height: canvas.height,
+        };
+    } finally {
+        loadingTask?.destroy().catch(() => {});
+        pdfWorker?.destroy();
+        worker.terminate();
+    }
+}
+
 export interface PdfUsercontentOptions {
     /** Source of pdf.js's worker module. */
     workerSource: string;
@@ -373,6 +444,7 @@ export function startPdfUsercontent({ workerSource, win = window }: PdfUserconte
     const post = (message: PdfUsercontentMessage): void => port.postMessage(message);
 
     let session: PdfSession | undefined;
+    let thumbnailStarted = false;
 
     port.onmessage = (event: MessageEvent): void => {
         const message = parsePdfHostMessage(event.data);
@@ -395,6 +467,24 @@ export function startPdfUsercontent({ workerSource, win = window }: PdfUserconte
                 break;
             case "zoom":
                 session?.zoom(message.direction);
+                break;
+            case "thumbnail":
+                // Inside: one thumbnail per iframe, and not in a viewer.
+                if (session || thumbnailStarted) return;
+                thumbnailStarted = true;
+                renderFirstPage({
+                    doc: win.document,
+                    workerSource,
+                    data: message.data,
+                    maxSide: message.maxSide,
+                }).then(
+                    (thumbnail) => port.postMessage(thumbnail, [thumbnail.image]),
+                    (error) =>
+                        post({
+                            type: "error",
+                            message: error instanceof Error ? `${error.name}: ${error.message}` : String(error),
+                        }),
+                );
                 break;
         }
     };

@@ -65,6 +65,17 @@ describe("parsePdfHostMessage", () => {
         expect(parsePdfHostMessage({ type: "zoom" })).toBeUndefined();
     });
 
+    it("Inside: accepts a thumbnail request of a sane size", () => {
+        const data = new ArrayBuffer(4);
+        expect(parsePdfHostMessage({ type: "thumbnail", data, maxSide: 320 })).toEqual({
+            type: "thumbnail",
+            data,
+            maxSide: 320,
+        });
+        expect(parsePdfHostMessage({ type: "thumbnail", data, maxSide: 5000 })).toBeUndefined();
+        expect(parsePdfHostMessage({ type: "thumbnail", data: "x", maxSide: 320 })).toBeUndefined();
+    });
+
     it.each([undefined, null, 42, "load", {}, { type: "ready" }, { type: "explode" }])("rejects %j", (value) => {
         expect(parsePdfHostMessage(value)).toBeUndefined();
     });
@@ -120,6 +131,16 @@ describe("parsePdfUsercontentMessage", () => {
             parsePdfUsercontentMessage({ type: "position", position: { ...position, scale: "enormous" } }),
         ).toBeUndefined();
         expect(parsePdfUsercontentMessage({ type: "position" })).toBeUndefined();
+    });
+
+    it("Inside: accepts a thumbnail image and only a sane one", () => {
+        const image = new ArrayBuffer(4);
+        const thumbnail = { type: "thumbnail", image, mimetype: "image/jpeg", width: 240, height: 320 };
+        expect(parsePdfUsercontentMessage({ ...thumbnail, extra: 1 })).toEqual(thumbnail);
+        expect(parsePdfUsercontentMessage({ ...thumbnail, mimetype: "text/html" })).toBeUndefined();
+        expect(parsePdfUsercontentMessage({ ...thumbnail, image: new ArrayBuffer(0) })).toBeUndefined();
+        expect(parsePdfUsercontentMessage({ ...thumbnail, width: 0 })).toBeUndefined();
+        expect(parsePdfUsercontentMessage({ ...thumbnail, height: 4096 })).toBeUndefined();
     });
 
     it("truncates an error message and refuses one that is not a string", () => {

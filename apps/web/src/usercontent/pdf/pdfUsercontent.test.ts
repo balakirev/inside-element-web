@@ -509,6 +509,59 @@ describe("PDF usercontent", () => {
         });
     });
 
+    describe("Inside: first-page thumbnail", () => {
+        function mockPage(): { render: ReturnType<typeof vi.fn>; loadingTask: PDFDocumentLoadingTask } {
+            const render = vi.fn(() => ({ promise: Promise.resolve() }));
+            const page = {
+                getViewport: ({ scale }: { scale: number }) => ({ width: 600 * scale, height: 800 * scale }),
+                render,
+            };
+            const loadingTask = { destroy: vi.fn(async () => {}) } as unknown as PDFDocumentLoadingTask;
+            const pdfDocument = { numPages: 3, getPage: vi.fn(async () => page) };
+            Object.defineProperty(loadingTask, "promise", { value: Promise.resolve(pdfDocument) });
+            pdfjsMock.getDocument.mockReturnValue(loadingTask);
+            return { render, loadingTask };
+        }
+
+        it("draws the first page at the asked size on white and sends it back as a JPEG", async () => {
+            const { render, loadingTask } = mockPage();
+            vi.spyOn(HTMLCanvasElement.prototype, "toBlob").mockImplementation(function (callback, type) {
+                callback(new Blob(["jpeg"], { type }));
+            });
+            const iframe = fakeIframe();
+            startPdfUsercontent({ workerSource: WORKER_SOURCE, win: iframe.win });
+
+            iframe.receive({ type: "thumbnail", data: new ArrayBuffer(8), maxSide: 320 });
+            emitWorkerReady();
+            await vi.waitFor(() => expect(iframe.posted().some((message) => message.type === "thumbnail")).toBe(true));
+
+            expect(render).toHaveBeenCalledWith(
+                expect.objectContaining({ background: "#ffffff", viewport: { width: 240, height: 320 } }),
+            );
+            const thumbnail = iframe.posted().find((message) => message.type === "thumbnail")!;
+            expect(thumbnail).toEqual(expect.objectContaining({ mimetype: "image/jpeg", width: 240, height: 320 }));
+            // Nothing stays running for a thumbnail.
+            expect(loadingTask.destroy).toHaveBeenCalled();
+            expect(activeWorker().terminate).toHaveBeenCalled();
+            expect(viewerMock.MockPDFViewer.instances).toHaveLength(0);
+        });
+
+        it("reports a document it cannot draw", async () => {
+            const loadingTask = { destroy: vi.fn(async () => {}) } as unknown as PDFDocumentLoadingTask;
+            Object.defineProperty(loadingTask, "promise", { value: Promise.reject(new Error("PasswordException")) });
+            pdfjsMock.getDocument.mockReturnValue(loadingTask);
+            const iframe = fakeIframe();
+            startPdfUsercontent({ workerSource: WORKER_SOURCE, win: iframe.win });
+
+            iframe.receive({ type: "thumbnail", data: new ArrayBuffer(8), maxSide: 320 });
+            emitWorkerReady();
+
+            await vi.waitFor(() =>
+                expect(iframe.posted()).toContainEqual({ type: "error", message: "Error: PasswordException" }),
+            );
+        });
+    });
+
     describe("layout", () => {
         it("fits the document to the iframe and tells the app it is ready", async () => {
             const iframe = fakeIframe();

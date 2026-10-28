@@ -21,6 +21,7 @@ import {
 } from "matrix-js-sdk/src/matrix";
 import {
     type ImageInfo,
+    type FileInfo,
     type AudioInfo,
     type VideoInfo,
     type EncryptedFile,
@@ -60,6 +61,7 @@ import { doMaybeLocalRoomAction } from "./utils/local-room";
 import { blobIsAnimated } from "./utils/Image.ts";
 import { PosthogAnalytics } from "./PosthogAnalytics.ts";
 import { cacheUploadedMedia } from "./utils/UploadedMediaCache";
+import { isPdfFile, pdfThumbnailForFile } from "./utils/pdfThumbnail";
 
 // scraped out of a macOS hidpi (5660ppm) screenshot png
 //                  5669 px (x-axis)      , 5669 px (y-axis)      , per metre
@@ -326,6 +328,38 @@ function infoForVideoFile(
             videoInfo.thumbnail_file = result.file;
             return videoInfo;
         });
+}
+
+/**
+ * Inside: draw the first page of a PDF and upload it as the thumbnail of the file. Resolves to no
+ * thumbnail if the page cannot be drawn or its upload fails; only cancelling the upload throws.
+ */
+async function infoForPdfFile(
+    matrixClient: MatrixClient,
+    roomId: string,
+    pdfFile: File,
+    thumbnailProgressHandler?: UploadOpts["progressHandler"],
+    controller?: AbortController,
+): Promise<FileInfo> {
+    const thumbnail = await pdfThumbnailForFile(pdfFile);
+    if (!thumbnail) return {};
+    try {
+        const result = await uploadFile(matrixClient, roomId, thumbnail.blob, thumbnailProgressHandler, controller);
+        return {
+            thumbnail_url: result.url,
+            thumbnail_file: result.file,
+            thumbnail_info: {
+                w: thumbnail.width,
+                h: thumbnail.height,
+                mimetype: thumbnail.blob.type,
+                size: thumbnail.blob.size,
+            },
+        };
+    } catch (e) {
+        if (e instanceof UploadCanceledError) throw e;
+        logger.warn("Unable to upload the thumbnail of a PDF", e);
+        return {};
+    }
 }
 
 /**
@@ -741,6 +775,18 @@ export default class ContentMessages {
                 }
             } else {
                 content.msgtype = MsgType.File;
+                if (isPdfFile(file)) {
+                    // Inside: the first page as the thumbnail of the file, as in Telegram. Without it the
+                    // file is still sent, just with the document icon.
+                    const pdfInfo = await infoForPdfFile(
+                        matrixClient,
+                        roomId,
+                        file,
+                        onThumbnailProgress,
+                        upload.abortController,
+                    );
+                    Object.assign(content.info, pdfInfo);
+                }
             }
 
             if (upload.cancelled) throw new UploadCanceledError();
