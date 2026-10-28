@@ -126,6 +126,7 @@ describe("<MImageReplyBody />", () => {
         hasThumbnail: content.info?.thumbnail_url !== null,
         getThumbnailHttp: vi.fn().mockReturnValue("https://server/thumb.png"),
         getThumbnailOfSourceHttp: vi.fn().mockReturnValue("https://server/thumb.png"),
+        getServerThumbnailOfSourceHttp: vi.fn().mockReturnValue("https://server/thumb.png"),
         getSquareThumbnailHttp: vi.fn(),
         downloadSource: vi.fn(),
     });

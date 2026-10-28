@@ -185,6 +185,23 @@ describe("ImageBodyView", () => {
         expect(screen.getByRole("progressbar")).toBeInTheDocument();
     });
 
+    it("shows a spinner over the blurhash while busy (Inside)", () => {
+        const snapshot: ImageBodyViewSnapshot = {
+            state: ImageBodyViewState.READY,
+            alt: "Loading image",
+            src: "https://example.org/full.png",
+            placeholder: ImageBodyViewPlaceholder.BLURHASH,
+            blurhash: "LEHV6nWB2yk8pyo0adR*.7kCMdnj",
+            maxWidth: 320,
+            maxHeight: 240,
+        };
+        const { rerender } = render(<ImageBodyView vm={new TestImageBodyViewModel(snapshot)} />);
+        expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
+
+        rerender(<ImageBodyView vm={new TestImageBodyViewModel({ ...snapshot, placeholderBusy: true })} />);
+        expect(screen.getByRole("progressbar")).toBeInTheDocument();
+    });
+
     it("invokes image load and error handlers", () => {
         const onImageLoad = vi.fn();
         const onImageError = vi.fn();

@@ -60,6 +60,16 @@
     animation: blurhashPulse 1.75s infinite cubic-bezier(0.4, 0, 0.6, 1);
 }
 
+/* Inside: a small spinner over the blurhash of an image that is taking a while. */
+.busy {
+    position: absolute;
+    display: flex;
+    padding: var(--cpd-space-2x);
+    border-radius: 50%;
+    background-color: rgb(0 0 0 / 35%);
+    color: #fff;
+}
+
 .mediaContent {
     position: relative;
     max-width: 100%;

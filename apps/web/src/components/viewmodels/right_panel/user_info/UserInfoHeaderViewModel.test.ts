@@ -158,6 +158,13 @@ describe("useUserInfoHeaderViewModel", () => {
             getThumbnailOfSourceHttp: function (width: number, height: number, mode?: "scale" | "crop"): string | null {
                 throw new Error("Function not implemented.");
             },
+            getServerThumbnailOfSourceHttp: function (
+                width: number,
+                height: number,
+                mode?: "scale" | "crop",
+            ): string | null {
+                throw new Error("Function not implemented.");
+            },
             getSquareThumbnailHttp: function (dim: number): string | null {
                 throw new Error("Function not implemented.");
             },

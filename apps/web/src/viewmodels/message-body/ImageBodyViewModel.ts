@@ -32,6 +32,8 @@ import { createReconnectedListener } from "../../utils/connection";
 import { DecryptError, DownloadError } from "../../utils/DecryptFile";
 import { BLURHASH_FIELD, createThumbnail } from "../../utils/image-media";
 import { isMimeTypeAllowed } from "../../utils/blobs";
+import { imageThumbnailHttp } from "../../utils/media/serverThumbnail";
+import { NO_WAIT_HEADER, RETRY_PARAM } from "../../utils/media/mediaCacheShared";
 import ImageView from "../../components/views/elements/ImageView";
 
 export interface ImageBodyViewModelProps {
@@ -89,6 +91,52 @@ interface InternalState {
     placeholder: ImageBodyViewPlaceholder;
     imageSize: ImageSize;
     generatedThumbnailUrl: string | null;
+    /** Inside: the image is taking a while: show a spinner over the blurhash. */
+    placeholderBusy: boolean;
+    /** Inside: how many times the image has been loaded again after an error. */
+    retryCount: number;
+}
+
+/** Inside: how long an image may take before a spinner joins its blurhash. */
+const BUSY_SPINNER_DELAY_MS = 1000;
+/** Inside: waits between attempts to load a file that is still being uploaded (MSC2246). */
+const PENDING_RETRY_MIN_MS = 2000;
+const PENDING_RETRY_MAX_MS = 30000;
+/** Inside: give up on a file still not uploaded after this many attempts (about half an hour). */
+const PENDING_MAX_RETRIES = 60;
+/** Inside: load again at most this many times when the file turns out to be there after an error. */
+const TRANSIENT_MAX_RETRIES = 2;
+
+/** Inside: what the server says about a media URL that failed to load as an image. */
+type MediaProbeResult = "pending" | "available" | "failed";
+
+/**
+ * Inside: ask the server about a media URL without waiting for an upload in progress: "pending" while
+ * the sender's client is still uploading it (504 M_NOT_YET_UPLOADED), "available" if it loads now.
+ */
+async function probeMedia(url: string): Promise<MediaProbeResult> {
+    try {
+        const response = await fetch(url, { headers: { [NO_WAIT_HEADER]: "1" } });
+        if (response.ok) {
+            void response.body?.cancel();
+            return "available";
+        }
+        if (response.status === 504) {
+            const body = await response.json().catch(() => null);
+            if (body?.errcode === "M_NOT_YET_UPLOADED") return "pending";
+        }
+    } catch {
+        // offline or similar: treat as a failure; the reconnect listener retries.
+    }
+    return "failed";
+}
+
+/** Inside: the URL with a marker that makes the browser load it again (the service worker drops it). */
+function withRetryParam(url: string | null, retryCount: number): string | null {
+    if (!url || retryCount === 0 || !/^https?:/.test(url)) return url;
+    const parsed = new URL(url);
+    parsed.searchParams.set(RETRY_PARAM, String(retryCount));
+    return parsed.toString();
 }
 
 /**
@@ -101,6 +149,8 @@ export class ImageBodyViewModel
 {
     private state: InternalState;
     private blurhashTimeout?: number;
+    private retryTimeout?: number;
+    private probing = false;
 
     private readonly reconnectedListener = createReconnectedListener((): void => {
         MatrixClientPeg.get()?.off(ClientEvent.Sync, this.reconnectedListener);
@@ -136,11 +186,15 @@ export class ImageBodyViewModel
             imgError: false,
             imgLoaded: false,
             loadedImageDimensions: undefined,
+            // Inside: the blurhash shows at once, as in Telegram, not after 150 ms: with the media cache
+            // and prefetching most images are there at once anyway, and the rest should not leave a hole.
             placeholder: mxEvent.getContent<ImageContent>().info?.[BLURHASH_FIELD]
-                ? ImageBodyViewPlaceholder.NONE
+                ? ImageBodyViewPlaceholder.BLURHASH
                 : ImageBodyViewPlaceholder.SPINNER,
             imageSize: SettingsStore.getValue("Images.size"),
             generatedThumbnailUrl: null,
+            placeholderBusy: false,
+            retryCount: 0,
         };
     }
 
@@ -223,6 +277,7 @@ export class ImageBodyViewModel
             showAnimatedContentOnHover: state.isAnimated && !autoplayGifs && !!contentUrl,
             placeholder: !props.forExport && !state.imgLoaded ? state.placeholder : ImageBodyViewPlaceholder.NONE,
             blurhash: content.info?.[BLURHASH_FIELD],
+            placeholderBusy: !props.forExport && !state.imgLoaded && state.placeholderBusy,
             gifLabel: state.isAnimated && !autoplayGifs ? "GIF" : undefined,
             bannerLabel: ImageBodyViewModel.shouldShowBanner(props.timelineRenderingType)
                 ? presentableTextForFile(content, _t("common|image"), true, true)
@@ -260,6 +315,7 @@ export class ImageBodyViewModel
 
     private resetState(mxEvent: MatrixEvent): void {
         this.clearBlurhashTimeout();
+        this.clearRetryTimeout();
         MatrixClientPeg.get()?.off(ClientEvent.Sync, this.reconnectedListener);
         this.revokeGeneratedThumbnailUrl();
         this.state = ImageBodyViewModel.createInitialState(mxEvent);
@@ -277,6 +333,12 @@ export class ImageBodyViewModel
         };
     }
 
+    private clearRetryTimeout(): void {
+        if (!this.retryTimeout) return;
+        clearTimeout(this.retryTimeout);
+        this.retryTimeout = undefined;
+    }
+
     private clearBlurhashTimeout(): void {
         if (!this.blurhashTimeout) {
             return;
@@ -286,6 +348,10 @@ export class ImageBodyViewModel
         this.blurhashTimeout = undefined;
     }
 
+    /**
+     * Inside: the blurhash is shown from the start (see createInitialState); this only adds a spinner
+     * over it when the image takes a while.
+     */
     private scheduleBlurhashPlaceholder(): void {
         if (
             !this.props.mxEvent.getContent<ImageContent>().info?.[BLURHASH_FIELD] ||
@@ -303,36 +369,23 @@ export class ImageBodyViewModel
 
             this.state = {
                 ...this.state,
-                placeholder: ImageBodyViewPlaceholder.BLURHASH,
+                placeholderBusy: true,
             };
-            this.snapshot.merge({ placeholder: ImageBodyViewPlaceholder.BLURHASH });
-        }, 150);
+            this.snapshot.merge({ placeholderBusy: true });
+        }, BUSY_SPINNER_DELAY_MS);
     }
 
+    /**
+     * Inside: the server thumbnail that fits the bubble on this screen (see `serverThumbnail.ts`),
+     * instead of always 800×600 and the original on high-DPI screens.
+     */
     private getThumbUrl(): string | null {
-        const thumbWidth = 800;
-        const thumbHeight = 600;
-
-        const content = this.props.mxEvent.getContent<ImageContent>();
-        const media = mediaFromContent(content);
-        const info = content.info;
-
-        if (info?.mimetype === "image/svg+xml" && media.hasThumbnail) {
-            return media.getThumbnailHttp(thumbWidth, thumbHeight, "scale");
-        }
-
-        if (this.state.isAnimated || window.devicePixelRatio === 1.0 || !info || !info.w || !info.h || !info.size) {
-            return media.getThumbnailOfSourceHttp(thumbWidth, thumbHeight);
-        }
-
-        const isLargerThanThumbnail = info.w > thumbWidth || info.h > thumbHeight;
-        const isLargeFileSize = info.size > 1 * 1024 * 1024;
-
-        if (isLargeFileSize && isLargerThanThumbnail) {
-            return media.getThumbnailOfSourceHttp(thumbWidth, thumbHeight);
-        }
-
-        return media.srcHttp;
+        return imageThumbnailHttp(this.props.mxEvent.getContent<ImageContent>(), {
+            imageSize: this.state.imageSize,
+            maxImageHeight: this.props.maxImageHeight,
+            devicePixelRatio: window.devicePixelRatio,
+            isAnimated: this.state.isAnimated,
+        });
     }
 
     private async downloadImage(): Promise<void> {
@@ -511,6 +564,71 @@ export class ImageBodyViewModel
     };
 
     public onImageError = (): void => {
+        // Inside: a file of an event sent before its upload finished (MSC2246) fails to load until the
+        // upload is done. Ask the server why it failed before showing an error.
+        const failedUrl = this.state.thumbUrl ?? this.state.contentUrl;
+        if (
+            failedUrl &&
+            /^https?:/.test(failedUrl) &&
+            !this.props.mediaEventHelper?.media.isEncrypted &&
+            !this.props.mediaEventHelper?.isFromLocalUpload
+        ) {
+            if (!this.probing) void this.handleRemoteImageError(failedUrl);
+            return;
+        }
+
+        this.handleImageError();
+    };
+
+    /** Inside: after an image failed to load: wait for an upload in progress, retry, or fail. */
+    private async handleRemoteImageError(failedUrl: string): Promise<void> {
+        this.probing = true;
+        const result = await probeMedia(failedUrl);
+        this.probing = false;
+        if (this.isDisposed || (this.state.thumbUrl ?? this.state.contentUrl) !== failedUrl) return;
+
+        if (result === "pending" && this.state.retryCount < PENDING_MAX_RETRIES) {
+            // Keep the blurhash (or spinner) with a spinner, and try again a little later.
+            this.state = {
+                ...this.state,
+                placeholderBusy: true,
+            };
+            this.snapshot.merge({ placeholderBusy: true });
+            const delay = Math.min(
+                PENDING_RETRY_MIN_MS * 2 ** Math.min(this.state.retryCount, 4),
+                PENDING_RETRY_MAX_MS,
+            );
+            this.clearRetryTimeout();
+            this.retryTimeout = window.setTimeout(() => this.reloadImage(), delay);
+            return;
+        }
+
+        if (result === "available" && this.state.retryCount < TRANSIENT_MAX_RETRIES) {
+            this.reloadImage();
+            return;
+        }
+
+        this.handleImageError();
+    }
+
+    /** Inside: load the image again, from its thumbnail, with URLs the browser has not failed on yet. */
+    private reloadImage(): void {
+        this.retryTimeout = undefined;
+        if (this.isDisposed) return;
+        const retryCount = this.state.retryCount + 1;
+        const content = this.props.mxEvent.getContent<ImageContent>();
+        this.state = {
+            ...this.state,
+            retryCount,
+            imgError: false,
+            thumbUrl: withRetryParam(this.getThumbUrl(), retryCount),
+            contentUrl: withRetryParam(mediaFromContent(content).srcHttp, retryCount),
+        };
+        this.updateSnapshotFromState();
+    }
+
+    /** Element's handling of an image that failed to load: fall back to the original, then fail. */
+    private handleImageError(): void {
         if (this.state.thumbUrl && this.state.thumbUrl !== this.state.contentUrl) {
             this.state = {
                 ...this.state,
@@ -532,7 +650,7 @@ export class ImageBodyViewModel
         };
         MatrixClientPeg.safeGet().on(ClientEvent.Sync, this.reconnectedListener);
         this.updateSnapshotFromState();
-    };
+    }
 
     public onImageLoad = (): void => {
         this.clearBlurhashTimeout();
@@ -548,6 +666,7 @@ export class ImageBodyViewModel
             imgLoaded: true,
             loadedImageDimensions,
             placeholder: ImageBodyViewPlaceholder.NONE,
+            placeholderBusy: false,
         };
         this.updateSnapshotFromState();
     };
@@ -662,6 +781,7 @@ export class ImageBodyViewModel
 
     public dispose(): void {
         this.clearBlurhashTimeout();
+        this.clearRetryTimeout();
         MatrixClientPeg.get()?.off(ClientEvent.Sync, this.reconnectedListener);
         this.revokeGeneratedThumbnailUrl();
         super.dispose();
