@@ -120,6 +120,7 @@ describe("ImageBodyViewModel", () => {
             hasThumbnail: content.info?.thumbnail_url !== null,
             getThumbnailHttp: vi.fn().mockReturnValue("https://server/thumb.png"),
             getThumbnailOfSourceHttp: vi.fn().mockReturnValue("https://server/thumb.png"),
+            getServerThumbnailOfSourceHttp: vi.fn().mockReturnValue("https://server/thumb.png"),
             getSquareThumbnailHttp: vi.fn(),
             downloadSource: vi.fn(),
         }) as unknown as Media;
@@ -282,7 +283,7 @@ describe("ImageBodyViewModel", () => {
         });
     });
 
-    it("switches from blurhash placeholder after the delay", () => {
+    it("shows the blurhash at once and a spinner over it when the image takes a while", () => {
         vi.useFakeTimers();
         const vm = createVm({
             mediaVisible: true,
@@ -296,11 +297,19 @@ describe("ImageBodyViewModel", () => {
         });
 
         vm.loadInitialMediaIfVisible();
-        expect(vm.getSnapshot().placeholder).toBe(ImageBodyViewPlaceholder.NONE);
+        expect(vm.getSnapshot().placeholder).toBe(ImageBodyViewPlaceholder.BLURHASH);
+        expect(vm.getSnapshot().placeholderBusy).toBe(false);
 
-        vi.advanceTimersByTime(150);
+        vi.advanceTimersByTime(1000);
 
         expect(vm.getSnapshot().placeholder).toBe(ImageBodyViewPlaceholder.BLURHASH);
+        expect(vm.getSnapshot().placeholderBusy).toBe(true);
+
+        vm.onImageLoad();
+        expect(vm.getSnapshot()).toMatchObject({
+            placeholder: ImageBodyViewPlaceholder.NONE,
+            placeholderBusy: false,
+        });
         vi.useRealTimers();
     });
 
@@ -589,9 +598,105 @@ describe("ImageBodyViewModel", () => {
 
         vm.loadInitialMediaIfVisible();
 
+        // Inside: a normal bubble (324×243) on a 2× screen needs 648×486 pixels: the server's 640×480.
         const media = mockedMediaFromContent.mock.results.at(-1)!.value as Media;
-        expect(media.getThumbnailOfSourceHttp).toHaveBeenCalledWith(800, 600);
+        expect(media.getServerThumbnailOfSourceHttp).toHaveBeenCalledWith(640, 480);
         expect(vm.getSnapshot().thumbnailSrc).toBe("https://server/thumb.png");
+    });
+
+    it("requests the smallest server thumbnail on a standard screen", () => {
+        const vm = createVm({
+            mediaVisible: true,
+            mxEvent: createEvent({
+                content: { info: { mimetype: "image/jpeg", w: 4000, h: 3000, size: 5 * 1024 * 1024 } },
+            }),
+        });
+
+        vm.loadInitialMediaIfVisible();
+
+        const media = mockedMediaFromContent.mock.results.at(-1)!.value as Media;
+        expect(media.getServerThumbnailOfSourceHttp).toHaveBeenCalledWith(320, 240);
+    });
+
+    describe("when an unencrypted image fails to load", () => {
+        const pendingResponse = (): Response =>
+            new Response(JSON.stringify({ errcode: "M_NOT_YET_UPLOADED", error: "Not yet uploaded" }), {
+                status: 504,
+            });
+
+        const loadedVm = (): ImageBodyViewModel => {
+            const vm = createVm({
+                mediaVisible: true,
+                mxEvent: createEvent({
+                    content: {
+                        info: {
+                            mimetype: "image/jpeg",
+                            w: 4000,
+                            h: 3000,
+                            size: 5 * 1024 * 1024,
+                            [BLURHASH_FIELD]: "LEHV6nWB2yk8pyo0adR*.7kCMdnj",
+                        },
+                    },
+                }),
+            });
+            vm.loadInitialMediaIfVisible();
+            return vm;
+        };
+
+        afterEach(() => {
+            vi.unstubAllGlobals();
+            vi.useRealTimers();
+        });
+
+        it("keeps the blurhash with a spinner while the file is still being uploaded, then loads it again", async () => {
+            vi.useFakeTimers();
+            const fetchSpy = vi.fn().mockResolvedValue(pendingResponse());
+            vi.stubGlobal("fetch", fetchSpy);
+            const vm = loadedVm();
+
+            vm.onImageError();
+            await vi.waitFor(() => expect(vm.getSnapshot().placeholderBusy).toBe(true));
+
+            expect(fetchSpy).toHaveBeenCalledWith("https://server/thumb.png", {
+                headers: { "X-Inside-No-Wait": "1" },
+            });
+            expect(vm.getSnapshot()).toMatchObject({
+                state: ImageBodyViewState.READY,
+                placeholder: ImageBodyViewPlaceholder.BLURHASH,
+                thumbnailSrc: "https://server/thumb.png",
+            });
+
+            vi.advanceTimersByTime(2000);
+
+            expect(vm.getSnapshot()).toMatchObject({
+                state: ImageBodyViewState.READY,
+                thumbnailSrc: "https://server/thumb.png?inside_retry=1",
+                src: "https://server/full.png?inside_retry=1",
+            });
+        });
+
+        it("falls back to the original when the server has no such thumbnail", async () => {
+            vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("{}", { status: 404 })));
+            const vm = loadedVm();
+
+            vm.onImageError();
+
+            await vi.waitFor(() => expect(vm.getSnapshot().thumbnailSrc).toBe("https://server/full.png"));
+            expect(vm.getSnapshot().state).toBe(ImageBodyViewState.READY);
+        });
+
+        it("shows the error when the original fails too", async () => {
+            const client = { on: vi.fn() };
+            vi.spyOn(MatrixClientPeg, "safeGet").mockReturnValue(client as any);
+            vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("{}", { status: 404 })));
+            const vm = loadedVm();
+
+            vm.onImageError();
+            await vi.waitFor(() => expect(vm.getSnapshot().thumbnailSrc).toBe("https://server/full.png"));
+            vm.onImageError();
+
+            await vi.waitFor(() => expect(vm.getSnapshot().state).toBe(ImageBodyViewState.ERROR));
+        });
     });
 
     it("generates a static thumbnail for animated images without a safe thumbnail", async () => {

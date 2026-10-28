@@ -10,6 +10,18 @@ import { type AESEncryptedSecretStoragePayload } from "matrix-js-sdk/src/types";
 import { idbLoad } from "../utils/StorageAccess";
 import { ACCESS_TOKEN_NAME, tryDecryptToken } from "../utils/tokens/tokens";
 import { buildAndEncodePickleKey } from "../utils/tokens/pickling";
+import { NO_WAIT_HEADER } from "../utils/media/mediaCacheShared";
+import {
+    type ByteRange,
+    isNotYetUploaded,
+    MediaCache,
+    type MediaRequestInfo,
+    parseMediaUrl,
+    parseRange,
+    rangeFromCached,
+    rangeFromFullResponse,
+    stripRetryParam,
+} from "./mediaCache";
 
 const serverSupportMap: {
     [serverUrl: string]: {
@@ -56,47 +68,251 @@ global.addEventListener("fetch", (event: FetchEvent) => {
 
     // We need to call respondWith synchronously, otherwise we may never execute properly. This means
     // later on we need to proxy the request through if it turns out the server doesn't support authentication.
-    event.respondWith(
-        (async (): Promise<Response> => {
-            // Add jitter to reduce request spam, particularly to `/versions` on initial page load
-            await new Promise<void>((resolve) => setTimeout(() => resolve(), Math.random() * 10));
-
-            let { url: requestUrl, auth } = await prepareRequest(url, event.clientId);
-
-            // Add authentication and send the request. We add authentication even if MSC3916 endpoints aren't
-            // being used to ensure patches like this work:
-            // https://github.com/matrix-org/synapse/commit/2390b66bf0ec3ff5ffb0c7333f3c9b239eeb92bb
-            const response = await fetch(requestUrl, fetchConfigForToken(auth?.accessToken));
-            if (response.status !== 401) return response;
-
-            // Inside: with OAuth (MAS) access tokens expire and the app refreshes them lazily, so the stored
-            // token we just used may be stale — typically right after reopening a tab. And at startup the tab
-            // may be too busy to answer "userinfo" in time, so the request went out without any token at all.
-            // Either way, ask the tab to refresh the token, read it again and retry once with it, instead of
-            // leaving the image broken.
-            try {
-                const staleToken = auth?.accessToken;
-                await refreshTokenInTab(event.clientId);
-                if (staleToken) {
-                    // @ts-expect-error - service worker types are not available. See 'fetch' event handler.
-                    const client = await global.clients.get(event.clientId);
-                    auth = await waitForNewAuthData(client, staleToken);
-                    if (auth.accessToken !== staleToken) {
-                        return await fetch(requestUrl, fetchConfigForToken(auth.accessToken));
-                    }
-                } else {
-                    ({ url: requestUrl, auth } = await prepareRequest(url, event.clientId));
-                    if (auth?.accessToken) {
-                        return await fetch(requestUrl, fetchConfigForToken(auth.accessToken));
-                    }
-                }
-            } catch (err) {
-                console.error("SW: Error retrying the media request with a fresh access token.", err);
-            }
-            return response;
-        })(),
-    );
+    event.respondWith(handleMediaRequest(event, url));
 });
+
+/** Inside: the cache of media responses, see `mediaCache.ts`. */
+const mediaCache = new MediaCache(() => (typeof caches === "undefined" ? undefined : caches));
+
+/** Inside: how long a media request waits for a file that is still being uploaded (MSC2246). */
+const UPLOAD_WAIT_MS = 4 * 60 * 1000;
+/** Inside: the longest a single request may ask Synapse to hold it while the upload goes on. */
+const UPLOAD_POLL_TIMEOUT_MS = 60 * 1000;
+/**
+ * Inside: a thumbnail request that took this long and then failed with 404 most likely waited for an
+ * upload which has just finished, before Synapse made the thumbnails. Worth asking again.
+ */
+const SLOW_THUMBNAIL_404_MS = 1000;
+
+/**
+ * Inside: answers a media request: from the media cache when it has the file (content behind an mxc
+ * URI never changes), otherwise from the server, with authentication, waiting for files that are still
+ * being uploaded, emulating `Range` that Synapse ignores, and caching what is worth caching.
+ */
+/** Inside: the parts of a `FetchEvent` used here (service worker types are not available, see above). */
+interface MediaFetchEvent {
+    request: Request;
+    clientId: string;
+    waitUntil?(promise: Promise<unknown>): void;
+}
+
+async function handleMediaRequest(event: MediaFetchEvent, url: URL): Promise<Response> {
+    const info = parseMediaUrl(url);
+    const rangeHeader = event.request.headers?.get?.("Range") ?? null;
+    const range = parseRange(rangeHeader);
+    const noWait = !!event.request.headers?.get?.(NO_WAIT_HEADER);
+
+    if (info) {
+        const cached = await fromCache(info, range);
+        if (cached) return cached;
+
+        // The same file is on its way already (the prefetcher and the timeline, or two tiles): wait for
+        // it to land in the cache instead of downloading it twice.
+        const inFlight = downloadsInFlight.get(info.key);
+        if (inFlight && !noWait) {
+            await inFlight;
+            const landed = await fromCache(info, range);
+            if (landed) return landed;
+        }
+    }
+
+    let finished = (): void => {};
+    if (info && !range && !downloadsInFlight.has(info.key)) {
+        const key = info.key;
+        downloadsInFlight.set(
+            key,
+            new Promise<void>((resolve) => {
+                finished = (): void => {
+                    downloadsInFlight.delete(key);
+                    resolve();
+                };
+            }),
+        );
+    }
+
+    try {
+        const response = await fetchFromServer(event, url, info, rangeHeader, noWait);
+
+        let forPage = response;
+        if (info && MediaCache.isCacheable(info.kind, response) && coversWholeBody(range, response)) {
+            let caching: Promise<void>;
+            if (info.kind === "thumbnail") {
+                // Small, and always wanted: read a copy into the cache whatever the page does.
+                caching = response
+                    .clone()
+                    .blob()
+                    .then((body) => mediaCache.put(info.key, body, response.headers));
+            } else {
+                // An original is cached only if the page reads all of it: a video element fetching just
+                // the metadata, or a cancelled download, must not pull the rest of the file over the network.
+                let collected: Promise<Blob | null>;
+                [forPage, collected] = collectWhileStreaming(response);
+                caching = collected.then((body) =>
+                    body ? mediaCache.put(info.key, body, response.headers) : undefined,
+                );
+            }
+            const done = caching.catch(() => {}).finally(finished);
+            event.waitUntil?.(done);
+        } else {
+            finished();
+        }
+
+        if (range && forPage.status === 200) return rangeFromFullResponse(forPage, range);
+        return forPage;
+    } catch (e) {
+        finished();
+        throw e;
+    }
+}
+
+/**
+ * Inside: passes a response's body through to the page, keeping a copy of what goes by. The promise gives
+ * the whole body once the page has read it to the end, or null if it stopped early or the download failed.
+ */
+function collectWhileStreaming(response: Response): [Response, Promise<Blob | null>] {
+    if (!response.body) return [response, Promise.resolve(null)];
+    const reader = response.body.getReader();
+    const chunks: Uint8Array[] = [];
+    let settle: (body: Blob | null) => void = () => {};
+    const collected = new Promise<Blob | null>((resolve) => (settle = resolve));
+    const body = new ReadableStream<Uint8Array>({
+        async pull(controller): Promise<void> {
+            try {
+                const { done, value } = await reader.read();
+                if (done) {
+                    controller.close();
+                    settle(new Blob(chunks as BlobPart[]));
+                    return;
+                }
+                chunks.push(value);
+                controller.enqueue(value);
+            } catch (e) {
+                settle(null);
+                controller.error(e);
+            }
+        },
+        cancel(reason): Promise<void> {
+            settle(null);
+            return reader.cancel(reason);
+        },
+    });
+    return [
+        new Response(body, { status: response.status, statusText: response.statusText, headers: response.headers }),
+        collected,
+    ];
+}
+
+/** Inside: downloads of cacheable media under way, by cache key; settle once the file is cached (or not). */
+const downloadsInFlight = new Map<string, Promise<void>>();
+
+/** Inside: the cached response for a media request, if the cache has the file. */
+async function fromCache(info: MediaRequestInfo, range: ByteRange | null): Promise<Response | undefined> {
+    const cached = await mediaCache.match(info.key);
+    if (!cached) return undefined;
+    if (range) return rangeFromCached(cached, range);
+    if (info.kind === "thumbnail") return cached;
+    // Let a media element know that it may seek in the cached file.
+    const headers = new Headers(cached.headers);
+    headers.set("Accept-Ranges", "bytes");
+    return new Response(cached.body, { status: cached.status, headers });
+}
+
+/**
+ * Inside: sends a media request to the server and, unless told not to wait, keeps asking while the file
+ * is still being uploaded.
+ */
+async function fetchFromServer(
+    event: MediaFetchEvent,
+    url: URL,
+    info: MediaRequestInfo | null,
+    rangeHeader: string | null,
+    noWait: boolean,
+): Promise<Response> {
+    // Add jitter to reduce request spam, particularly to `/versions` on initial page load
+    await new Promise<void>((resolve) => setTimeout(() => resolve(), Math.random() * 10));
+
+    // Pass `Range` on, in case the server honours it one day (then its 206 goes back untouched).
+    const extraHeaders: Record<string, string> = rangeHeader ? { Range: rangeHeader } : {};
+    const requestUrl = stripRetryParam(url);
+    let started = Date.now();
+    let response = await fetchMediaWithAuth(requestUrl, event.clientId, extraHeaders);
+    if (noWait) return response;
+
+    // Asynchronous uploads (MSC2246): the event can arrive before the file. Synapse holds the request
+    // for `timeout_ms` (20 s by default) and then answers 504 M_NOT_YET_UPLOADED; ask again, so that
+    // the image or video shows up by itself once the upload is done instead of failing.
+    const deadline = Date.now() + UPLOAD_WAIT_MS;
+    const pollUrl = new URL(requestUrl.href);
+    pollUrl.searchParams.set("timeout_ms", String(UPLOAD_POLL_TIMEOUT_MS));
+    let delayMs = 500;
+    let waited = false;
+    let thumbnailRetries = 0;
+    while (Date.now() < deadline) {
+        const pending = await isNotYetUploaded(response);
+        const thumbnailNotReady =
+            !pending &&
+            info?.kind === "thumbnail" &&
+            response.status === 404 &&
+            thumbnailRetries < 3 &&
+            (waited || Date.now() - started > SLOW_THUMBNAIL_404_MS);
+        if (!pending && !thumbnailNotReady) break;
+        if (thumbnailNotReady) thumbnailRetries++;
+        waited = true;
+        await new Promise<void>((resolve) => setTimeout(() => resolve(), delayMs));
+        delayMs = Math.min(delayMs * 2, 5000);
+        started = Date.now();
+        response = await fetchMediaWithAuth(pollUrl, event.clientId, extraHeaders);
+    }
+    return response;
+}
+
+/** Inside: whether a response to a request with this range carries the whole file, so may be cached. */
+function coversWholeBody(range: ByteRange | null, response: Response): boolean {
+    if (!range) return true;
+    // A Safari probe ("bytes=0-1") must not pull the whole file into the cache.
+    const total = Number(response.headers.get("Content-Length") ?? NaN);
+    return range.start === 0 && (range.end === undefined || range.end >= total - 1);
+}
+
+/**
+ * Sends a media request with the access token, rewritten to the authenticated (MSC3916) endpoints where
+ * the server supports them, and retries once with a refreshed token after a 401.
+ */
+async function fetchMediaWithAuth(url: URL, clientId: string, extraHeaders: Record<string, string>): Promise<Response> {
+    let { url: requestUrl, auth } = await prepareRequest(url, clientId);
+
+    // Add authentication and send the request. We add authentication even if MSC3916 endpoints aren't
+    // being used to ensure patches like this work:
+    // https://github.com/matrix-org/synapse/commit/2390b66bf0ec3ff5ffb0c7333f3c9b239eeb92bb
+    const response = await fetch(requestUrl, fetchConfigForToken(auth?.accessToken, extraHeaders));
+    if (response.status !== 401) return response;
+
+    // Inside: with OAuth (MAS) access tokens expire and the app refreshes them lazily, so the stored
+    // token we just used may be stale — typically right after reopening a tab. And at startup the tab
+    // may be too busy to answer "userinfo" in time, so the request went out without any token at all.
+    // Either way, ask the tab to refresh the token, read it again and retry once with it, instead of
+    // leaving the image broken.
+    try {
+        const staleToken = auth?.accessToken;
+        await refreshTokenInTab(clientId);
+        if (staleToken) {
+            // @ts-expect-error - service worker types are not available. See 'fetch' event handler.
+            const client = await global.clients.get(clientId);
+            auth = await waitForNewAuthData(client, staleToken);
+            if (auth.accessToken !== staleToken) {
+                return await fetch(requestUrl, fetchConfigForToken(auth.accessToken, extraHeaders));
+            }
+        } else {
+            ({ url: requestUrl, auth } = await prepareRequest(url, clientId));
+            if (auth?.accessToken) {
+                return await fetch(requestUrl, fetchConfigForToken(auth.accessToken, extraHeaders));
+            }
+        }
+    } catch (err) {
+        console.error("SW: Error retrying the media request with a fresh access token.", err);
+    }
+    return response;
+}
 
 /**
  * Works out the access token for a media request and, where the server supports it, the authenticated
@@ -293,13 +509,15 @@ async function askClient<T>(client: unknown, type: string, timeoutMs: number): P
     });
 }
 
-function fetchConfigForToken(accessToken?: string): RequestInit | undefined {
+function fetchConfigForToken(accessToken?: string, extraHeaders: Record<string, string> = {}): RequestInit | undefined {
     if (!accessToken) {
-        return undefined; // no headers/config to specify
+        // no auth; Inside: but still pass e.g. `Range` on
+        return Object.keys(extraHeaders).length ? { headers: extraHeaders } : undefined;
     }
 
     return {
         headers: {
+            ...extraHeaders,
             Authorization: `Bearer ${accessToken}`,
         },
     };

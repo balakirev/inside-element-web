@@ -82,6 +82,11 @@ export interface ImageBodyViewSnapshot {
      */
     blurhash?: string;
     /**
+     * Inside: whether to show a small spinner over the blurhash placeholder, for an image that is
+     * taking a while (a slow connection, or a file still being uploaded by its sender).
+     */
+    placeholderBusy?: boolean;
+    /**
      * Maximum rendered width for the media frame.
      */
     maxWidth?: number;
@@ -170,10 +175,11 @@ interface ImageBodyViewProps {
 function renderPlaceholder({
     placeholder,
     blurhash,
+    placeholderBusy,
     maxWidth,
     maxHeight,
     loadingLabel,
-}: Pick<ImageBodyViewSnapshot, "placeholder" | "blurhash" | "maxWidth" | "maxHeight"> & {
+}: Pick<ImageBodyViewSnapshot, "placeholder" | "blurhash" | "placeholderBusy" | "maxWidth" | "maxHeight"> & {
     loadingLabel: string;
 }): JSX.Element | null {
     switch (placeholder) {
@@ -183,12 +189,19 @@ function renderPlaceholder({
             }
 
             return (
-                <Blurhash
-                    className={styles.blurhash}
-                    hash={blurhash}
-                    width={maxWidth ?? 320}
-                    height={maxHeight ?? 240}
-                />
+                <>
+                    <Blurhash
+                        className={styles.blurhash}
+                        hash={blurhash}
+                        width={maxWidth ?? 320}
+                        height={maxHeight ?? 240}
+                    />
+                    {placeholderBusy && (
+                        <span className={styles.busy}>
+                            <InlineSpinner aria-label={loadingLabel} role="progressbar" />
+                        </span>
+                    )}
+                </>
             );
 
         case ImageBodyViewPlaceholder.SPINNER:
@@ -234,6 +247,7 @@ export function ImageBodyView({
         showAnimatedContentOnHover,
         placeholder = ImageBodyViewPlaceholder.NONE,
         blurhash,
+        placeholderBusy,
         maxWidth,
         maxHeight,
         aspectRatio,
@@ -298,6 +312,7 @@ export function ImageBodyView({
     const placeholderNode = renderPlaceholder({
         placeholder,
         blurhash,
+        placeholderBusy,
         maxWidth,
         maxHeight,
         loadingLabel: _t("common|loading"),

@@ -13,6 +13,7 @@ import { encodeUnpaddedBase64 } from "matrix-js-sdk/src/matrix";
 import * as StorageAccess from "../utils/StorageAccess";
 import { persistTokens } from "../utils/tokens/tokens";
 import { encryptPickleKey } from "../utils/tokens/pickling";
+import { MemoryCacheStorage } from "../test/test-utils/MemoryCacheStorage";
 
 const USER_ID = "@alice:example.com";
 const DEVICE_ID = "ABCDEFG";
@@ -329,6 +330,167 @@ describe("serviceworker", () => {
             const statuses = (await Promise.all(responses)).map((r) => r.status);
             expect(statuses).toEqual([200, 200, 200]);
             expect(tab.postMessage.mock.calls.filter(([msg]) => msg.type === "refresh_token")).toHaveLength(1);
+        });
+    });
+    describe("media cache, uploads in progress and ranges (Inside)", () => {
+        let cacheStorage: MemoryCacheStorage;
+
+        /** Media requests made to the network (not `/versions`), as [url, init]. */
+        function mediaFetches(): [string, RequestInit | undefined][] {
+            return fetchSpy.mock.calls
+                .filter(([input]) => !String(input).endsWith("/_matrix/client/versions"))
+                .map(([input, init]) => [String(input), init]);
+        }
+
+        /** Drive the fetch handler for a request and return its response. */
+        async function request(url: string, headers: Record<string, string> = {}): Promise<Response> {
+            let responded: Promise<Response> | undefined;
+            const waits: Promise<unknown>[] = [];
+            emit("fetch", {
+                request: { method: "GET", url, headers: new Headers(headers) },
+                clientId: "client-1",
+                respondWith: (response: Promise<Response>) => {
+                    responded = response;
+                },
+                waitUntil: (promise: Promise<unknown>) => waits.push(promise),
+            });
+            const response = await responded!;
+            // Let the cache write finish: the page has the response by now, the worker keeps caching.
+            await response.clone().arrayBuffer();
+            await Promise.all(waits);
+            return response;
+        }
+
+        beforeEach(async () => {
+            cacheStorage = new MemoryCacheStorage();
+            vi.stubGlobal("caches", cacheStorage);
+            await persistTokens(undefined, { accessToken: "token" });
+        });
+
+        it("answers a thumbnail from the cache the second time, without the network", async () => {
+            const thumbUrl = `${homeserver}/_matrix/media/v3/thumbnail/example.com/abc123?width=320&height=240&method=scale&allow_redirect=true`;
+            fetchSpy.mockImplementation(async (input: URL | string) => {
+                if (input.toString().endsWith("/_matrix/client/versions")) {
+                    return { json: async () => ({ versions: ["v1.11"] }) };
+                }
+                return new Response("jpeg", { headers: { "Content-Type": "image/jpeg" } });
+            });
+
+            expect(await (await request(thumbUrl)).text()).toBe("jpeg");
+            const again = await request(`${thumbUrl}&inside_retry=1`);
+
+            expect(await again.text()).toBe("jpeg");
+            expect(again.headers.get("Content-Type")).toBe("image/jpeg");
+            expect(mediaFetches()).toHaveLength(1);
+        });
+
+        it("does not cache errors", async () => {
+            fetchSpy.mockImplementation(async (input: URL | string) => {
+                if (input.toString().endsWith("/_matrix/client/versions")) {
+                    return { json: async () => ({ versions: ["v1.11"] }) };
+                }
+                return new Response("{}", { status: 404 });
+            });
+
+            await request(mediaUrl);
+            await request(mediaUrl);
+
+            expect(mediaFetches()).toHaveLength(2);
+        });
+
+        it("keeps asking for a file which is still being uploaded, with timeout_ms", async () => {
+            let calls = 0;
+            fetchSpy.mockImplementation(async (input: URL | string) => {
+                if (input.toString().endsWith("/_matrix/client/versions")) {
+                    return { json: async () => ({ versions: ["v1.11"] }) };
+                }
+                if (++calls === 1) {
+                    return new Response(JSON.stringify({ errcode: "M_NOT_YET_UPLOADED" }), { status: 504 });
+                }
+                return new Response("media", { headers: { "Content-Length": "5" } });
+            });
+
+            const response = await request(mediaUrl);
+
+            expect(response.status).toBe(200);
+            expect(mediaFetches().map(([url]) => url)).toEqual([
+                `${homeserver}/_matrix/client/v1/media/download/example.com/abc123`,
+                `${homeserver}/_matrix/client/v1/media/download/example.com/abc123?timeout_ms=60000`,
+            ]);
+        });
+
+        it("answers at once when asked not to wait", async () => {
+            fetchSpy.mockImplementation(async (input: URL | string) => {
+                if (input.toString().endsWith("/_matrix/client/versions")) {
+                    return { json: async () => ({ versions: ["v1.11"] }) };
+                }
+                return new Response(JSON.stringify({ errcode: "M_NOT_YET_UPLOADED" }), { status: 504 });
+            });
+
+            const response = await request(mediaUrl, { "X-Inside-No-Wait": "1" });
+
+            expect(response.status).toBe(504);
+            expect(mediaFetches()).toHaveLength(1);
+        });
+
+        it("passes Range on and answers 206 when the server sends the whole file", async () => {
+            fetchSpy.mockImplementation(async (input: URL | string) => {
+                if (input.toString().endsWith("/_matrix/client/versions")) {
+                    return { json: async () => ({ versions: ["v1.11"] }) };
+                }
+                return new Response("0123456789", {
+                    headers: { "Content-Type": "video/mp4", "Content-Length": "10" },
+                });
+            });
+
+            const response = await request(mediaUrl, { Range: "bytes=2-4" });
+
+            expect(response.status).toBe(206);
+            expect(response.headers.get("Content-Range")).toBe("bytes 2-4/10");
+            expect(await response.text()).toBe("234");
+            expect(mediaFetches()[0][1]).toEqual({ headers: { Range: "bytes=2-4", Authorization: "Bearer token" } });
+        });
+
+        it("does not cache a video the page stopped reading (metadata only)", async () => {
+            fetchSpy.mockImplementation(async (input: URL | string) => {
+                if (input.toString().endsWith("/_matrix/client/versions")) {
+                    return { json: async () => ({ versions: ["v1.11"] }) };
+                }
+                return new Response("0123456789", {
+                    headers: { "Content-Type": "video/mp4", "Content-Length": "10" },
+                });
+            });
+
+            let responded: Promise<Response> | undefined;
+            emit("fetch", {
+                request: { method: "GET", url: mediaUrl, headers: new Headers({ Range: "bytes=0-" }) },
+                clientId: "client-1",
+                respondWith: (response: Promise<Response>) => {
+                    responded = response;
+                },
+            });
+            await (await responded!).body!.cancel();
+            await request(mediaUrl, { Range: "bytes=0-" });
+
+            expect(mediaFetches()).toHaveLength(2);
+        });
+
+        it("serves ranges of a cached video from the cache", async () => {
+            fetchSpy.mockImplementation(async (input: URL | string) => {
+                if (input.toString().endsWith("/_matrix/client/versions")) {
+                    return { json: async () => ({ versions: ["v1.11"] }) };
+                }
+                return new Response("0123456789", {
+                    headers: { "Content-Type": "video/mp4", "Content-Length": "10" },
+                });
+            });
+
+            await request(mediaUrl, { Range: "bytes=0-" });
+            const seek = await request(mediaUrl, { Range: "bytes=7-" });
+
+            expect(seek.status).toBe(206);
+            expect(await seek.text()).toBe("789");
+            expect(mediaFetches()).toHaveLength(1);
         });
     });
 });

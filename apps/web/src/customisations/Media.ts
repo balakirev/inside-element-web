@@ -119,6 +119,16 @@ class MediaImplementation {
     }
 
     /**
+     * Inside: like {@link getThumbnailOfSourceHttp}, but for exactly the given size in device pixels,
+     * without scaling by the device pixel ratio: for asking for one of the sizes the server made in
+     * advance (`thumbnail_sizes`), see `utils/media/serverThumbnail.ts`.
+     */
+    public getServerThumbnailOfSourceHttp(width: number, height: number, mode: ResizeMethod = "scale"): string | null {
+        // eslint-disable-next-line no-restricted-properties
+        return this.client.mxcUrlToHttp(this.srcMxc, width, height, mode, false, true);
+    }
+
+    /**
      * Creates a square thumbnail of the media. If the media has a thumbnail recorded, that MXC will
      * be used, otherwise the source media will be used.
      * @param {number} dim The desired width and height.

@@ -66,6 +66,8 @@ import { checkBrowserSupport } from "./SupportedBrowser";
 import { type URLParams } from "./vector/url_utils.ts";
 import { type OnLoggedInPayload } from "./dispatcher/payloads/OnLoggedInPayload.ts";
 import { clearUploadedMediaCache } from "./utils/UploadedMediaCache";
+import { clearMediaCache } from "./utils/media/mediaCacheShared";
+import { InsideMediaPrefetcher } from "./utils/media/InsideMediaPrefetcher";
 import { CallStatusListener } from "./CallStatusListener.ts";
 import { CallStore } from "./stores/CallStore.ts";
 import { ModuleApi } from "./modules/Api.ts";
@@ -1118,6 +1120,9 @@ async function startMatrixClient(
     // of the matrix client that cannot be set prior to starting up.
     dis.dispatch({ action: Action.ClientStarted });
 
+    // Inside: load the latest pictures of the top rooms in advance.
+    if (startSyncing) InsideMediaPrefetcher.instance.start(client);
+
     if (isSoftLogout()) {
         softLogout();
     }
@@ -1192,6 +1197,9 @@ export async function clearStorage(opts?: { deleteEverything?: boolean }): Promi
 
     window.sessionStorage?.clear();
 
+    // Inside: the service worker's cache of media responses belongs to the session too.
+    await clearMediaCache();
+
     // create a temporary client to clear out the persistent stores.
     const cli = createMatrixClient({
         // we'll never make any requests, so can pass a bogus HS URL
@@ -1208,6 +1216,7 @@ export async function clearStorage(opts?: { deleteEverything?: boolean }): Promi
  * on MatrixClientPeg after stopping.
  */
 export function stopMatrixClient(unsetClient = true): void {
+    InsideMediaPrefetcher.instance.stop();
     SDKContextClass.instance.legacyCallHandler.stop();
     SDKContextClass.instance.notifier.stop();
     UserActivity.sharedInstance().stop();
