@@ -36,6 +36,11 @@ the next upstream release with `git rebase --onto <new-tag> <old-tag> inside/mai
 | Dust when deleting a message          | After the delete confirmation the message tile crumbles into dust, as in Telegram (`utils/DustEffect.ts`). |
 | Favicon badge in the brand red        | The unread counter drawn over the tab icon uses the Lobby signal red `#C8102E` instead of Element's `#d00`. |
 | Search and More in the room header    | The right side of the room header is the Lobby button capsule: search, threads, room info, more. Search opens the room's message search as Ctrl+F does; More opens the room list item's options menu below the button (`RoomHeader/InsideHeaderButtons.tsx`). |
+| Avatar at the last bubble of a series  | In the bubble layout the sender avatar sits at the last message of a series (`mx_EventTile_inside_lastInSeries`), the name above the first one, as in Telegram. |
+| Names without the Matrix ID           | Same-named members (one person with two accounts) no longer get " (@user:server)" in event texts, room list previews and the timeline sender; kept for names that look like a Matrix ID or contain direction marks, and in the member list and user info (`utils/event/getSenderName.ts`). |
+| Online members in the room header      | "6 members · 2 online": the number of joined members whose presence is online, next to the member count (`mx_RoomHeader_inside_online`). |
+| Pin for favourite rooms                | A favourite room without unread messages shows a pin where the unread badge would be (`mx_RoomListItemView_inside_pin`). |
+| Counter on muted rooms                 | A muted room keeps a grey counter of its unread messages in the room list (`mx_RoomListItemView_inside_muted`), counted on the client because servers do not count them; folders and the favicon still leave it out. |
 | Version script without `jq`            | Branch builds failed: the Docker builder image has no `jq`.                                                                                                                                                                                                                                                                                                               |
 
 ## Build
