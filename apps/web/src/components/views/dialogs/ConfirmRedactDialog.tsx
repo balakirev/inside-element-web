@@ -14,6 +14,7 @@ import { MatrixClientPeg } from "../../../MatrixClientPeg";
 import Modal from "../../../Modal";
 import ErrorDialog from "./ErrorDialog";
 import TextInputDialog from "./TextInputDialog";
+import { playDustEffect } from "../../../utils/DustEffect";
 
 interface IProps {
     event: MatrixEvent;
@@ -65,6 +66,10 @@ export function createRedactEventDialog({
 
         const cli = MatrixClientPeg.safeGet();
         const withRelTypes: Pick<IRedactOpts, "with_rel_types"> = {};
+
+        // Inside: the bubble turns to dust, as in Telegram. Started before the request (the tile
+        // still shows the message) and not awaited; it does nothing under reduced motion.
+        playDustEffect(eventId);
 
         try {
             onCloseDialog?.();
