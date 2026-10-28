@@ -24,7 +24,9 @@ export const PDF_THUMBNAIL_SIDE = 320;
 /** Larger files are not drawn when sending them. */
 export const MAX_PDF_THUMBNAIL_BYTES = 50 * 1024 * 1024;
 /** Older PDFs without a thumbnail are drawn in the timeline only up to this size. */
-export const MAX_LAZY_PDF_THUMBNAIL_BYTES = 5 * 1024 * 1024;
+// Matches the media cache limit of the service worker (originals ≤ 20 MB are kept), so the file fetched
+// for the page-1 preview is not downloaded again when the PDF is opened.
+export const MAX_LAZY_PDF_THUMBNAIL_BYTES = 20 * 1024 * 1024;
 /** How long one page may take before we give up. */
 const TIMEOUT_MS = 20_000;
 /** How many drawn pages of events are kept as object URLs. */
