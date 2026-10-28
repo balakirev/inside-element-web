@@ -252,6 +252,46 @@ describe("ContentMessages", () => {
             );
         });
 
+        it("Inside: sends a round video with its flag and the recorder's info, without compressing it", async () => {
+            vi.spyOn(document, "createElement").mockImplementation((tagName) => {
+                const element = createElement(tagName);
+                if (tagName === "video") {
+                    (<HTMLVideoElement>element).load = vi.fn();
+                    (<HTMLVideoElement>element).play = () => element.onloadeddata!(new Event("loadeddata"));
+                    (<HTMLVideoElement>element).pause = vi.fn();
+                    Object.defineProperty(element, "videoHeight", { get: () => 384 });
+                    Object.defineProperty(element, "videoWidth", { get: () => 384 });
+                    // A recorded WebM has no duration in its header.
+                    Object.defineProperty(element, "duration", { get: () => Infinity });
+                }
+                return element;
+            });
+
+            vi.mocked(client.uploadContent).mockResolvedValue({ content_uri: "mxc://server/round" });
+            const file = new File(["x"], "round-video.webm", { type: "video/webm" });
+            await contentMessages.sendContentToRoom(file, roomId, undefined, client, undefined, undefined, undefined, {
+                compress: false,
+                extraContent: { "estate.inside.lobby.round_video": true },
+                info: { duration: 7200, w: 384, h: 384 },
+            });
+            expect(client.sendMessage).toHaveBeenCalledWith(
+                roomId,
+                null,
+                expect.objectContaining({
+                    "url": "mxc://server/round",
+                    "msgtype": "m.video",
+                    "estate.inside.lobby.round_video": true,
+                    "info": expect.objectContaining({
+                        duration: 7200,
+                        w: 384,
+                        h: 384,
+                        size: 1,
+                        mimetype: "video/webm",
+                    }),
+                }),
+            );
+        });
+
         it("should use m.audio for audio files", async () => {
             vi.spyOn(document, "createElement").mockImplementation((tagName) => {
                 const element = createElement(tagName);
