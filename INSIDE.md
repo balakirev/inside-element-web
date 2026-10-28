@@ -63,7 +63,36 @@ the next upstream release with `git rebase --onto <new-tag> <old-tag> inside/mai
 | Thumbnail size for the bubble            | Our Synapse prepares thumbnails at upload (`dynamic_thumbnails: false`, sizes 320×240, 640×480, 800×600). An image asks for the smallest of them that is sharp in its bubble on this screen (320×240 for a normal bubble at 1×, 640×480 at 2×) instead of always 800×600, and on a high-DPI screen the original only when no size is sharp enough and the original is under 1 MB (`utils/media/serverThumbnail.ts`, `Media.getServerThumbnailOfSourceHttp`). |
 | Blurhash at once                        | An image with a blurhash shows it from the start, with a small spinner over it after a second (`placeholderBusy` of `ImageBodyView`); Element showed it only after 150 ms, and nothing before. |
 | Thumbnails loaded in advance            | After the initial sync and after reconnecting, the thumbnails of the latest 4 images, video posters and file pictures of the 8 rooms with the latest activity (the top of the room list, other than the open one) are loaded at idle time, two at a time, into the media cache; so is a new media message in a room other than the open one. Not with "low bandwidth" or Save-Data, not for encrypted media or media the user chose not to preview (`utils/media/InsideMediaPrefetcher.ts`). |
+| Round video messages                  | As in Telegram Desktop, the round button of the empty composer records voice or round video («кружки»): a tap (under 250 ms) swaps the mic and the camera with a turn-and-fade animation and the mode is kept on the device (`mx_inside_record_mode` in local storage); press and hold records in the current mode, release sends, sliding up 60 px locks (a voice message then goes on in Element's recording UI with stop, delete and send, as before; a locked round video turns the button into "send" and offers a delete button), sliding left 110 px or Escape cancels, Enter or Space start a locked recording; mouse and touch (`InsideRecordButton.tsx`, `utils/recordGesture.ts`). A round video shows the front camera live in a 280 px circle over the chat, with a white 60 s progress ring on its edge, a timer and "slide left to cancel" (`mx_InsideRoundRecorder`). It is the centre square of the camera, mirrored as the user sees themselves, drawn at 384×384 on a canvas and recorded with the microphone by MediaRecorder: MP4 H.264/AAC where the browser can (Chrome, Safari), WebM VP9/VP8+Opus otherwise, 1 Mbit/s video, 64 kbit/s audio, 30 fps; it stops and sends by itself at 60 s, and under 1 s is thrown away (`utils/RoundVideoRecorder.ts`). A refused permission, a missing or busy camera or a browser without MediaRecorder get a dialog in plain words. It is sent through the usual upload path (pending bubble, MSC2246 for 2 MB and more), not compressed again, as `m.video` with `info` `w`/`h`/`duration`/`size`/`mimetype`, the first frame as the thumbnail with its blurhash, and the flag **`"estate.inside.lobby.round_video": true`** in the content (`utils/sendRoundVideo.ts`; `sendContentToRoom` takes `extraContent` and `info` for it). Other clients show a normal video. In the room, thread and search timelines such an event is a 260 px circle with no bubble, background, border or shadow (`mx_EventTile_inside_roundVideo` on the tile, which overrides skin bubble styles; the line is laid out as a photo, so the time and ticks sit on a pill over the circle's bottom right edge; a group sender's name is a small pill above it) with the duration and a muted mark on a pill at the bottom left. It loops muted while at least 30 % of it is on screen (IntersectionObserver), not with reduced motion or "autoplay videos" off (then the first frame); a click plays it from the start with sound and a progress ring on its edge, a click again pauses, the end goes back to the loop; one round video plays with sound at a time and voice messages stop (`InsideRoundVideoBody.tsx`). Exports, the file panel and hidden media keep Element's video. |
 | Version script without `jq`            | Branch builds failed: the Docker builder image has no `jq`.                                                                                                                                                                                                                                                                                                               |
+
+## Notes
+
+**Round video messages, as Telegram does them** (checked in the open-source clients: Telegram
+Desktop `f985723`, Web K `13401b8`, Web A `6002824`). Only Telegram Desktop has the tap-to-switch
+button: a press arms a 120 ms timer and a release before it (plus 0.2 s of samples) is a tap that
+flips the app-wide `recordVideoMessages` setting
+([history_view_voice_record_bar.cpp](https://github.com/telegramdesktop/tdesktop/blob/f985723b552b30fe1c17d377d57f44e61a15a8c4/Telegram/SourceFiles/history/view/controls/history_view_voice_record_bar.cpp),
+[history_widget.cpp](https://github.com/telegramdesktop/tdesktop/blob/f985723b552b30fe1c17d377d57f44e61a15a8c4/Telegram/SourceFiles/history/history_widget.cpp),
+[core_settings.h](https://github.com/telegramdesktop/tdesktop/blob/f985723b552b30fe1c17d377d57f44e61a15a8c4/Telegram/SourceFiles/core/core_settings.h));
+hold records, release sends, sliding up by the lock's height locks, releasing outside the bar
+cancels. Web K and Web A pick voice or video from the button's context menu and record on a click
+([chatRecording.ts](https://github.com/morethanwords/tweb/blob/13401b8444b02ea706d61606356139f1f0192ad8/src/components/chat/recording/chatRecording.ts),
+[Composer.tsx](https://github.com/Ajaxy/telegram-tt/blob/6002824b6532f3d913997ce496d9ab5f9b86bc22/src/components/common/Composer.tsx)).
+All three stop at 60 s and record a 400 px square: Desktop H.264 2 Mbit/s + AAC 64 kbit/s in MP4
+([round_video_recorder.cpp](https://github.com/telegramdesktop/tdesktop/blob/f985723b552b30fe1c17d377d57f44e61a15a8c4/Telegram/SourceFiles/ui/controls/round_video_recorder.cpp)),
+the web clients 1.2 Mbit/s, `video/mp4;codecs=avc1.42E01E,mp4a.40.2` first, Web K falling back to
+WebM ([nativeVideoRecorder.ts](https://github.com/morethanwords/tweb/blob/13401b8444b02ea706d61606356139f1f0192ad8/src/helpers/videoRecorder/nativeVideoRecorder.ts),
+[config.ts](https://github.com/Ajaxy/telegram-tt/blob/6002824b6532f3d913997ce496d9ab5f9b86bc22/src/config.ts)); the
+Android client uses 384 px. The recording is a 300–360 px circle with a white progress ring. In
+the chat a round video is 240 px (Web K 240/280), loops muted while visible, plays with sound
+through the shared player on a tap (one at a time) with a progress ring, the label counts down,
+and the end goes back to the start
+([RoundVideo.tsx](https://github.com/Ajaxy/telegram-tt/blob/6002824b6532f3d913997ce496d9ab5f9b86bc22/src/components/middle/message/RoundVideo.tsx),
+[wrappers/video.ts](https://github.com/morethanwords/tweb/blob/13401b8444b02ea706d61606356139f1f0192ad8/src/components/wrappers/video.ts),
+[history_view_gif.cpp](https://github.com/telegramdesktop/tdesktop/blob/f985723b552b30fe1c17d377d57f44e61a15a8c4/Telegram/SourceFiles/history/view/media/history_view_gif.cpp)).
+Telegram marks it with `documentAttributeVideo.round_message`; Matrix has no such field, hence our
+content flag.
 
 ## Build
 
