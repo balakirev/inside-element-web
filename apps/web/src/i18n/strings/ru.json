@@ -3832,6 +3832,7 @@
         "keep_caption_button": "Продолжить",
         "not_image": "Выбранный вами файл не является изображением.",
         "pending_compressing": "Сжатие…",
+        "pending_compressing_percent": "Сжатие… %(percent)s",
         "pending_failed": "Не отправлено",
         "pending_progress": "%(loaded)s из %(total)s",
         "send_original": "Без сжатия",

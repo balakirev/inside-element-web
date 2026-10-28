@@ -3862,6 +3862,7 @@
         "keep_caption_button": "Keep editing",
         "not_image": "The file you have chosen is not a valid image file.",
         "pending_compressing": "Compressing…",
+        "pending_compressing_percent": "Compressing… %(percent)s",
         "pending_failed": "Not sent",
         "pending_progress": "%(loaded)s of %(total)s",
         "send_original": "No compression",

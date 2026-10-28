@@ -37,6 +37,7 @@ import dispatcher from "./dispatcher/dispatcher";
 import { Action } from "./dispatcher/actions";
 import { type UploadFinishedPayload } from "./dispatcher/payloads/UploadPayload";
 import { compressPhotoForUpload } from "./utils/compressPhoto";
+import { compressVideoForUpload, isCompressibleVideo } from "./utils/compressVideo";
 import SettingsStore from "./settings/SettingsStore";
 
 vi.mock("matrix-encrypt-attachment", () => ({ default: { encryptAttachment: vi.fn().mockResolvedValue({}) } }));
@@ -57,6 +58,11 @@ vi.mock("./utils/local-room", () => ({
 vi.mock("./utils/compressPhoto", async (importOriginal) => ({
     ...(await importOriginal<typeof import("./utils/compressPhoto")>()),
     compressPhotoForUpload: vi.fn(async (file: File) => file),
+}));
+vi.mock("./utils/compressVideo", async (importOriginal) => ({
+    ...(await importOriginal<typeof import("./utils/compressVideo")>()),
+    isCompressibleVideo: vi.fn(() => false),
+    compressVideoForUpload: vi.fn(async (file: File) => file),
 }));
 
 const createElement = document.createElement.bind(document);
@@ -575,6 +581,63 @@ describe("ContentMessages", () => {
                 expect(compressPhotoForUpload).not.toHaveBeenCalled();
                 expect(client.uploadContent).toHaveBeenCalledWith(original, expect.anything());
                 settingSpy.mockRestore();
+            });
+
+            it("compresses a video first, following its progress, and sends the result", async () => {
+                const compressed = new File([new Uint8Array(3000)], "clip.mp4", { type: "video/mp4" });
+                let seen: Array<[boolean, number | undefined]> = [];
+                vi.mocked(isCompressibleVideo).mockReturnValueOnce(true);
+                vi.mocked(compressVideoForUpload).mockImplementationOnce(async (_file, options) => {
+                    const [upload] = contentMessages.getCurrentUploads();
+                    options!.onProgress!(0.4);
+                    seen.push([upload.compressing, upload.compressionProgress]);
+                    expect(options!.signal).toBe(upload.abortController.signal);
+                    return compressed;
+                });
+                vi.mocked(client.uploadContent).mockResolvedValue({ content_uri: "mxc://server/file" });
+                vi.spyOn(document, "createElement").mockImplementation((tagName) => {
+                    const element = createElement(tagName);
+                    if (tagName === "video") {
+                        (<HTMLVideoElement>element).load = vi.fn();
+                        (<HTMLVideoElement>element).play = () => element.onloadeddata!(new Event("loadeddata"));
+                        (<HTMLVideoElement>element).pause = vi.fn();
+                        Object.defineProperty(element, "videoWidth", { get: () => 1280 });
+                        Object.defineProperty(element, "videoHeight", { get: () => 720 });
+                        Object.defineProperty(element, "duration", { get: () => 20 });
+                    }
+                    return element;
+                });
+                const original = new File([new Uint8Array(9000)], "clip.mov", { type: "video/quicktime" });
+
+                await contentMessages.sendContentToRoom(original, roomId, undefined, client, undefined);
+
+                expect(seen).toEqual([[true, 0.4]]);
+                expect(client.uploadContent).toHaveBeenCalledWith(compressed, expect.anything());
+                expect(client.sendMessage).toHaveBeenCalledWith(
+                    roomId,
+                    null,
+                    expect.objectContaining({
+                        body: "clip.mp4",
+                        msgtype: "m.video",
+                        info: expect.objectContaining({ size: 3000, mimetype: "video/mp4", w: 1280, h: 720 }),
+                    }),
+                );
+                seen = [];
+            });
+
+            it("sends nothing when cancelled while the video is compressed", async () => {
+                vi.mocked(isCompressibleVideo).mockReturnValueOnce(true);
+                vi.mocked(compressVideoForUpload).mockImplementationOnce(async (file) => {
+                    contentMessages.cancelUpload(contentMessages.getCurrentUploads()[0]);
+                    return file;
+                });
+                const original = new File([new Uint8Array(9000)], "clip.mov", { type: "video/quicktime" });
+
+                await contentMessages.sendContentToRoom(original, roomId, undefined, client, undefined);
+
+                expect(client.uploadContent).not.toHaveBeenCalled();
+                expect(client.sendMessage).not.toHaveBeenCalled();
+                expect(contentMessages.getFailedUploads(roomId)).toEqual([]);
             });
 
             it("forgets a failed upload on delete", async () => {

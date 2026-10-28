@@ -42,6 +42,10 @@ export class RoomUpload {
      * Inside: set while the photo or video is being compressed, before its upload starts.
      */
     public compressing = false;
+    /**
+     * Inside: the share of a video's compression done, 0 to 1, while it is compressed.
+     */
+    public compressionProgress?: number;
 
     public constructor(
         public readonly roomId: string,

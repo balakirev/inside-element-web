@@ -64,6 +64,7 @@ import { cacheUploadedMedia } from "./utils/UploadedMediaCache";
 import { isPdfFile, pdfThumbnailForFile } from "./utils/pdfThumbnail";
 import { isCompressiblePhoto } from "./utils/photoCompression";
 import { compressPhotoForUpload } from "./utils/compressPhoto";
+import { compressVideoForUpload, isCompressibleVideo } from "./utils/compressVideo";
 
 // scraped out of a macOS hidpi (5660ppm) screenshot png
 //                  5669 px (x-axis)      , 5669 px (y-axis)      , per metre
@@ -266,33 +267,26 @@ function loadVideoElement(videoFile: File): Promise<HTMLVideoElement> {
         video.playsInline = true;
         video.muted = true;
 
-        const reader = new FileReader();
+        // Inside: an object URL rather than the whole file read into a data URL (53 MB of text for a
+        // 40 MB video). Chrome chokes on quicktime but likes mp4, so a .mov is handed over as mp4.
+        const blob = videoFile.type === "video/quicktime" ? new Blob([videoFile], { type: "video/mp4" }) : videoFile;
+        const objectUrl = URL.createObjectURL(blob);
 
-        reader.onload = function (ev): void {
-            // Wait until we have enough data to thumbnail the first frame.
-            video.onloadeddata = async function (): Promise<void> {
-                resolve(video);
-                video.pause();
-            };
-            video.onerror = function (e): void {
-                reject(e);
-            };
-
-            let dataUrl = ev.target?.result as string;
-            // Chrome chokes on quicktime but likes mp4, and `file.type` is
-            // read only, so do this horrible hack to unbreak quicktime
-            if (dataUrl?.startsWith("data:video/quicktime;")) {
-                dataUrl = dataUrl.replace("data:video/quicktime;", "data:video/mp4;");
-            }
-
-            video.src = dataUrl;
-            video.load();
-            void video.play();
+        // Wait until we have enough data to thumbnail the first frame.
+        video.onloadeddata = async function (): Promise<void> {
+            resolve(video);
+            video.pause();
+            // The first frame stays drawable once loaded.
+            URL.revokeObjectURL(objectUrl);
         };
-        reader.onerror = function (e): void {
+        video.onerror = function (e): void {
+            URL.revokeObjectURL(objectUrl);
             reject(e);
         };
-        reader.readAsDataURL(videoFile);
+
+        video.src = objectUrl;
+        video.load();
+        void video.play();
     });
 }
 
@@ -729,15 +723,24 @@ export default class ContentMessages {
     }
 
     /**
-     * Inside: a smaller copy of a photo for sending, or the file itself. The pending bubble shows
-     * "Compressing…" meanwhile.
+     * Inside: a smaller copy of a photo or a video for sending, or the file itself. The pending
+     * bubble shows "Compressing…" meanwhile, with the share done for videos.
      */
     private async compressForUpload(file: File, upload: RoomUpload): Promise<File> {
-        if (!isCompressiblePhoto(file)) return file;
+        const photo = isCompressiblePhoto(file);
+        if (!photo && !isCompressibleVideo(file)) return file;
         upload.compressing = true;
         dis.dispatch<UploadProgressPayload>({ action: Action.UploadProgress, upload });
         try {
-            const compressed = await compressPhotoForUpload(file);
+            const compressed = photo
+                ? await compressPhotoForUpload(file)
+                : await compressVideoForUpload(file, {
+                      signal: upload.abortController.signal,
+                      onProgress: (progress) => {
+                          upload.compressionProgress = progress;
+                          dis.dispatch<UploadProgressPayload>({ action: Action.UploadProgress, upload });
+                      },
+                  });
             if (compressed !== file) {
                 upload.file = compressed;
                 upload.fileSize = compressed.size;
@@ -745,6 +748,7 @@ export default class ContentMessages {
             return compressed;
         } finally {
             upload.compressing = false;
+            upload.compressionProgress = undefined;
             dis.dispatch<UploadProgressPayload>({ action: Action.UploadProgress, upload });
         }
     }

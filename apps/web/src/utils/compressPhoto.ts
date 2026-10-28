@@ -15,6 +15,7 @@ import { logger } from "matrix-js-sdk/src/logger";
 
 import { blobIsAnimated } from "./Image";
 import photoCompressionWorkerFactory from "../workers/photoCompressionWorkerFactory";
+import { isCompressibleVideo } from "./compressVideo";
 import {
     compressedFileName,
     compressPhotoBlob,
@@ -88,9 +89,9 @@ export async function compressPhotoForUpload(file: File, options: CompressPhotoO
 }
 
 /**
- * Whether the file is one that {@link compressPhotoForUpload} may make smaller, so that the upload
- * dialog offers to send it as it is.
+ * Whether the file is a photo or a video that may be made smaller before sending, so that the
+ * upload dialog offers to send it as it is.
  */
 export function mayCompressForUpload(file: File): boolean {
-    return isCompressiblePhoto(file);
+    return isCompressiblePhoto(file) || isCompressibleVideo(file);
 }

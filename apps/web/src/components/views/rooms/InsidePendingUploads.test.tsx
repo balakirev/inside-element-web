@@ -94,6 +94,18 @@ describe("InsidePendingUploads", () => {
         expect(container.querySelector(".mx_InsidePendingUpload_progressText")).toHaveTextContent("Compressing…");
     });
 
+    it("follows the compression of a video on the ring", () => {
+        const upload = makeUpload(room, "clip.mov", "video/quicktime", 40 * 1024 * 1024, 0);
+        upload.compressing = true;
+        upload.compressionProgress = 0.45;
+        current = [upload];
+
+        const { container } = renderUploads();
+
+        expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "45");
+        expect(container.querySelector(".mx_InsidePendingUpload_progressText")).toHaveTextContent("Compressing… 45%");
+    });
+
     it("shows a video upload with its first frame", () => {
         current = [makeUpload(room, "clip.mp4", "video/mp4", 2048, 0)];
 
