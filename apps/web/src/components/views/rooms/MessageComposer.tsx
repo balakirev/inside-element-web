@@ -52,7 +52,7 @@ import { type ComposerInsertPayload } from "../../../dispatcher/payloads/Compose
 import { Action } from "../../../dispatcher/actions";
 import type EditorModel from "../../../editor/model";
 import UIStore, { UI_EVENTS } from "../../../stores/UIStore";
-import RoomContext from "../../../contexts/RoomContext";
+import RoomContext, { TimelineRenderingType } from "../../../contexts/RoomContext";
 import { type SettingUpdatedPayload } from "../../../dispatcher/payloads/SettingUpdatedPayload";
 import MessageComposerButtons from "./MessageComposerButtons";
 import AccessibleButton, { type ButtonEvent } from "../elements/AccessibleButton";
@@ -756,8 +756,13 @@ export class MessageComposer extends React.Component<IProps, IState> {
 
         const showSendButton =
             canSendMessages && !editState && (!this.state.isComposerEmpty || this.state.haveRecording);
-        // Recording does not work well in narrow mode (see MessageComposerButtons), so no mic there.
-        const showVoiceMessageButton = canSendMessages && !editState && !showSendButton && !this.context.narrow;
+        // Recording does not work well in narrow mode (see MessageComposerButtons), so no mic there,
+        // except in the thread panel, which is always narrow; the Inside skin makes room for the recording.
+        const showVoiceMessageButton =
+            canSendMessages &&
+            !editState &&
+            !showSendButton &&
+            (!this.context.narrow || this.context.timelineRenderingType === TimelineRenderingType.Thread);
 
         const classes = classNames({
             "mx_MessageComposer": true,
@@ -765,6 +770,7 @@ export class MessageComposer extends React.Component<IProps, IState> {
             "mx_MessageComposer_e2eStatus": leftIcon,
             "mx_MessageComposer_wysiwyg": this.state.isWysiwygLabEnabled,
             "mx_MessageComposer--editing": !!editState,
+            "mx_MessageComposer--recording": this.state.haveRecording,
         });
 
         return (

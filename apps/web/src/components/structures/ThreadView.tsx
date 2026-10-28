@@ -6,7 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR GPL-3.0-only OR LicenseRef-Element-Com
 Please see LICENSE files in the repository root for full details.
 */
 
-import React, { type JSX, createRef, type KeyboardEvent } from "react";
+import React, { type JSX, createRef, type KeyboardEvent, useReducer } from "react";
 import {
     type Thread,
     THREAD_RELATION_TYPE,
@@ -52,6 +52,8 @@ import { type ThreadPayload } from "../../dispatcher/payloads/ThreadPayload";
 import { ScopedRoomContextProvider } from "../../contexts/ScopedRoomContext.tsx";
 import { RoomUploadContextProvider } from "../../viewmodels/room/RoomUploadViewModel.tsx";
 import { EventPresentationContextProvider } from "../../utils/EventPresentationContextProvider";
+import { useTypedEventEmitter } from "../../hooks/useEventEmitter";
+import { useRoomName } from "../../hooks/useRoomName";
 
 interface IProps {
     room: Room;
@@ -72,6 +74,28 @@ interface IState {
     editState?: EditorStateTransfer;
     replyToEvent?: MatrixEvent;
     narrow: boolean;
+}
+
+/**
+ * Inside: the line under the thread heading, "<room name> · 3 replies".
+ */
+export function ThreadViewSubtitle({ room, thread }: Readonly<{ room: Room; thread?: Thread }>): JSX.Element {
+    const roomName = useRoomName(room);
+    // Re-render when the thread changes; the count itself is read from the thread.
+    const [, onThreadChange] = useReducer((n: number) => n + 1, 0);
+    useTypedEventEmitter(thread, ThreadEvent.Update, onThreadChange);
+    useTypedEventEmitter(thread, ThreadEvent.NewReply, onThreadChange);
+    const replyCount = thread?.length ?? 0;
+
+    return (
+        <div className="mx_ThreadView_inside_subtitle">
+            <span className="mx_ThreadView_inside_subtitle_room">{roomName}</span>
+            {" · "}
+            <span className="mx_ThreadView_inside_subtitle_count">
+                {_t("threads|count_of_reply", { count: replyCount })}
+            </span>
+        </div>
+    );
 }
 
 export default class ThreadView extends React.Component<IProps, IState> {
@@ -349,9 +373,12 @@ export default class ThreadView extends React.Component<IProps, IState> {
     private renderThreadViewHeader = (): JSX.Element => {
         return (
             <div className="mx_BaseCard_header_title">
-                <Heading size="4" className="mx_BaseCard_header_title_heading">
-                    {_t("common|thread")}
-                </Heading>
+                <div className="mx_ThreadView_inside_title">
+                    <Heading size="4" className="mx_BaseCard_header_title_heading">
+                        {_t("common|thread")}
+                    </Heading>
+                    <ThreadViewSubtitle room={this.props.room} thread={this.state.thread} />
+                </div>
                 <ThreadListContextMenu mxEvent={this.props.mxEvent} permalinkCreator={this.props.permalinkCreator} />
             </div>
         );

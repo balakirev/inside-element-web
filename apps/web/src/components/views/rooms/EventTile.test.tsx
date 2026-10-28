@@ -801,6 +801,45 @@ describe("EventTile", () => {
         });
     });
 
+    describe("Inside thread summary", () => {
+        beforeEach(() => {
+            vi.spyOn(client, "supportsThreads").mockReturnValue(true);
+        });
+
+        it("stacks the avatars of the reply participants in the thread summary", async () => {
+            const { rootEvent } = mkThread({
+                room,
+                client,
+                authorId: "@alice:example.org",
+                participantUserIds: ["@bob:example.org", "@carol:example.org"],
+                length: 4, // root + 3 answers
+            });
+            const { container } = getComponent({ mxEvent: rootEvent }, TimelineRenderingType.Room);
+
+            await waitFor(() => expect(container.querySelector(".mx_ThreadSummary_inside_avatars")).not.toBeNull());
+            const avatars = container.querySelectorAll(
+                ".mx_ThreadSummary_inside_avatars .mx_ThreadSummary_inside_avatar",
+            );
+            expect(avatars).toHaveLength(2);
+            expect(screen.getByTestId("thread-summary")).toHaveTextContent("3 replies");
+        });
+
+        it("shows the reply count with the word in the threads list", async () => {
+            const { rootEvent } = mkThread({
+                room,
+                client,
+                authorId: "@alice:example.org",
+                participantUserIds: ["@alice:example.org"],
+                length: 3, // root + 2 answers
+            });
+            const { container } = getComponent({ mxEvent: rootEvent }, TimelineRenderingType.ThreadsList);
+
+            await waitFor(() =>
+                expect(container.querySelector(".mx_ThreadPanel_replies_amount")).toHaveTextContent("2 replies"),
+            );
+        });
+    });
+
     describe("search thread info", () => {
         it("renders search thread info for events in a thread", () => {
             const threadEvent = makeThreadReplyEvent(room.roomId);

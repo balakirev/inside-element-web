@@ -8,7 +8,7 @@ Please see LICENSE files in the repository root for full details.
 
 import React, { type ReactNode } from "react";
 import { MediaBody } from "@element-hq/web-shared-components";
-import { type Room, type IEventRelation, type MatrixEvent } from "matrix-js-sdk/src/matrix";
+import { type Room, type IEventRelation, type MatrixEvent, THREAD_RELATION_TYPE } from "matrix-js-sdk/src/matrix";
 import { logger } from "matrix-js-sdk/src/logger";
 import { DeleteIcon, StopSolidIcon } from "@vector-im/compound-design-tokens/assets/web/icons";
 
@@ -132,10 +132,13 @@ export default class VoiceRecordComposerTile extends React.PureComponent<IProps,
                 });
             }
 
+            // Inside: name the thread as the text composer does, so the local echo joins the thread at once.
+            const threadId = relation?.rel_type === THREAD_RELATION_TYPE.name ? (relation.event_id ?? null) : null;
+
             // we don't care if it fails, it'll get queued.
             void doMaybeLocalRoomAction(
                 this.props.room.roomId,
-                (actualRoomId: string) => MatrixClientPeg.safeGet().sendMessage(actualRoomId, content),
+                (actualRoomId: string) => MatrixClientPeg.safeGet().sendMessage(actualRoomId, threadId, content),
                 this.props.room.client,
             );
         } catch (e) {

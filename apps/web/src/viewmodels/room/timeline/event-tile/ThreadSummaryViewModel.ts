@@ -20,6 +20,7 @@ import {
     RoomStateEvent,
     type Thread,
     ThreadEvent,
+    THREAD_RELATION_TYPE,
 } from "matrix-js-sdk/src/matrix";
 import { logger } from "matrix-js-sdk/src/logger";
 import {
@@ -48,6 +49,8 @@ import {
 } from "./EventPreviewUtils";
 
 const AVATAR_SIZE_PX = 24;
+/** Inside: how many reply participants the thread summary shows as an avatar stack. */
+const MAX_PARTICIPANT_AVATARS = 3;
 const THREAD_PROFILE_CONTEXTS = new Set<TimelineRenderingType>([
     TimelineRenderingType.Thread,
     TimelineRenderingType.ThreadsList,
@@ -297,14 +300,16 @@ export class ThreadMessagePreviewViewModel
 
     private computeBaseReplySnapshot(
         mxEvent: MatrixEvent,
-    ): Pick<ThreadMessagePreviewViewSnapshot, "avatar" | "senderName" | "showDisplayName"> {
+    ): Pick<ThreadMessagePreviewViewSnapshot, "avatar" | "participantAvatars" | "senderName" | "showDisplayName"> {
         const member = ThreadMessagePreviewViewModel.getDisplayMember(this.props, mxEvent);
         const sender = mxEvent.getSender() ?? "";
         const senderName = member?.name ?? sender;
         const avatar = ThreadMessagePreviewViewModel.computeAvatar(this.props, mxEvent, member);
+        const participantAvatars = ThreadMessagePreviewViewModel.computeParticipantAvatars(this.props, mxEvent);
 
         return {
             avatar: keepIfSame(this.snapshot.current.avatar, avatar),
+            participantAvatars: keepIfSame(this.snapshot.current.participantAvatars, participantAvatars),
             senderName,
             showDisplayName: this.props.showDisplayName,
         };
@@ -318,7 +323,10 @@ export class ThreadMessagePreviewViewModel
     }
 
     private setDecryptionFailure(
-        baseSnapshot: Pick<ThreadMessagePreviewViewSnapshot, "avatar" | "senderName" | "showDisplayName">,
+        baseSnapshot: Pick<
+            ThreadMessagePreviewViewSnapshot,
+            "avatar" | "participantAvatars" | "senderName" | "showDisplayName"
+        >,
     ): void {
         const label = _t("timeline|decryption_failure|unable_to_decrypt");
         this.snapshot.merge({
@@ -333,6 +341,7 @@ export class ThreadMessagePreviewViewModel
         this.snapshot.merge({
             isVisible: false,
             avatar: undefined,
+            participantAvatars: undefined,
             senderName: undefined,
             previewContent: undefined,
             previewTooltip: undefined,
@@ -371,6 +380,34 @@ export class ThreadMessagePreviewViewModel
 
     private static getProfileUserId(mxEvent?: MatrixEvent): string {
         return mxEvent?.sender?.userId ?? mxEvent?.getSender() ?? "";
+    }
+
+    /**
+     * Inside: avatars of up to {@link MAX_PARTICIPANT_AVATARS} distinct senders of the thread's replies,
+     * the latest replier last. Only the loaded part of the thread is known, so the latest reply's sender
+     * is always included even before the thread timeline has been fetched.
+     */
+    private static computeParticipantAvatars(
+        props: ThreadMessagePreviewViewModelProps,
+        lastReply: MatrixEvent,
+    ): ThreadMessagePreviewAvatar[] {
+        const latestEventBySender = new Map<string, MatrixEvent>();
+        const addSender = (mxEvent: MatrixEvent): void => {
+            const sender = mxEvent.getSender();
+            if (sender && !latestEventBySender.has(sender)) latestEventBySender.set(sender, mxEvent);
+        };
+
+        addSender(lastReply);
+        const events = props.thread.events ?? [];
+        for (let i = events.length - 1; i >= 0 && latestEventBySender.size < MAX_PARTICIPANT_AVATARS; i--) {
+            const mxEvent = events[i];
+            if (mxEvent.isRelation(THREAD_RELATION_TYPE.name) && !mxEvent.isRedacted()) addSender(mxEvent);
+        }
+
+        return [...latestEventBySender.values()].reverse().map((mxEvent) => {
+            const member = ThreadMessagePreviewViewModel.getDisplayMember(props, mxEvent);
+            return ThreadMessagePreviewViewModel.computeAvatar(props, mxEvent, member);
+        });
     }
 
     private static computeAvatar(
@@ -601,7 +638,8 @@ export class ThreadSummaryViewModel
 
         return {
             isVisible: count > 0,
-            replyCountLabel: props.narrow ? String(count) : _t("threads|count_of_reply", { count }),
+            // Inside: the reply count always carries the word ("3 replies"), also in the narrow layout.
+            replyCountLabel: _t("threads|count_of_reply", { count }),
             narrow: props.narrow,
         };
     }
