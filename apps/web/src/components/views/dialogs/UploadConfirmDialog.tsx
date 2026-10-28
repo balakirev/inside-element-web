@@ -85,6 +85,9 @@ function computePreviewContent(mimeType: string, fileName: string, objectUrl?: s
  * view-model: it is revoked when the view-model is disposed, i.e. when the dialog unmounts.
  */
 class UploadPreviewViewModel extends MediaPreviewGroupViewModel {
+    /** Inside: the preview URL, for the dialog to draw images and videos itself. */
+    public readonly objectUrl?: string;
+
     public constructor(file: File) {
         const mimeType = file.type;
         const objectUrl = formatIsPreviewable(mimeType) ? URL.createObjectURL(file) : undefined;
@@ -98,9 +101,45 @@ class UploadPreviewViewModel extends MediaPreviewGroupViewModel {
         };
 
         super({ entries: [preview] });
+        this.objectUrl = objectUrl;
 
         if (objectUrl !== undefined) this.disposables.track(() => URL.revokeObjectURL(objectUrl));
     }
+}
+
+interface MediaPreviewProps {
+    file: File;
+    url: string;
+    onError: () => void;
+}
+
+/**
+ * Inside: an image or a video is shown on its own, with the name and the size as one quiet line
+ * under it, as other messengers do; the file-type tile is only for files without a picture.
+ */
+function InsideMediaPreview({ file, url, onError }: MediaPreviewProps): JSX.Element {
+    const media = file.type.startsWith("image/") ? (
+        <img src={url} alt={file.name} onError={onError} />
+    ) : (
+        // Uploaded media carries no caption track, but the empty element is still required for a11y.
+        <video src={url} controls preload="metadata" onError={onError}>
+            <track kind="captions" />
+        </video>
+    );
+
+    return (
+        <div className="mx_UploadConfirmDialog_inside_media">
+            <div className="mx_UploadConfirmDialog_inside_mediaFrame">{media}</div>
+            <div className="mx_UploadConfirmDialog_inside_fileMeta">
+                <span className="mx_UploadConfirmDialog_inside_fileName">{file.name}</span>
+                <span className="mx_UploadConfirmDialog_inside_fileSize">{fileSize(file.size)}</span>
+            </div>
+        </div>
+    );
+}
+
+function hasPicture(file: File): boolean {
+    return file.type.startsWith("image/") || file.type.startsWith("video/");
 }
 
 export default function UploadConfirmDialog({
@@ -120,6 +159,11 @@ export default function UploadConfirmDialog({
     } else {
         title = _t("upload_file|title");
     }
+
+    // Inside: a picture the browser cannot draw falls back to the file tile.
+    const [mediaFailed, setMediaFailed] = useState(false);
+    const onMediaError = useCallback((): void => setMediaFailed(true), []);
+    const showMedia = hasPicture(file) && vm.objectUrl !== undefined && !mediaFailed;
 
     const [caption, setCaption] = useState("");
     const trimmedCaption = caption.trim();
@@ -167,6 +211,24 @@ export default function UploadConfirmDialog({
         onFinished(true, true, trimmedCaption || undefined);
     }, [onFinished, trimmedCaption]);
 
+    // Inside: the caption field gets the focus however the dialog was opened (attach button, drag
+    // and drop, paste). `autoFocus` alone loses it when a dialog closing just before (the spinner
+    // while the media config loads, the previous file's dialog) hands the focus back to the composer
+    // after this one has mounted.
+    const captionRef = useRef<HTMLTextAreaElement>(null);
+    useEffect(() => {
+        const focusCaption = (): void => {
+            const textarea = captionRef.current;
+            if (textarea && document.activeElement !== textarea) textarea.focus();
+        };
+        const timer = window.setTimeout(focusCaption, 0);
+        const frame = window.requestAnimationFrame(focusCaption);
+        return () => {
+            window.clearTimeout(timer);
+            window.cancelAnimationFrame(frame);
+        };
+    }, []);
+
     const onCaptionKeyDown = useCallback(
         (ev: KeyboardEvent<HTMLTextAreaElement>): void => {
             // Enter sends, Shift+Enter starts a new line; ignore Enter that confirms an IME composition.
@@ -199,11 +261,16 @@ export default function UploadConfirmDialog({
             <div id="mx_Dialog_content">
                 <div className="mx_UploadConfirmDialog_previewOuter">
                     <div className="mx_UploadConfirmDialog_previewInner">
-                        <MediaPreviewGroupPreview vm={vm} />
+                        {showMedia ? (
+                            <InsideMediaPreview file={file} url={vm.objectUrl} onError={onMediaError} />
+                        ) : (
+                            <MediaPreviewGroupPreview vm={vm} />
+                        )}
                     </div>
                 </div>
                 <textarea
-                    className="mx_UploadConfirmDialog_caption"
+                    ref={captionRef}
+                    className="mx_UploadConfirmDialog_caption mx_UploadConfirmDialog_inside_caption"
                     aria-label={_t("upload_file|caption_label")}
                     placeholder={_t("upload_file|caption_placeholder")}
                     value={caption}
@@ -212,6 +279,7 @@ export default function UploadConfirmDialog({
                     rows={1}
                     // The caption is the natural next step after picking a file, as in other messengers.
                     autoFocus={true}
+                    data-autofocus={true}
                 />
             </div>
 
