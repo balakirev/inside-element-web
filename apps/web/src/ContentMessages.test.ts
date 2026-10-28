@@ -38,6 +38,7 @@ import { Action } from "./dispatcher/actions";
 import { type UploadFinishedPayload } from "./dispatcher/payloads/UploadPayload";
 import { compressPhotoForUpload } from "./utils/compressPhoto";
 import { compressVideoForUpload, isCompressibleVideo } from "./utils/compressVideo";
+import { createMediaUri, serverSupportsAsyncUploads, uploadToMediaUri } from "./utils/asyncMediaUpload";
 import SettingsStore from "./settings/SettingsStore";
 
 vi.mock("matrix-encrypt-attachment", () => ({ default: { encryptAttachment: vi.fn().mockResolvedValue({}) } }));
@@ -58,6 +59,12 @@ vi.mock("./utils/local-room", () => ({
 vi.mock("./utils/compressPhoto", async (importOriginal) => ({
     ...(await importOriginal<typeof import("./utils/compressPhoto")>()),
     compressPhotoForUpload: vi.fn(async (file: File) => file),
+}));
+// Inside: the classic upload unless a test lets the server take asynchronous ones.
+vi.mock("./utils/asyncMediaUpload", () => ({
+    serverSupportsAsyncUploads: vi.fn(async () => false),
+    createMediaUri: vi.fn(),
+    uploadToMediaUri: vi.fn(),
 }));
 vi.mock("./utils/compressVideo", async (importOriginal) => ({
     ...(await importOriginal<typeof import("./utils/compressVideo")>()),
@@ -620,7 +627,7 @@ describe("ContentMessages", () => {
                     undefined,
                     undefined,
                     undefined,
-                    false,
+                    { compress: false },
                 );
                 expect(compressPhotoForUpload).not.toHaveBeenCalled();
 
@@ -703,6 +710,222 @@ describe("ContentMessages", () => {
                 expect(dispatchSpy).toHaveBeenCalledWith({ action: Action.UploadCanceled, upload: failed });
                 dispatchSpy.mockRestore();
             });
+        });
+    });
+
+    describe("Inside: asynchronous upload (MSC2246)", () => {
+        const roomId = "!roomId:server";
+        let put: PromiseWithResolvers<void>;
+
+        beforeEach(() => {
+            vi.mocked(doMaybeLocalRoomAction).mockImplementation(
+                <T>(roomId: string, fn: (actualRoomId: string) => Promise<T>) => fn(roomId),
+            );
+            vi.mocked(BlurhashEncoder.instance.getBlurhash).mockResolvedValue("blurhashstring");
+            Object.defineProperty(global.Image.prototype, "src", {
+                configurable: true,
+                set() {
+                    window.setTimeout(() => this.onload());
+                },
+            });
+            Object.defineProperty(global.Image.prototype, "height", { configurable: true, get: () => 600 });
+            Object.defineProperty(global.Image.prototype, "width", { configurable: true, get: () => 800 });
+            vi.mocked(serverSupportsAsyncUploads).mockResolvedValue(true);
+            vi.mocked(createMediaUri).mockResolvedValue({ contentUri: "mxc://server/reserved" });
+            put = Promise.withResolvers<void>();
+            vi.mocked(uploadToMediaUri).mockReset().mockReturnValue(put.promise);
+            vi.mocked(client.uploadContent).mockResolvedValue({ content_uri: "mxc://server/thumb" });
+            vi.mocked(client.sendMessage).mockResolvedValue({ event_id: "$sent" });
+            vi.mocked(client.redactEvent).mockResolvedValue({ event_id: "$redaction" });
+        });
+
+        afterEach(() => {
+            vi.mocked(serverSupportsAsyncUploads).mockResolvedValue(false);
+        });
+
+        // Only files of 2 MB and more go up after their event.
+        function big(file: File): File {
+            Object.defineProperty(file, "size", { value: 3 * 1024 * 1024 });
+            return file;
+        }
+
+        function mediaEvent(url: string): ReturnType<typeof mkEvent> {
+            return mkEvent({
+                type: "m.room.message",
+                user: client.getSafeUserId(),
+                room: roomId,
+                content: { msgtype: "m.image", body: "photo.webp", url },
+                event: true,
+            });
+        }
+
+        it("sends the event with thumbnail and blurhash before the file, then puts the file", async () => {
+            const file = big(new File([new Uint8Array(100)], "photo.webp", { type: "image/webp" }));
+            const dispatchSpy = vi.spyOn(dispatcher, "dispatch");
+
+            const sent = contentMessages.sendContentToRoom(file, roomId, undefined, client, undefined);
+            await vi.waitFor(() => expect(client.sendMessage).toHaveBeenCalled());
+
+            expect(client.sendMessage).toHaveBeenCalledWith(
+                roomId,
+                null,
+                expect.objectContaining({
+                    url: "mxc://server/reserved",
+                    info: expect.objectContaining({
+                        "thumbnail_url": "mxc://server/thumb",
+                        "xyz.amorgan.blurhash": "blurhashstring",
+                        "w": 800,
+                        "h": 600,
+                        "size": 3 * 1024 * 1024,
+                    }),
+                }),
+            );
+            // Only the thumbnail went the classic way; the file goes to the reserved URI.
+            expect(client.uploadContent).toHaveBeenCalledTimes(1);
+            expect(uploadToMediaUri).toHaveBeenCalledWith(
+                client,
+                "mxc://server/reserved",
+                file,
+                expect.objectContaining({ name: "photo.webp" }),
+            );
+            // The sender's own tile has the bytes, and the timeline shows the bubble in its place.
+            expect(queryUploadedMediaCache("mxc://server/reserved")).toBe(file);
+            const [upload] = contentMessages.getCurrentUploads();
+            expect(upload.awaitingMedia).toBe(true);
+            expect(contentMessages.isMediaPendingFor(mediaEvent("mxc://server/reserved"))).toBe(true);
+            expect(contentMessages.isMediaPendingFor(mediaEvent("mxc://server/other"))).toBe(false);
+            expect(dispatchSpy).not.toHaveBeenCalledWith(expect.objectContaining({ action: Action.UploadFinished }));
+
+            put.resolve();
+            await sent;
+
+            expect(upload.awaitingMedia).toBe(false);
+            expect(contentMessages.isMediaPendingFor(mediaEvent("mxc://server/reserved"))).toBe(false);
+            expect(dispatchSpy).toHaveBeenCalledWith({ action: Action.UploadFinished, upload });
+            expect(contentMessages.getCurrentUploads()).toEqual([]);
+            dispatchSpy.mockRestore();
+        });
+
+        it("sends small files the classic way", async () => {
+            vi.mocked(client.uploadContent).mockResolvedValue({ content_uri: "mxc://server/file" });
+            await contentMessages.sendContentToRoom(
+                new File(["x"], "doc.pdf", { type: "application/pdf" }),
+                roomId,
+                undefined,
+                client,
+                undefined,
+            );
+            expect(createMediaUri).not.toHaveBeenCalled();
+            expect(uploadToMediaUri).not.toHaveBeenCalled();
+        });
+
+        it("goes the classic way when the server cannot reserve a URI", async () => {
+            vi.mocked(createMediaUri).mockRejectedValue(new MatrixError({ errcode: "M_LIMIT_EXCEEDED" }, 429));
+            vi.mocked(client.uploadContent).mockResolvedValue({ content_uri: "mxc://server/file" });
+            const file = big(new File(["x"], "doc.pdf", { type: "application/pdf" }));
+
+            await contentMessages.sendContentToRoom(file, roomId, undefined, client, undefined);
+
+            expect(uploadToMediaUri).not.toHaveBeenCalled();
+            expect(client.sendMessage).toHaveBeenCalledWith(
+                roomId,
+                null,
+                expect.objectContaining({ url: "mxc://server/file" }),
+            );
+        });
+
+        it("goes the classic way in encrypted rooms, without server support or with the setting off", async () => {
+            vi.mocked(createMediaUri).mockClear();
+            vi.mocked(client.uploadContent).mockResolvedValue({ content_uri: "mxc://server/file" });
+            const file = big(new File(["x"], "doc.pdf", { type: "application/pdf" }));
+
+            vi.mocked(serverSupportsAsyncUploads).mockResolvedValueOnce(false);
+            await contentMessages.sendContentToRoom(file, roomId, undefined, client, undefined);
+
+            const settingSpy = vi
+                .spyOn(SettingsStore, "getValue")
+                .mockImplementation((name) => (name === "Inside.asyncMediaUpload" ? false : null));
+            await contentMessages.sendContentToRoom(file, roomId, undefined, client, undefined);
+            settingSpy.mockRestore();
+
+            vi.mocked(client.getCrypto()!.isEncryptionEnabledInRoom).mockResolvedValueOnce(true);
+            await contentMessages.sendContentToRoom(file, roomId, undefined, client, undefined);
+
+            expect(createMediaUri).toHaveBeenCalledTimes(0);
+            expect(uploadToMediaUri).not.toHaveBeenCalled();
+            expect(client.sendMessage).toHaveBeenCalledTimes(3);
+        });
+
+        it("takes the event back when cancelled while the file goes up", async () => {
+            vi.mocked(uploadToMediaUri).mockImplementation(
+                (_client, _uri, _body, options) =>
+                    new Promise((_resolve, reject) =>
+                        options!.abortController!.signal.addEventListener("abort", () =>
+                            reject(new DOMException("Aborted", "AbortError")),
+                        ),
+                    ),
+            );
+            const file = big(new File(["x"], "doc.pdf", { type: "application/pdf" }));
+            const sent = contentMessages.sendContentToRoom(file, roomId, undefined, client, undefined);
+            await vi.waitFor(() => expect(uploadToMediaUri).toHaveBeenCalled());
+
+            contentMessages.cancelUpload(contentMessages.getCurrentUploads()[0]);
+            await sent;
+
+            expect(client.redactEvent).toHaveBeenCalledWith(roomId, "$sent");
+            expect(queryUploadedMediaCache("mxc://server/reserved")).toBeUndefined();
+            expect(contentMessages.getFailedUploads(roomId)).toEqual([]);
+        });
+
+        it("keeps a failed file upload as a bubble: retry puts it again, delete takes the event back", async () => {
+            const file = big(new File(["x"], "doc.pdf", { type: "application/pdf" }));
+            const sent = contentMessages.sendContentToRoom(file, roomId, undefined, client, undefined);
+            await vi.waitFor(() => expect(uploadToMediaUri).toHaveBeenCalled());
+            put.reject(new Error("network"));
+            await sent;
+
+            const [failed] = contentMessages.getFailedUploads(roomId);
+            expect(failed.failed).toBe(true);
+            // The event stays hidden behind the failed bubble.
+            expect(contentMessages.isMediaPendingFor(mediaEvent("mxc://server/reserved"))).toBe(true);
+
+            vi.mocked(uploadToMediaUri).mockResolvedValueOnce(undefined);
+            await contentMessages.retryUpload(failed);
+            expect(uploadToMediaUri).toHaveBeenCalledTimes(2);
+            expect(vi.mocked(uploadToMediaUri).mock.calls[1][1]).toBe("mxc://server/reserved");
+            // The event is not sent again.
+            expect(client.sendMessage).toHaveBeenCalledTimes(1);
+            expect(contentMessages.getFailedUploads(roomId)).toEqual([]);
+            expect(contentMessages.isMediaPendingFor(mediaEvent("mxc://server/reserved"))).toBe(false);
+
+            // Fails again, and this time the user deletes it.
+            vi.mocked(uploadToMediaUri).mockReset().mockRejectedValue(new Error("network"));
+            const second = contentMessages.sendContentToRoom(file, roomId, undefined, client, undefined);
+            await second;
+            const [again] = contentMessages.getFailedUploads(roomId);
+            contentMessages.dismissFailedUpload(again);
+            await vi.waitFor(() => expect(client.redactEvent).toHaveBeenCalledWith(roomId, "$sent"));
+            expect(contentMessages.getFailedUploads(roomId)).toEqual([]);
+        });
+
+        it("sends the next file's event without waiting for this file to go up", async () => {
+            vi.spyOn(Modal, "createDialog").mockImplementation((component: unknown) => {
+                if (component === UploadConfirmDialog) return { finished: Promise.resolve([true, true]) } as any;
+                return { finished: new Promise(() => {}), close: vi.fn() } as any;
+            });
+            vi.mocked(client.getMediaConfig).mockResolvedValue({});
+            vi.mocked(createMediaUri)
+                .mockResolvedValueOnce({ contentUri: "mxc://server/one" })
+                .mockResolvedValueOnce({ contentUri: "mxc://server/two" });
+            const files = [big(new File(["1"], "a.pdf", { type: "application/pdf" }))];
+            files.push(big(new File(["2"], "b.pdf", { type: "application/pdf" })));
+
+            await contentMessages.sendContentListToRoom(files, roomId, undefined, undefined, client);
+            await vi.waitFor(() => expect(client.sendMessage).toHaveBeenCalledTimes(2));
+
+            const urls = vi.mocked(client.sendMessage).mock.calls.map((call) => (call[2] as { url?: string }).url);
+            expect(urls).toEqual(["mxc://server/one", "mxc://server/two"]);
+            put.resolve();
         });
     });
 
@@ -943,13 +1166,13 @@ describe("sendContentListToRoom analytics", () => {
         await contentMessages.sendContentListToRoom(files, roomId, undefined, undefined, client);
 
         const calls = vi.mocked(contentMessages.sendContentToRoom).mock.calls;
-        expect(calls.map((call) => call[7])).toEqual([false, false]);
+        expect(calls.map((call) => call[7]?.compress)).toEqual([false, false]);
     });
 
     it("compresses by default when the dialog does not ask", async () => {
         const files = [mkFile("text/plain", "a.txt")];
         await contentMessages.sendContentListToRoom(files, roomId, undefined, undefined, client);
-        expect(vi.mocked(contentMessages.sendContentToRoom).mock.calls[0][7]).toBe(true);
+        expect(vi.mocked(contentMessages.sendContentToRoom).mock.calls[0][7]?.compress).toBe(true);
     });
 
     it("tracks AttachmentCancel when the user cancels at the confirmation dialog", async () => {

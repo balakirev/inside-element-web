@@ -186,6 +186,29 @@ describe("InsidePendingUploads", () => {
         expect(container.querySelector(".mx_InsidePendingUpload")).toBeNull();
     });
 
+    it("stays in place of an event sent before its file while the file goes up", () => {
+        const upload = makeUpload(room, "photo.jpg", "image/jpeg", 1000, 500);
+        upload.contentUri = "mxc://server/photo";
+        upload.awaitingMedia = true;
+        current = [upload];
+        const echo = new MatrixEvent({
+            type: EventType.RoomMessage,
+            room_id: room.roomId,
+            sender: client.getSafeUserId(),
+            content: { msgtype: MsgType.Image, body: "photo.jpg", url: "mxc://server/photo" },
+        });
+        vi.spyOn(room, "getPendingEvents").mockReturnValue([echo]);
+
+        const { container } = renderUploads();
+        expect(container.querySelector(".mx_InsidePendingUpload")).not.toBeNull();
+
+        upload.awaitingMedia = false;
+        act(() => {
+            dis.dispatch({ action: Action.UploadFinished, upload }, true);
+        });
+        expect(container.querySelector(".mx_InsidePendingUpload")).toBeNull();
+    });
+
     it("shows a failed upload with retry and delete", () => {
         const upload = makeUpload(room, "report.pdf", "application/pdf", 1000, 300);
         upload.failed = true;

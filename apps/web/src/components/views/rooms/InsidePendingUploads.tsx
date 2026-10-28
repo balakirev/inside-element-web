@@ -69,7 +69,8 @@ function contentUriOf(event: MatrixEvent): string | undefined {
  * event from the server), so that it takes the place of the pending bubble.
  */
 function hasArrived(room: Room, upload: RoomUpload): boolean {
-    if (!upload.contentUri) return false;
+    // Inside: an event sent before its file stays hidden behind the bubble until the file is up.
+    if (!upload.contentUri || upload.awaitingMedia) return false;
     let pending: MatrixEvent[] = [];
     try {
         pending = room.getPendingEvents();

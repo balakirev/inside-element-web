@@ -346,6 +346,17 @@ describe("MessagePanel", function () {
         expect(tiles.length).toEqual(10);
     });
 
+    it("Inside: hides an event whose file is still going up after it, for its pending bubble", function () {
+        const pending = vi
+            .spyOn(ContentMessages.sharedInstance(), "isMediaPendingFor")
+            .mockImplementation((event) => event === events[9]);
+        const { container } = render(getComponent({ events }), clientAndSDKContextRenderOptions(client, sdkContext));
+
+        expect(container.getElementsByClassName("mx_EventTile")).toHaveLength(9);
+        expect(container.querySelector(`[data-event-id="${events[9].getId()}"]`)).toBeNull();
+        pending.mockRestore();
+    });
+
     it("should collapse adjacent member events", function () {
         const { container } = render(
             getComponent({ events: mkMelsEvents() }),

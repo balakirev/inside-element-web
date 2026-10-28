@@ -46,6 +46,17 @@ export class RoomUpload {
      * Inside: the share of a video's compression done, 0 to 1, while it is compressed.
      */
     public compressionProgress?: number;
+    /**
+     * Inside: set while the event of the upload is already sent and its file is still going up to
+     * the URI reserved for it (asynchronous upload, MSC2246). The timeline keeps the bubble in place
+     * of the event meanwhile.
+     */
+    public awaitingMedia = false;
+    /**
+     * Inside: with an asynchronous upload, the ID of the event once it is sent (undefined if sending
+     * it failed), so that cancelling can take it back.
+     */
+    public sentEvent?: Promise<string | undefined>;
 
     public constructor(
         public readonly roomId: string,

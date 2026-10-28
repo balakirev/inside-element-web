@@ -60,11 +60,17 @@ import { attachMentions, attachRelation } from "./utils/messages.ts";
 import { doMaybeLocalRoomAction } from "./utils/local-room";
 import { blobIsAnimated } from "./utils/Image.ts";
 import { PosthogAnalytics } from "./PosthogAnalytics.ts";
-import { cacheUploadedMedia } from "./utils/UploadedMediaCache";
+import { cacheUploadedMedia, forgetUploadedMedia } from "./utils/UploadedMediaCache";
 import { isPdfFile, pdfThumbnailForFile } from "./utils/pdfThumbnail";
 import { isCompressiblePhoto } from "./utils/photoCompression";
 import { compressPhotoForUpload } from "./utils/compressPhoto";
 import { compressVideoForUpload, isCompressibleVideo } from "./utils/compressVideo";
+import {
+    type CreatedMedia,
+    createMediaUri,
+    serverSupportsAsyncUploads,
+    uploadToMediaUri,
+} from "./utils/asyncMediaUpload";
 
 // scraped out of a macOS hidpi (5660ppm) screenshot png
 //                  5669 px (x-axis)      , 5669 px (y-axis)      , per metre
@@ -80,6 +86,24 @@ export class UploadFailedError extends Error {
 
 interface IMediaConfig {
     "m.upload.size"?: number;
+}
+
+/** Inside: how one file is sent. */
+export interface SendContentOptions {
+    /** Whether a photo or a video may be compressed; by default as the device setting says. */
+    compress?: boolean;
+    /**
+     * Called once the event of the file is sent (or sending it is over), so that the next file can
+     * follow. With asynchronous uploads that is before the file itself is up.
+     */
+    onEventSent?: () => void;
+}
+
+type MediaContent = Omit<MediaEventContent, "info"> & { info: Partial<MediaEventInfo> };
+
+function contentUriOf(event: MatrixEvent): string | undefined {
+    const content = event.getContent();
+    return content.url ?? content.file?.url;
 }
 
 /**
@@ -147,6 +171,11 @@ const IMAGE_THUMBNAIL_MIN_REDUCTION_SIZE = 1 << 16; // 1MB
 const IMAGE_THUMBNAIL_MIN_REDUCTION_PERCENT = 0.1; // 10%
 // We don't apply these thresholds to video thumbnails as a poster image is always useful
 // and videos tend to be much larger.
+
+// Inside: files smaller than this go the classic way even where asynchronous uploads are possible.
+// Their upload takes about as long as reserving a URI and sending the thumbnail first, and
+// receivers then get the event with its media ready rather than waiting for it.
+const ASYNC_UPLOAD_MIN_BYTES = 2 * 1024 * 1024;
 
 // Image mime types for which to always include a thumbnail for even if it is larger than the input for wider support.
 const ALWAYS_INCLUDE_THUMBNAIL = ["image/avif", "image/webp", "image/svg+xml"];
@@ -417,11 +446,22 @@ export async function uploadFile(
     }
 }
 
+/** Inside: put the uploaded thumbnail into the event, or drop its info when there is none. */
+function applyThumbnail(content: MediaContent, uploaded?: { url?: string; file?: EncryptedFile }): void {
+    const info = content.info as ImageInfo;
+    if (uploaded) {
+        info.thumbnail_url = uploaded.url;
+        info.thumbnail_file = uploaded.file;
+    } else {
+        delete info.thumbnail_info;
+    }
+}
+
 export default class ContentMessages {
     private inprogress: RoomUpload[] = [];
     // Inside: failed uploads of the main timeline, shown there as bubbles with "retry" and "delete",
     // each with what sends it again.
-    private failed = new Map<RoomUpload, () => Promise<void>>();
+    private failed = new Map<RoomUpload, { retry: () => Promise<void>; dismiss?: () => void }>();
     private mediaConfig: IMediaConfig | null = null;
 
     public sendStickerContentToRoom(
@@ -533,9 +573,12 @@ export default class ContentMessages {
             }
             const fileCaption = caption;
             const fileCompress = compress;
+            // Inside: the next file follows once this one's event is out, which with asynchronous
+            // uploads is before its file is up.
+            const eventSent = Promise.withResolvers<void>();
             sentFileTypes.push(file.type.split("/")[0]);
 
-            promBefore = doMaybeLocalRoomAction(
+            const sending = doMaybeLocalRoomAction(
                 roomId,
                 (actualRoomId) =>
                     this.sendContentToRoom(
@@ -546,10 +589,13 @@ export default class ContentMessages {
                         replyToEvent ?? undefined,
                         loopPromiseBefore,
                         fileCaption,
-                        fileCompress,
+                        { compress: fileCompress, onEventSent: eventSent.resolve },
                     ),
                 matrixClient,
             );
+            // However it ends, the files after it are not held up.
+            sending.finally(eventSent.resolve).catch(() => {});
+            promBefore = eventSent.promise;
         }
         if (sentFileTypes.length) {
             // Find the most common type.
@@ -614,18 +660,35 @@ export default class ContentMessages {
      * Inside: send a failed upload again, with the same file, caption and reply.
      */
     public retryUpload(upload: RoomUpload): Promise<void> {
-        const retry = this.failed.get(upload);
-        if (!retry) return Promise.resolve();
+        const failure = this.failed.get(upload);
+        if (!failure) return Promise.resolve();
         this.failed.delete(upload);
-        return retry();
+        return failure.retry();
     }
 
     /**
      * Inside: forget a failed upload without sending it again.
      */
     public dismissFailedUpload(upload: RoomUpload): void {
-        if (!this.failed.delete(upload)) return;
+        const failure = this.failed.get(upload);
+        if (!failure) return;
+        this.failed.delete(upload);
+        // Inside: an event already sent for it is taken back.
+        failure.dismiss?.();
         dis.dispatch<UploadCanceledPayload>({ action: Action.UploadCanceled, upload });
+    }
+
+    /**
+     * Inside: whether the event is the sender's own media event whose file is still being uploaded
+     * after it (asynchronous upload) into the main timeline. The timeline shows the pending bubble
+     * of the upload in its place until the file is up.
+     */
+    public isMediaPendingFor(event: MatrixEvent): boolean {
+        const uri = contentUriOf(event);
+        if (!uri) return false;
+        return [...this.inprogress, ...this.failed.keys()].some(
+            (upload) => upload.awaitingMedia && !upload.relation && upload.contentUri === uri,
+        );
     }
 
     public cancelUpload(upload: RoomUpload): void {
@@ -641,9 +704,9 @@ export default class ContentMessages {
         replyToEvent: MatrixEvent | undefined,
         promBefore?: Promise<any>,
         caption?: string,
-        // Inside: whether photos and videos may be compressed; by default as the device setting says.
-        compress = !SettingsStore.getValue("Inside.uploadOriginals"),
+        options: SendContentOptions = {},
     ): Promise<void> {
+        const compress = options.compress ?? !SettingsStore.getValue("Inside.uploadOriginals");
         const upload = new RoomUpload(roomId, file.name || _t("common|attachment"), relation, file.size);
         upload.file = file;
         upload.caption = caption?.trim() || undefined;
@@ -666,22 +729,19 @@ export default class ContentMessages {
                 replyToEvent,
                 promBefore,
                 caption,
+                options.onEventSent,
             );
         } catch (error) {
             this.onUploadError(error, upload, () =>
-                this.sendContentToRoom(
-                    sending,
-                    roomId,
-                    relation,
-                    matrixClient,
-                    replyToEvent,
-                    undefined,
-                    caption,
-                    false,
-                ),
+                this.sendContentToRoom(sending, roomId, relation, matrixClient, replyToEvent, undefined, caption, {
+                    compress: false,
+                }),
             );
         } finally {
-            removeElement(this.inprogress, (e) => e.promise === upload.promise);
+            options.onEventSent?.();
+            // Inside: this very upload; `promise` is never set, so matching on it removed whichever
+            // upload came first.
+            removeElement(this.inprogress, (e) => e === upload);
         }
     }
 
@@ -725,9 +785,10 @@ export default class ContentMessages {
         replyToEvent: MatrixEvent | undefined,
         promBefore: Promise<any> | undefined,
         caption: string | undefined,
+        onEventSent: (() => void) | undefined,
     ): Promise<void> {
         const fileName = file.name || _t("common|attachment");
-        const content: Omit<MediaEventContent, "info"> & { info: Partial<MediaEventInfo> } = {
+        const content: MediaContent = {
             body: fileName,
             info: {
                 size: file.size,
@@ -770,18 +831,29 @@ export default class ContentMessages {
 
         // Inside: the file goes up at once, and its thumbnail next to it as soon as it is made, rather
         // than the thumbnail first and the file after it.
+        const threadId = (relation?.rel_type === THREAD_RELATION_TYPE.name ? relation.event_id : null) ?? null;
+        const describePromise = this.describeMedia(file, content);
+        // Handled below; this only keeps a failure from being reported as unhandled meanwhile.
+        describePromise.catch(() => {});
+
+        // Inside: with asynchronous uploads (MSC2246) the event goes out first and the file after it.
+        const created = await this.createMediaUriIfPossible(matrixClient, roomId, file);
+        if (upload.cancelled) throw new UploadCanceledError();
+        if (created) {
+            await this.sendThenUpload(file, created, content, describePromise, upload, matrixClient, threadId, {
+                promBefore,
+                onEventSent,
+                onThumbnailProgress,
+            });
+            return;
+        }
+
         const filePromise = uploadFile(matrixClient, roomId, file, onProgress, upload.abortController);
-        const thumbnailPromise = this.describeMedia(file, content).then((thumbnail) =>
+        const thumbnailPromise = describePromise.then((thumbnail) =>
             thumbnail ? this.uploadThumbnail(matrixClient, roomId, thumbnail, onThumbnailProgress, upload) : undefined,
         );
         const [result, thumbnailResult] = await Promise.all([filePromise, thumbnailPromise]);
-        const info = content.info as ImageInfo;
-        if (thumbnailResult) {
-            info.thumbnail_url = thumbnailResult.url;
-            info.thumbnail_file = thumbnailResult.file;
-        } else {
-            delete info.thumbnail_info;
-        }
+        applyThumbnail(content, thumbnailResult);
         content.file = result.file;
         content.url = result.url;
         upload.contentUri = result.url ?? result.file?.url;
@@ -791,7 +863,6 @@ export default class ContentMessages {
         if (promBefore) await promBefore;
 
         if (upload.cancelled) throw new UploadCanceledError();
-        const threadId = relation?.rel_type === THREAD_RELATION_TYPE.name ? relation.event_id : null;
 
         const response = await matrixClient.sendMessage(roomId, threadId ?? null, content as MediaEventContent);
 
@@ -801,6 +872,183 @@ export default class ContentMessages {
 
         dis.dispatch<UploadFinishedPayload>({ action: Action.UploadFinished, upload });
         dis.dispatch({ action: "message_sent" });
+    }
+
+    /**
+     * Inside: an mxc URI to upload to after the event is sent, where that is possible and worth it:
+     * the setting is on, the file is large, the room is not encrypted and the server takes
+     * asynchronous uploads (MSC2246). Undefined otherwise, or when the server refuses (it allows
+     * only a few pending URIs), so that the file goes the classic way.
+     */
+    private async createMediaUriIfPossible(
+        matrixClient: MatrixClient,
+        roomId: string,
+        file: File,
+    ): Promise<CreatedMedia | undefined> {
+        if (file.size < ASYNC_UPLOAD_MIN_BYTES || !SettingsStore.getValue("Inside.asyncMediaUpload")) return undefined;
+        try {
+            if (await matrixClient.getCrypto()?.isEncryptionEnabledInRoom(roomId)) return undefined;
+            if (!(await serverSupportsAsyncUploads(matrixClient))) return undefined;
+            return await createMediaUri(matrixClient);
+        } catch (e) {
+            logger.warn("Unable to reserve a media URI, uploading the classic way", e);
+            return undefined;
+        }
+    }
+
+    /**
+     * Inside: send the event of a medium with its thumbnail and blurhash at once, then upload the
+     * file to the URI reserved for it. Receivers see the message (blurred) right away and the media
+     * once it is up. The pending bubble stays until then and its cancel takes the event back.
+     */
+    private async sendThenUpload(
+        file: File,
+        created: CreatedMedia,
+        content: MediaContent,
+        describePromise: Promise<Blob | undefined>,
+        upload: RoomUpload,
+        matrixClient: MatrixClient,
+        threadId: string | null,
+        {
+            promBefore,
+            onEventSent,
+            onThumbnailProgress,
+        }: {
+            promBefore?: Promise<any>;
+            onEventSent?: () => void;
+            onThumbnailProgress: (progress: UploadProgress) => void;
+        },
+    ): Promise<void> {
+        const { roomId } = upload;
+        const { contentUri } = created;
+        content.url = contentUri;
+        // The sender's own tile shows the local file, without waiting for the upload.
+        cacheUploadedMedia(contentUri, file);
+
+        try {
+            const thumbnail = await describePromise;
+            const thumbnailResult = thumbnail
+                ? await this.uploadThumbnail(matrixClient, roomId, thumbnail, onThumbnailProgress, upload)
+                : undefined;
+            applyThumbnail(content, thumbnailResult);
+            if (upload.cancelled) throw new UploadCanceledError();
+            if (promBefore) await promBefore;
+            if (upload.cancelled) throw new UploadCanceledError();
+        } catch (e) {
+            forgetUploadedMedia(contentUri);
+            throw e;
+        }
+
+        upload.contentUri = contentUri;
+        upload.awaitingMedia = true;
+        const sent = matrixClient.sendMessage(roomId, threadId, content as MediaEventContent);
+        upload.sentEvent = sent.then(
+            (response) => response.event_id,
+            (e) => {
+                // Its local echo stays as an unsent message that can be sent again once the file is up.
+                logger.warn("The event of an upload failed to send", e);
+                return undefined;
+            },
+        );
+        // The file goes up while the event is on its way; a retry puts it to the same URI.
+        const putFor = (target: RoomUpload): Promise<void> =>
+            uploadToMediaUri(matrixClient, contentUri, file, {
+                name: file.name || undefined,
+                progressHandler: (progress) => {
+                    target.onProgress(progress);
+                    dis.dispatch<UploadProgressPayload>({ action: Action.UploadProgress, upload: target });
+                },
+                abortController: target.abortController,
+            });
+        const put = putFor(upload);
+        const eventId = await upload.sentEvent;
+        onEventSent?.();
+        if (eventId) {
+            if (SettingsStore.getValue("Performance.addSendMessageTimingMetadata")) {
+                sendRoundTripMetric(matrixClient, roomId, eventId);
+            }
+            dis.dispatch({ action: "message_sent" });
+        }
+        await this.awaitMedia(upload, put, matrixClient, putFor);
+    }
+
+    /**
+     * Inside: wait for the file of an event already sent. Cancelling takes the event back; a
+     * failure leaves the bubble with "retry" (the same file to the same URI) and "delete" (the
+     * event is taken back), in threads a dialog and the event is taken back.
+     */
+    private async awaitMedia(
+        upload: RoomUpload,
+        put: Promise<void>,
+        matrixClient: MatrixClient,
+        putFor: (upload: RoomUpload) => Promise<void>,
+    ): Promise<void> {
+        try {
+            await put;
+        } catch (e) {
+            if (upload.cancelled) {
+                await this.withdrawEvent(matrixClient, upload);
+                throw new UploadCanceledError();
+            }
+            logger.warn("The file of a sent event failed to upload", e);
+            const description = _t("upload_failed_generic", { fileName: upload.fileName });
+            if (upload.relation) {
+                await this.withdrawEvent(matrixClient, upload);
+                Modal.createDialog(ErrorDialog, { title: _t("upload_failed_title"), description });
+            } else {
+                upload.failed = true;
+                upload.failureReason = description;
+                this.failed.set(upload, {
+                    retry: () => this.retryMedia(upload, matrixClient, putFor),
+                    dismiss: () => void this.withdrawEvent(matrixClient, upload),
+                });
+            }
+            dis.dispatch<UploadErrorPayload>({ action: Action.UploadFailed, upload, error: e });
+            return;
+        }
+        upload.awaitingMedia = false;
+        dis.dispatch<UploadFinishedPayload>({ action: Action.UploadFinished, upload });
+    }
+
+    /** Inside: upload the file of a sent event again, after its upload failed. */
+    private async retryMedia(
+        failed: RoomUpload,
+        matrixClient: MatrixClient,
+        putFor: (upload: RoomUpload) => Promise<void>,
+    ): Promise<void> {
+        const upload = new RoomUpload(failed.roomId, failed.fileName, failed.relation, failed.fileSize);
+        upload.file = failed.file;
+        upload.caption = failed.caption;
+        upload.contentUri = failed.contentUri;
+        upload.sentEvent = failed.sentEvent;
+        upload.awaitingMedia = true;
+        this.inprogress.push(upload);
+        dis.dispatch<UploadStartedPayload>({ action: Action.UploadStarted, upload });
+        try {
+            await this.awaitMedia(upload, putFor(upload), matrixClient, putFor);
+        } catch {
+            // Cancelled: the event was taken back.
+        } finally {
+            removeElement(this.inprogress, (e) => e === upload);
+        }
+    }
+
+    /** Inside: take back the event of an upload whose file will not come: redact it, or drop its local echo. */
+    private async withdrawEvent(matrixClient: MatrixClient, upload: RoomUpload): Promise<void> {
+        const { contentUri } = upload;
+        if (contentUri) forgetUploadedMedia(contentUri);
+        try {
+            const eventId = await upload.sentEvent;
+            if (eventId) {
+                await matrixClient.redactEvent(upload.roomId, eventId);
+                return;
+            }
+            const room = matrixClient.getRoom(upload.roomId);
+            const echo = room?.getPendingEvents().find((event) => contentUriOf(event) === contentUri);
+            if (echo) matrixClient.cancelPendingEvent(echo);
+        } catch (e) {
+            logger.warn("Unable to take back the event of a cancelled upload", e);
+        }
     }
 
     /**
@@ -904,7 +1152,7 @@ export default class ContentMessages {
                 // "delete" (InsidePendingUploads), so no dialog over it.
                 upload.failed = true;
                 upload.failureReason = desc;
-                this.failed.set(upload, retry);
+                this.failed.set(upload, { retry });
             }
             dis.dispatch<UploadErrorPayload>({ action: Action.UploadFailed, upload, error });
         }
