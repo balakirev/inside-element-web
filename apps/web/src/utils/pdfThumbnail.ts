@@ -62,11 +62,14 @@ function renderInIframe(data: ArrayBuffer, maxSide: number): Promise<PdfThumbnai
         iframe.setAttribute("aria-hidden", "true");
         iframe.tabIndex = -1;
         iframe.title = "";
-        // Laid out (browsers may not run a display:none frame) but out of sight and out of the way.
+        // Laid out (browsers may not run a display:none frame) and inside the viewport: Chromium does not
+        // paint a cross-origin frame placed off-screen, so pdf.js never finishes rendering there.
+        // Invisible (opacity 0) and out of the way (no pointer events, behind everything).
         Object.assign(iframe.style, {
             position: "fixed",
-            left: "-10000px",
+            left: "0",
             top: "0",
+            zIndex: "-1",
             width: "400px",
             height: "400px",
             border: "0",
