@@ -60,7 +60,7 @@ describe("serviceworker", () => {
 
     /** Stands in for the tab which the service worker asks for the user ID and device ID. */
     const tab = {
-        postMessage: vi.fn(({ responseKey }: { responseKey: string }) => {
+        postMessage: vi.fn(({ responseKey }: { responseKey: string; type?: string }) => {
             emit("message", { data: { responseKey, userId: USER_ID, deviceId: DEVICE_ID, homeserver } });
         }),
     };
@@ -175,5 +175,51 @@ describe("serviceworker", () => {
         expect(url).toEqual(mediaUrl);
         expect(init).toBeUndefined();
         expect(lastRewriteFailureCause()).toMatchObject({ message: "no pickle key found" });
+    });
+
+    describe("when the stored access token has expired", () => {
+        beforeEach(async () => {
+            await persistTokens(undefined, { accessToken: "stale_token" });
+            fetchSpy.mockImplementation(async (input: URL | string, init?: RequestInit) => {
+                if (input.toString().endsWith("/_matrix/client/versions")) {
+                    return { json: async () => ({ versions: ["v1.11"] }) };
+                }
+                const auth = (init?.headers as Record<string, string> | undefined)?.Authorization;
+                return new Response("media", { status: auth === "Bearer stale_token" ? 401 : 200 });
+            });
+        });
+
+        it("asks the tab to refresh the token and retries with the new one", async () => {
+            tab.postMessage.mockImplementation(({ responseKey, type }: { responseKey: string; type?: string }) => {
+                // The tab refreshes and persists the token before it replies.
+                const persisted =
+                    type === "refresh_token" ? persistTokens(undefined, { accessToken: "fresh_token" }) : null;
+                void Promise.resolve(persisted).then(() =>
+                    emit("message", { data: { responseKey, userId: USER_ID, deviceId: DEVICE_ID, homeserver } }),
+                );
+            });
+
+            const { init } = await interceptMediaRequest();
+
+            expect(tab.postMessage).toHaveBeenCalledWith(expect.objectContaining({ type: "refresh_token" }));
+            expect(init).toEqual({ headers: { Authorization: `Bearer fresh_token` } });
+        });
+
+        it("returns the 401 when the tab could not refresh the token", async () => {
+            tab.postMessage.mockImplementation(({ responseKey }: { responseKey: string }) => {
+                emit("message", { data: { responseKey, userId: USER_ID, deviceId: DEVICE_ID, homeserver } });
+            });
+
+            let responded: Promise<Response> | undefined;
+            emit("fetch", {
+                request: { method: "GET", url: mediaUrl },
+                clientId: "client-1",
+                respondWith: (response: Promise<Response>) => {
+                    responded = response;
+                },
+            });
+
+            expect((await responded!).status).toBe(401);
+        });
     });
 });

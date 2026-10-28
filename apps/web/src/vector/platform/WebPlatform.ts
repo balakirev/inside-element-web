@@ -101,6 +101,14 @@ export default class WebPlatform extends BasePlatform {
                     deviceId,
                     homeserver,
                 });
+            } else if (event.data?.["type"] === "refresh_token" && event.data?.["responseKey"]) {
+                // Inside: the service worker got a 401 for media with the stored access token. Any authenticated
+                // request makes the client refresh an expired token and persist the new one; reply when done.
+                const source = event.source!;
+                const reply = (): void => source.postMessage({ responseKey: event.data["responseKey"] });
+                const cli = MatrixClientPeg.get();
+                if (!cli) return reply();
+                cli.whoami().then(reply, reply);
             }
         } catch (e) {
             console.error("Error responding to service worker: ", e);

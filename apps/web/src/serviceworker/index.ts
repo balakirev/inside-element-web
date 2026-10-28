@@ -93,7 +93,24 @@ global.addEventListener("fetch", (event: FetchEvent) => {
             // Add authentication and send the request. We add authentication even if MSC3916 endpoints aren't
             // being used to ensure patches like this work:
             // https://github.com/matrix-org/synapse/commit/2390b66bf0ec3ff5ffb0c7333f3c9b239eeb92bb
-            return fetch(url, fetchConfigForToken(auth?.accessToken));
+            const response = await fetch(url, fetchConfigForToken(auth?.accessToken));
+
+            // Inside: with OAuth (MAS) access tokens expire and the app refreshes them lazily, so the stored
+            // token we just used may be stale — typically right after reopening a tab. Ask the tab to refresh
+            // it and retry once, instead of leaving the image broken.
+            if (response.status === 401 && auth?.accessToken) {
+                try {
+                    // @ts-expect-error - service worker types are not available. See 'fetch' event handler.
+                    const client = await global.clients.get(event.clientId);
+                    const fresh = await getFreshAuthData(client, auth.accessToken);
+                    if (fresh.accessToken !== auth.accessToken) {
+                        return fetch(url, fetchConfigForToken(fresh.accessToken));
+                    }
+                } catch (err) {
+                    console.error("SW: Error refreshing the access token.", err);
+                }
+            }
+            return response;
         })(),
     );
 });
@@ -164,11 +181,32 @@ async function getAuthData(client: unknown): Promise<{ accessToken: string; home
     }
 }
 
+/**
+ * Inside: asks the tab to refresh its access token, then reads the stored one again. The tab persists a
+ * refreshed token asynchronously, so give it a moment if the first read still returns the stale one.
+ */
+async function getFreshAuthData(
+    client: unknown,
+    staleToken: string,
+): Promise<{ accessToken: string; homeserver: string }> {
+    await askClient(client, "refresh_token", 10000);
+    let auth = await getAuthData(client);
+    for (let i = 0; i < 5 && auth.accessToken === staleToken; i++) {
+        await new Promise<void>((resolve) => setTimeout(() => resolve(), 200));
+        auth = await getAuthData(client);
+    }
+    return auth;
+}
+
 // Ideally we'd use the `Client` interface for `client`, but since it's not available (see 'fetch' listener), we use
 // unknown for now and force-cast it to something close enough inside the function.
 async function askClientForUserIdParams(
     client: unknown,
 ): Promise<{ userId: string; deviceId: string; homeserver: string }> {
+    return askClient(client, "userinfo", 1000);
+}
+
+async function askClient<T>(client: unknown, type: string, timeoutMs: number): Promise<T> {
     return new Promise((resolve, reject) => {
         // Dev note: this uses postMessage, which is a highly insecure channel. postMessage is typically visible to other
         // tabs, windows, browser extensions, etc, making it far from ideal for sharing sensitive information. This is
@@ -180,7 +218,7 @@ async function askClientForUserIdParams(
         // than just reading IndexedDB ourselves.
 
         // Avoid stalling the tab in case something goes wrong.
-        const timeoutId = setTimeout(() => reject(new Error("timeout in postMessage")), 1000);
+        const timeoutId = setTimeout(() => reject(new Error("timeout in postMessage")), timeoutMs);
 
         // We don't need particularly good randomness here - we just use this to generate a request ID, so we know
         // which postMessage reply is for our active request.
@@ -196,7 +234,7 @@ async function askClientForUserIdParams(
         global.addEventListener("message", listener);
 
         // Ask the tab for the information we need. This is handled by WebPlatform.
-        (client as Window).postMessage({ responseKey, type: "userinfo" });
+        (client as Window).postMessage({ responseKey, type });
     });
 }
 
