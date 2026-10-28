@@ -18,6 +18,7 @@ import React, {
 } from "react";
 import {
     EventStatus,
+    EventType,
     type MatrixEvent,
     MatrixEventEvent,
     type Relations,
@@ -26,6 +27,7 @@ import {
     type RoomMember,
     type Thread,
     ThreadEvent,
+    MsgType,
 } from "matrix-js-sdk/src/matrix";
 import { logger } from "matrix-js-sdk/src/logger";
 import { uniqueId } from "lodash";
@@ -156,6 +158,22 @@ export interface IEventTileType extends React.Component<HTMLDivElement> {
 }
 
 /** Props used to render an event in a room timeline surface. */
+const MEDIA_MSGTYPES: string[] = [MsgType.Image, MsgType.Video, MsgType.File, MsgType.Audio];
+
+/**
+ * Inside: whether a right-click on `target` hit the media part of a photo, video, file, audio / voice
+ * message or sticker event, rather than its caption (a text body) or the reply it quotes.
+ */
+export function isOnMediaBody(mxEvent: MatrixEvent, target: Element): boolean {
+    const isMedia =
+        mxEvent.getType() === EventType.Sticker ||
+        (mxEvent.getType() === EventType.RoomMessage && MEDIA_MSGTYPES.includes(mxEvent.getContent().msgtype ?? ""));
+    if (!isMedia || mxEvent.isRedacted()) return false;
+    // The caption is a text body, whose links keep the native menu; a quoted reply is another event;
+    // the timestamp is a permalink handled as on any other message.
+    return !target.closest(".mx_MTextBody, .mx_ReplyChain, .mx_ReplyTile, .mx_MessageTimestamp");
+}
+
 export interface EventTileProps {
     /** Matrix event to render. */
     mxEvent: MatrixEvent;
@@ -774,6 +792,23 @@ export class UnwrappedEventTile extends React.Component<EventTileProps, IState> 
 
     private showContextMenu(ev: React.MouseEvent, permalink?: string): void {
         const clickTarget = ev.target as HTMLElement;
+
+        // Inside: as in Telegram, a right-click anywhere on a photo, video, file, voice message or sticker
+        // opens the message menu. Their bodies are wrapped in links to the media (the image lightbox, the
+        // file download) and contain <img>s, which made Element leave them to the browser's own menu.
+        // Links and images inside the message text (and the caption) still get the native menu.
+        if (isOnMediaBody(this.props.mxEvent, clickTarget)) {
+            if (this.props.editState) return;
+            ev.preventDefault();
+            ev.stopPropagation();
+            this.setState((prevState) => ({
+                interaction: eventTileOpenContextMenu(prevState.interaction, {
+                    position: { left: ev.clientX, top: ev.clientY, bottom: ev.clientY },
+                    link: permalink,
+                }),
+            }));
+            return;
+        }
 
         // Try to find an anchor element
         const anchorElement = clickTarget instanceof HTMLAnchorElement ? clickTarget : clickTarget.closest("a");
