@@ -36,6 +36,7 @@ import defaultDispatcher from "../../dispatcher/dispatcher";
 import type LegacyCallEventGrouper from "./LegacyCallEventGrouper";
 import WhoIsTypingTile from "../views/rooms/WhoIsTypingTile";
 import InsidePendingUploads from "../views/rooms/InsidePendingUploads";
+import ContentMessages from "../../ContentMessages";
 import ScrollPanel, { type IScrollState } from "./ScrollPanel";
 import ErrorBoundary from "../views/elements/ErrorBoundary";
 import Spinner from "../views/elements/Spinner";
@@ -481,6 +482,10 @@ export default class MessagePanel extends React.Component<IProps, IState> {
         if (MatrixClientPeg.safeGet().isUserIgnored(mxEv.getSender()!)) {
             return false; // ignored = no show (only happens if the ignore happens after an event was received)
         }
+
+        // Inside: our own media event whose file is still going up after it (asynchronous upload) is
+        // shown as its pending bubble at the end of the timeline until the file is there.
+        if (ContentMessages.sharedInstance().isMediaPendingFor(mxEv)) return false;
 
         if (this.showHiddenEvents && !forceHideEvents) {
             return true;

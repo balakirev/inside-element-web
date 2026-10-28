@@ -14,6 +14,8 @@ import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 
 import UploadConfirmDialog from "./UploadConfirmDialog.tsx";
 import * as pdfThumbnail from "../../../utils/pdfThumbnail";
+import SettingsStore from "../../../settings/SettingsStore";
+import { SettingLevel } from "../../../settings/SettingLevel";
 
 /**
  * The shared media preview tile hides the image until it has loaded it once out of band, which jsdom
@@ -326,6 +328,45 @@ describe("<UploadConfirmDialog />", () => {
             fireEvent.keyDown(getByRole("textbox", { name: "Caption" }), { key: "Escape" });
 
             expect(onFinished).toHaveBeenCalledWith(false);
+        });
+    });
+    describe("Inside: no compression", () => {
+        const photo = new File(["jpeg"], "IMG_1.jpg", { type: "image/jpeg" });
+
+        afterEach(async () => {
+            await SettingsStore.setValue("Inside.uploadOriginals", null, SettingLevel.DEVICE, false);
+        });
+
+        it("offers to send a photo without compression, off by default", () => {
+            const onFinished = vi.fn();
+            const { getByRole } = render(<UploadConfirmDialog file={photo} onFinished={onFinished} />);
+
+            expect(getByRole("checkbox", { name: "No compression" })).not.toBeChecked();
+            fireEvent.click(getByRole("button", { name: "Upload" }));
+
+            expect(onFinished).toHaveBeenCalledWith(true, false, undefined, false);
+        });
+
+        it("sends the original when switched on, and remembers it on the device", () => {
+            const onFinished = vi.fn();
+            const first = render(<UploadConfirmDialog file={photo} onFinished={onFinished} />);
+
+            fireEvent.click(first.getByRole("checkbox", { name: "No compression" }));
+            fireEvent.click(first.getByRole("button", { name: "Upload" }));
+
+            expect(onFinished).toHaveBeenCalledWith(true, false, undefined, true);
+            expect(SettingsStore.getValue("Inside.uploadOriginals")).toBe(true);
+            first.unmount();
+
+            const { getByRole } = render(<UploadConfirmDialog file={photo} onFinished={vi.fn()} />);
+            expect(getByRole("checkbox", { name: "No compression" })).toBeChecked();
+        });
+
+        it("does not offer it for files that are sent as they are", () => {
+            const { queryByRole } = render(
+                <UploadConfirmDialog file={new File(["gif"], "cat.gif", { type: "image/gif" })} onFinished={vi.fn()} />,
+            );
+            expect(queryByRole("checkbox", { name: "No compression" })).toBeNull();
         });
     });
 });

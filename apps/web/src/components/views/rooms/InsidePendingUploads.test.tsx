@@ -84,6 +84,28 @@ describe("InsidePendingUploads", () => {
         expect(ContentMessages.sharedInstance().cancelUpload).toHaveBeenCalledWith(upload);
     });
 
+    it("says the photo is being compressed before its upload starts", () => {
+        const upload = makeUpload(room, "photo.jpg", "image/jpeg", 4 * 1024 * 1024, 0);
+        upload.compressing = true;
+        current = [upload];
+
+        const { container } = renderUploads();
+
+        expect(container.querySelector(".mx_InsidePendingUpload_progressText")).toHaveTextContent("Compressing…");
+    });
+
+    it("follows the compression of a video on the ring", () => {
+        const upload = makeUpload(room, "clip.mov", "video/quicktime", 40 * 1024 * 1024, 0);
+        upload.compressing = true;
+        upload.compressionProgress = 0.45;
+        current = [upload];
+
+        const { container } = renderUploads();
+
+        expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "45");
+        expect(container.querySelector(".mx_InsidePendingUpload_progressText")).toHaveTextContent("Compressing… 45%");
+    });
+
     it("shows a video upload with its first frame", () => {
         current = [makeUpload(room, "clip.mp4", "video/mp4", 2048, 0)];
 
@@ -161,6 +183,29 @@ describe("InsidePendingUploads", () => {
             room.emit(RoomEvent.LocalEchoUpdated, echo, room);
         });
 
+        expect(container.querySelector(".mx_InsidePendingUpload")).toBeNull();
+    });
+
+    it("stays in place of an event sent before its file while the file goes up", () => {
+        const upload = makeUpload(room, "photo.jpg", "image/jpeg", 1000, 500);
+        upload.contentUri = "mxc://server/photo";
+        upload.awaitingMedia = true;
+        current = [upload];
+        const echo = new MatrixEvent({
+            type: EventType.RoomMessage,
+            room_id: room.roomId,
+            sender: client.getSafeUserId(),
+            content: { msgtype: MsgType.Image, body: "photo.jpg", url: "mxc://server/photo" },
+        });
+        vi.spyOn(room, "getPendingEvents").mockReturnValue([echo]);
+
+        const { container } = renderUploads();
+        expect(container.querySelector(".mx_InsidePendingUpload")).not.toBeNull();
+
+        upload.awaitingMedia = false;
+        act(() => {
+            dis.dispatch({ action: Action.UploadFinished, upload }, true);
+        });
         expect(container.querySelector(".mx_InsidePendingUpload")).toBeNull();
     });
 

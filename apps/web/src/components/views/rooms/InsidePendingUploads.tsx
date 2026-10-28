@@ -69,7 +69,8 @@ function contentUriOf(event: MatrixEvent): string | undefined {
  * event from the server), so that it takes the place of the pending bubble.
  */
 function hasArrived(room: Room, upload: RoomUpload): boolean {
-    if (!upload.contentUri) return false;
+    // Inside: an event sent before its file stays hidden behind the bubble until the file is up.
+    if (!upload.contentUri || upload.awaitingMedia) return false;
     let pending: MatrixEvent[] = [];
     try {
         pending = room.getPendingEvents();
@@ -104,7 +105,13 @@ interface RingProps {
 
 /** A circular progress ring with a cancel button in its middle. */
 function ProgressRing({ upload }: RingProps): JSX.Element {
-    const percent = upload.total > 0 ? Math.round((Math.min(upload.loaded, upload.total) / upload.total) * 100) : 0;
+    // Inside: while a video is compressed the ring follows the compression, then the upload.
+    const percent =
+        upload.compressing && upload.compressionProgress !== undefined
+            ? Math.round(upload.compressionProgress * 100)
+            : upload.total > 0
+              ? Math.round((Math.min(upload.loaded, upload.total) / upload.total) * 100)
+              : 0;
     const radius = 20;
     const circumference = 2 * Math.PI * radius;
     // A short arc even at zero: with the ring turning it shows the upload is under way while the
@@ -213,11 +220,19 @@ function PendingMedia({ upload, kind, onResize }: PendingUploadProps & { kind: "
             <div className="mx_InsidePendingUpload_overlay">{!upload.failed && <ProgressRing upload={upload} />}</div>
             {!upload.failed && (
                 <span className="mx_InsidePendingUpload_progressText">
-                    {formatUploadProgress(upload.loaded, upload.total)}
+                    {upload.compressing ? compressingText(upload) : formatUploadProgress(upload.loaded, upload.total)}
                 </span>
             )}
         </div>
     );
+}
+
+/** "Compressing…", with the share done ("Compressing… 45 %") once it is known. */
+function compressingText(upload: RoomUpload): string {
+    if (upload.compressionProgress === undefined) return _t("upload_file|pending_compressing");
+    return _t("upload_file|pending_compressing_percent", {
+        percent: formatUploadPercent(upload.compressionProgress, 1),
+    });
 }
 
 /** "12 %" in the user's language. */

@@ -85,6 +85,7 @@
         "matrix-encrypt-attachment": "^1.0.3",
         "matrix-js-sdk": "44.0.0",
         "matrix-widget-api": "^1.19.0",
+        "mediabunny": "1.62.1",
         "memoize-one": "^6.0.0",
         "mime": "^4.0.4",
         "opus-recorder": "^8.0.3",
