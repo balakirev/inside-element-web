@@ -36,6 +36,7 @@ the next upstream release with `git rebase --onto <new-tag> <old-tag> inside/mai
 | Dust when deleting a message          | After the delete confirmation the message tile crumbles into dust, as in Telegram (`utils/DustEffect.ts`). |
 | Favicon badge in the brand red        | The unread counter drawn over the tab icon uses the Lobby signal red `#C8102E` instead of Element's `#d00`. |
 | Search and More in the room header    | The right side of the room header is the Lobby button capsule: search, threads, room info, more. Search opens the room's message search as Ctrl+F does; More opens the room list item's options menu below the button (`RoomHeader/InsideHeaderButtons.tsx`). |
+| Threads                                | The bar under a message with replies shows a stack of up to three reply participants' avatars and always the count with the word ("3 replies"), also in the thread list; the thread panel header has "<room> · N replies" under its title; the empty thread composer offers the voice message button too (Element hid it in the narrow thread panel), and voice messages name their thread like text ones. |
 | Version script without `jq`            | Branch builds failed: the Docker builder image has no `jq`.                                                                                                                                                                                                                                                                                                               |
 
 ## Build
