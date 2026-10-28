@@ -117,6 +117,24 @@ describe("InsidePendingUploads", () => {
         expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "0");
     });
 
+    it("shows a round video as a circle with the ring on its edge and cancel in the middle", () => {
+        const upload = makeUpload(room, "video_note.mp4", "video/mp4", 4000, 1000);
+        upload.roundVideo = true;
+        current = [upload];
+
+        const { container } = renderUploads();
+
+        expect(container.querySelector(".mx_InsidePendingUpload_roundVideo")).not.toBeNull();
+        expect(container.querySelector(".mx_InsidePendingUpload_bubble")).toBeNull();
+        expect(container.querySelector(".mx_InsidePendingUpload_roundCircle video")).toHaveAttribute(
+            "src",
+            "blob:null/preview#t=0.001",
+        );
+        expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "25");
+        fireEvent.click(screen.getByRole("button", { name: "Cancel upload" }));
+        expect(ContentMessages.sharedInstance().cancelUpload).toHaveBeenCalledWith(upload);
+    });
+
     it("shows another file as a file bubble with the ring in place of the icon", () => {
         current = [makeUpload(room, "report.pdf", "application/pdf", 10 * 1024, 5 * 1024)];
 

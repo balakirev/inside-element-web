@@ -63,6 +63,7 @@ import { PosthogAnalytics } from "./PosthogAnalytics.ts";
 import { cacheUploadedMedia, forgetUploadedMedia } from "./utils/UploadedMediaCache";
 import { isPdfFile, pdfThumbnailForFile } from "./utils/pdfThumbnail";
 import { isCompressiblePhoto } from "./utils/photoCompression";
+import { ROUND_VIDEO_FLAG } from "./utils/roundVideo";
 import { compressPhotoForUpload } from "./utils/compressPhoto";
 import { compressVideoForUpload, isCompressibleVideo } from "./utils/compressVideo";
 import {
@@ -717,6 +718,7 @@ export default class ContentMessages {
         const upload = new RoomUpload(roomId, file.name || _t("common|attachment"), relation, file.size);
         upload.file = file;
         upload.caption = caption?.trim() || undefined;
+        upload.roundVideo = options.extraContent?.[ROUND_VIDEO_FLAG] === true;
         this.inprogress.push(upload);
         dis.dispatch<UploadStartedPayload>({ action: Action.UploadStarted, upload });
 

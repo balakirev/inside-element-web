@@ -53,6 +53,10 @@ export class RoomUpload {
      */
     public awaitingMedia = false;
     /**
+     * Inside: a round video message («кружок»); its pending bubble is a circle.
+     */
+    public roundVideo = false;
+    /**
      * Inside: with an asynchronous upload, the ID of the event once it is sent (undefined if sending
      * it failed), so that cancelling can take it back.
      */
