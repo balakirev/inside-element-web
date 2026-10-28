@@ -26,7 +26,9 @@ export interface ConfigOptions extends WebConfigJson {
 
     /**
      * Inside: never show the "Verify this device" / "Set up encryption" toasts
-     * (DeviceListenerCurrentDevice). Our server has encryption switched off, so
+     * (DeviceListenerCurrentDevice), nor the full-screen "Verify this device"
+     * (COMPLETE_SECURITY) / "Setting up keys" (E2E_SETUP) views after login, and
+     * ignore force_verification (MatrixChat). Our server has encryption switched off, so
      * device verification protects nothing. Absent or false = upstream behaviour.
      */
     inside_hide_device_verification?: boolean;

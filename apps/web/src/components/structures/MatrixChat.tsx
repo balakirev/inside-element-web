@@ -397,6 +397,7 @@ export default class MatrixChat extends React.PureComponent<IProps, IState> {
      *
      * This method either calls {@link onLoggedIn} directly, or switches to {@link Views.E2E_SETUP} or
      * {@link Views.COMPLETE_SECURITY}, which will later call {@link onCompleteSecurityE2eSetupFinished}.
+     * Inside: with `inside_hide_device_verification` it always goes straight to the post-login screen.
      */
     private async postLoginSetup(): Promise<void> {
         const cli = MatrixClientPeg.safeGet();
@@ -429,7 +430,11 @@ export default class MatrixChat extends React.PureComponent<IProps, IState> {
             return;
         }
 
-        if (crossSigningIsSetUp) {
+        if (SdkConfig.get("inside_hide_device_verification")) {
+            // Inside: device verification is hidden on this deployment (no E2EE), so neither ask to
+            // verify this device (COMPLETE_SECURITY) nor bootstrap cross-signing (E2E_SETUP) after login.
+            this.onShowPostLoginScreen();
+        } else if (crossSigningIsSetUp) {
             // if the user has previously set up cross-signing, verify this device so we can fetch the
             // private keys.
 
@@ -1370,6 +1375,8 @@ export default class MatrixChat extends React.PureComponent<IProps, IState> {
      */
     private async shouldForceVerification(): Promise<boolean> {
         if (!SdkConfig.get("force_verification")) return false;
+        // Inside: device verification is hidden on this deployment, so never force it either.
+        if (SdkConfig.get("inside_hide_device_verification")) return false;
         const mustVerifyFlag = localStorage.getItem("must_verify_device");
         if (!mustVerifyFlag) return false;
 
