@@ -2032,6 +2032,10 @@
         "forget_room": "Forget this room",
         "forget_space": "Forget this space",
         "header": {
+            "inside_online": {
+                "one": "%(count)s online",
+                "other": "%(count)s online"
+            },
             "join_video_call": "Join video call",
             "join_voice_call": "Join voice call",
             "more": "More",

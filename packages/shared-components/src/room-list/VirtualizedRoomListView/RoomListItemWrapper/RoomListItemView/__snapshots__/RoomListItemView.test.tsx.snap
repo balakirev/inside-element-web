@@ -2023,12 +2023,13 @@ exports[`<RoomListItemView /> > shows the muted icon for muted rooms 1`] = `
             class="RoomListItemView-module_notificationDecoration"
           >
             <div
-              class="Flex-module_flex"
+              class="Flex-module_flex mx_RoomListItemView_inside_muted"
               data-testid="notification-decoration"
               style="--mx-flex-display: flex; --mx-flex-direction: row; --mx-flex-align: center; --mx-flex-justify: center; --mx-flex-gap: var(--cpd-space-1x); --mx-flex-wrap: nowrap;"
             >
               <span
                 class="_unread-counter_1147r_8"
+                data-muted="true"
               >
                 111
               </span>

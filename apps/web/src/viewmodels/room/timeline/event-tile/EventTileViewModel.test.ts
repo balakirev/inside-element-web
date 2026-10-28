@@ -432,6 +432,52 @@ describe("EventTileViewModel", () => {
         expect(snapshot.sender.viewUserOnClick).toBe(true);
     });
 
+    describe("Inside: avatar at the last bubble of a series", () => {
+        const bubble = (display: Partial<EventTileViewModelProps["display"]>) =>
+            EventTileViewModel.createRenderState(makeProps({ display: { layout: Layout.Bubble, ...display } }));
+
+        it.each([
+            // [continuation, isLastInSection, avatarSize, needsSenderProfile, lastInSeries class]
+            [false, false, null, true, false], // first of a series: name, no avatar
+            [true, false, null, false, false], // middle: nothing
+            [true, true, "30px", false, true], // last: avatar only
+            [false, true, "30px", true, true], // single bubble: name and avatar
+        ])(
+            "continuation=%s lastInSection=%s gives avatar %s, sender %s",
+            (continuation, isLastInSection, avatarSize, needsSenderProfile, lastInSeriesClass) => {
+                const state = bubble({ continuation, isLastInSection });
+                expect(state.snapshot.sender.profileState).toEqual({ avatarSize, needsSenderProfile });
+                expect((state.classNames.root ?? "").split(" ").includes("mx_EventTile_inside_lastInSeries")).toBe(
+                    lastInSeriesClass,
+                );
+            },
+        );
+
+        it("keeps the avatar at the first event in the group layout", () => {
+            const state = EventTileViewModel.createRenderState(
+                makeProps({ display: { layout: Layout.Group, continuation: false, isLastInSection: false } }),
+            );
+            expect(state.snapshot.sender.profileState).toEqual({ avatarSize: "30px", needsSenderProfile: true });
+            expect(state.classNames.root).toBe("mx_EventTile");
+        });
+
+        it("keeps thread timelines unchanged in the bubble layout", () => {
+            const state = bubble({
+                timelineRenderingType: TimelineRenderingType.Thread,
+                continuation: false,
+                isLastInSection: false,
+            });
+            expect(state.snapshot.sender.profileState).toEqual({ avatarSize: "32px", needsSenderProfile: true });
+            expect(state.classNames.root).toBe("mx_EventTile");
+        });
+
+        it("does not mark info messages", () => {
+            const state = bubble({ isInfoMessage: true, isLastInSection: true });
+            expect(state.snapshot.sender.profileState.avatarSize).toBe("14px");
+            expect(state.classNames.root).toBe("mx_EventTile");
+        });
+    });
+
     it("carries pure sender render inputs", () => {
         const snapshot = EventTileViewModel.createSnapshot(
             makeProps({

@@ -7,7 +7,7 @@
 
 import React, { type JSX, memo, type ReactNode } from "react";
 import { Text, Tooltip } from "@vector-im/compound-web";
-import { NotificationsOffSolidIcon } from "@vector-im/compound-design-tokens/assets/web/icons";
+import { NotificationsOffSolidIcon, PinSolidIcon } from "@vector-im/compound-design-tokens/assets/web/icons";
 import classNames from "classnames";
 
 import { Flex } from "../../../../core/utils/Flex";
@@ -41,6 +41,13 @@ export const RoomListItemContent = memo(function RoomListItemContent({
     isDragging = false,
 }: RoomListItemContentProps): JSX.Element {
     const item = useViewModel(vm);
+    const { notification } = item;
+    const showPin =
+        item.isFavourite &&
+        !notification.isMention &&
+        !notification.isNotification &&
+        !notification.isActivityNotification &&
+        !notification.invited;
 
     return (
         <Flex
@@ -110,6 +117,16 @@ export const RoomListItemContent = memo(function RoomListItemContent({
                 {/* aria-hidden because we summarise the unread count/notification status in a11yLabel */}
                 <div className={styles.notificationDecoration} aria-hidden={true}>
                     <NotificationDecoration {...item.notification} />
+                    {/* Inside: a pin in place of the unread badge for favourite rooms, as in other messengers */}
+                    {showPin && (
+                        <PinSolidIcon
+                            width="20px"
+                            height="20px"
+                            fill="var(--cpd-color-icon-tertiary)"
+                            className="mx_RoomListItemView_inside_pin"
+                            data-testid="room-list-item-pin"
+                        />
+                    )}
                 </div>
             </Flex>
         </Flex>

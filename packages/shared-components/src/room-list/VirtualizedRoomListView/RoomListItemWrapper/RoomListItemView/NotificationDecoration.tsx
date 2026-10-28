@@ -70,7 +70,14 @@ export const NotificationDecoration: React.FC<NotificationDecorationProps> = ({
     }
 
     return (
-        <Flex align="center" justify="center" gap="var(--cpd-space-1x)" data-testid="notification-decoration">
+        <Flex
+            align="center"
+            justify="center"
+            gap="var(--cpd-space-1x)"
+            data-testid="notification-decoration"
+            // Inside: the counter of a muted room, drawn grey by the skin
+            className={muted && (isMention || isNotification) ? "mx_RoomListItemView_inside_muted" : undefined}
+        >
             {isUnsentMessage && (
                 <ErrorSolidIcon width="20px" height="20px" fill="var(--cpd-color-icon-critical-primary)" />
             )}
@@ -82,7 +89,9 @@ export const NotificationDecoration: React.FC<NotificationDecorationProps> = ({
             )}
             {invited && <EmailSolidIcon width="20px" height="20px" fill="var(--cpd-color-icon-accent-primary)" />}
             {isMention && <MentionIcon width="20px" height="20px" fill="var(--cpd-color-icon-accent-primary)" />}
-            {(isMention || isNotification) && <UnreadCounter count={count || null} />}
+            {(isMention || isNotification) && (
+                <UnreadCounter count={count || null} data-muted={muted ? "true" : undefined} />
+            )}
             {isActivityNotification && <Unread />}
             {muted && <NotificationsOffSolidIcon width="20px" height="20px" fill="var(--cpd-color-icon-tertiary)" />}
         </Flex>

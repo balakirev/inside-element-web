@@ -207,6 +207,40 @@ describe("RoomHeader", () => {
         expect(setCardSpy).toHaveBeenCalledWith({ phase: RightPanelPhases.MemberList });
     });
 
+    describe("Inside online members", () => {
+        const mkMembers = (presences: string[]) =>
+            presences.map((presence, index) => ({
+                userId: `@user-${index}:example.org`,
+                name: `Member ${index}`,
+                rawDisplayName: `Member ${index}`,
+                roomId: room.roomId,
+                membership: KnownMembership.Join,
+                user: { presence },
+                getAvatarUrl: () => null,
+                getMxcAvatarUrl: () => null,
+            }));
+
+        it("shows how many members are online next to the member count", () => {
+            const members = mkMembers(["online", "online", "offline", "unavailable"]);
+            room.currentState.setJoinedMemberCount(members.length);
+            room.getJoinedMembers = vi.fn().mockReturnValue(members);
+
+            const { container } = render(<RoomHeader room={room} />, getWrapper());
+
+            expect(container.querySelector(".mx_RoomHeader_inside_online")).toHaveTextContent("2 online");
+        });
+
+        it("shows nothing extra when nobody is online", () => {
+            const members = mkMembers(["offline", "offline"]);
+            room.currentState.setJoinedMemberCount(members.length);
+            room.getJoinedMembers = vi.fn().mockReturnValue(members);
+
+            const { container } = render(<RoomHeader room={room} />, getWrapper());
+
+            expect(container.querySelector(".mx_RoomHeader_inside_online")).toBeNull();
+        });
+    });
+
     it("has room info icon that opens the room info panel", async () => {
         const user = userEvent.setup();
         const { getAllByRole } = render(<RoomHeader room={room} />, getWrapper());

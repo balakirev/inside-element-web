@@ -33,11 +33,24 @@ describe("DisambiguatedProfileViewModel", () => {
         expect(vm.getSnapshot()).toEqual({
             displayName: "Alice",
             colorClass: "mx_Username_color3",
-            displayIdentifier: "@alice:example.org",
+            // Inside: a member who only shares the display name gets no Matrix ID next to it
+            displayIdentifier: undefined,
             title: "Alice (@alice:example.org)",
             emphasizeDisplayName: true,
         });
     });
+
+    it.each(["@bob:example.org", "Al\u202Eice"])(
+        "keeps the Matrix ID for a disambiguated name that could impersonate: %s",
+        (rawDisplayName) => {
+            const vm = new DisambiguatedProfileViewModel({
+                member: { ...member, rawDisplayName },
+                fallbackName: "Fallback",
+            });
+
+            expect(vm.getSnapshot().displayIdentifier).toBe("@alice:example.org");
+        },
+    );
 
     it("should default member fields when member is null", () => {
         const vm = new DisambiguatedProfileViewModel({

@@ -148,3 +148,24 @@ function findLatestImportantEvent(client: MatrixClient, timeline: Array<MatrixEv
 function isImportantEvent(client: MatrixClient, event: MatrixEvent): boolean {
     return !shouldHideEvent(event) && eventTriggersUnreadCount(client, event);
 }
+
+/**
+ * Inside: the number of unread messages in the room's loaded live timeline after the user's read
+ * receipt, counted on the client. Servers do not count messages of muted rooms, which still show
+ * a grey counter in the room list, as in other messengers. Without a receipt in the loaded part
+ * of the timeline this is a lower bound.
+ */
+export function countUnreadMessages(room: Room): number {
+    if (room.isSpaceRoom()) return 0;
+
+    const myUserId = room.client.getSafeUserId();
+    const events = room.getLiveTimeline().getEvents();
+    let count = 0;
+    for (let index = events.length - 1; index >= 0; index--) {
+        const event = events[index];
+        const eventId = event.getId();
+        if (eventId && room.hasUserReadEvent(myUserId, eventId)) break;
+        if (isImportantEvent(room.client, event)) count++;
+    }
+    return count;
+}

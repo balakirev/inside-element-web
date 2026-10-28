@@ -26,6 +26,7 @@ import { HistoryIcon, UserProfileSolidIcon } from "@vector-im/compound-design-to
 import { useRoomName } from "../../../../hooks/useRoomName.ts";
 import { RightPanelPhases } from "../../../../stores/right-panel/RightPanelStorePhases.ts";
 import { useRoomMemberCount, useRoomMembers } from "../../../../hooks/useRoomMembers.ts";
+import { useOnlineMemberCount } from "../../../../hooks/useOnlineMemberCount.ts";
 import { _t } from "../../../../languageHandler";
 import { getPlatformCallTypeProps, useRoomCall } from "../../../../hooks/room/useRoomCall";
 import { useRoomThreadNotifications } from "../../../../hooks/room/useRoomThreadNotifications.ts";
@@ -62,6 +63,7 @@ function RoomHeaderButtons({ room, extraButtons }: { room: Room; extraButtons?: 
     const sdkContext = useContext(SDKContext);
     const members = useRoomMembers(room, 2500);
     const memberCount = useRoomMemberCount(room, { throttleWait: 2500, includeInvited: true });
+    const onlineCount = useOnlineMemberCount(room, members);
 
     const {
         voiceCallDisabledReason,
@@ -369,6 +371,11 @@ function RoomHeaderButtons({ room, extraButtons }: { room: Room; extraButtons?: 
                     >
                         {formatCount(memberCount)}
                     </FacePile>
+                    {onlineCount > 0 && (
+                        <span className="mx_RoomHeader_inside_online">
+                            {_t("room|header|inside_online", { count: onlineCount })}
+                        </span>
+                    )}
                 </Text>
             )}
         </>

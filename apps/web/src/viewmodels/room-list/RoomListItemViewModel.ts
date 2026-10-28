@@ -33,6 +33,7 @@ import { shouldShowComponent } from "../../customisations/helpers/UIComponents";
 import { UIComponent } from "../../settings/UIFeature";
 import { CallStore, CallStoreEvent } from "../../stores/CallStore";
 import { clearRoomNotification, setMarkedUnreadState } from "../../utils/notifications";
+import { countUnreadMessages } from "../../Unread";
 import { tagRoom } from "../../utils/room/tagRoom";
 import { VIP_TAG } from "../../stores/room-list-v3/skip-list/filters/InsideFolderFilters";
 import { keepIfSame } from "../../utils/keepIfSame";
@@ -144,6 +145,9 @@ export class RoomListItemViewModel
         this.disposables.trackListener(props.room, RoomEvent.Name, this.onRoomChanged);
         // Read receipts turn the tick next to the user's own latest message from "sent" into "read"
         this.disposables.trackListener(props.room, RoomEvent.Receipt, this.onMessagePreviewChanged);
+        // Inside: the counter of a muted room follows new messages and the user's read receipt
+        this.disposables.trackListener(props.room, RoomEvent.Receipt, this.onMutedUnreadMaybeChanged);
+        this.disposables.trackListener(props.room, RoomEvent.Timeline, this.onMutedUnreadMaybeChanged);
         this.disposables.trackListener(props.room, RoomEvent.Tags, this.onRoomChanged);
 
         // Rebuild the available sections when their order changes or when one is created/renamed/removed
@@ -183,6 +187,10 @@ export class RoomListItemViewModel
 
     private onNotificationChanged = (): void => {
         this.updateItem();
+    };
+
+    private onMutedUnreadMaybeChanged = (): void => {
+        if (this.snapshot.current.notification.muted) this.updateItem();
     };
 
     private onMessagePreviewChanged = (): void => {
@@ -394,10 +402,6 @@ export class RoomListItemViewModel
         const showMoreOptionsMenu = hasAccessToOptionsMenu(room);
         const showNotificationMenu = hasAccessToNotificationMenu(room, client.isGuest(), isArchived);
 
-        // Notification levels
-        const canMarkAsRead = notifState.level > NotificationLevel.None;
-        const canMarkAsUnread = !canMarkAsRead && !isArchived;
-
         const canInvite = room.canInvite(client.getUserId()!) && !isDm && shouldShowComponent(UIComponent.InviteUsers);
         const canCopyRoomLink = !isDm;
 
@@ -425,6 +429,13 @@ export class RoomListItemViewModel
         }
 
         const isNotificationMute = elementRoomNotifState === ElementRoomNotifState.Mute;
+        // Inside: a muted room keeps a counter of its unread messages, drawn grey by the skin, as in
+        // other messengers. Only here: the space panel folders and the favicon still leave it out.
+        const mutedUnreadCount = isNotificationMute && !notifState.invited ? countUnreadMessages(room) : 0;
+
+        // Notification levels
+        const canMarkAsRead = notifState.level > NotificationLevel.None || mutedUnreadCount > 0;
+        const canMarkAsUnread = !canMarkAsRead && !isArchived;
 
         // Video room and call state tracking
         const call = CallStore.instance.getCall(room.roomId);
@@ -448,14 +459,15 @@ export class RoomListItemViewModel
             isBold: notifState.hasAnyNotificationOrActivity,
             messagePreview,
             notification: {
-                hasAnyNotificationOrActivity: notifState.hasAnyNotificationOrActivity || hasParticipantsInCall,
+                hasAnyNotificationOrActivity:
+                    notifState.hasAnyNotificationOrActivity || hasParticipantsInCall || mutedUnreadCount > 0,
                 isUnsentMessage: notifState.isUnsentMessage,
                 invited: notifState.invited,
                 isMention: notifState.isMention,
                 isActivityNotification: notifState.isActivityNotification,
-                isNotification: notifState.isNotification,
-                hasUnreadCount: notifState.hasUnreadCount,
-                count: notifState.count,
+                isNotification: notifState.isNotification || mutedUnreadCount > 0,
+                hasUnreadCount: notifState.hasUnreadCount || mutedUnreadCount > 0,
+                count: notifState.count || mutedUnreadCount,
                 muted: isNotificationMute,
                 callType: hasParticipantsInCall ? callType : undefined,
             },

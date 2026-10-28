@@ -16,7 +16,7 @@ import {
     MatrixEvent,
     type MRoomTopicEventContent,
     Room,
-    type RoomMember,
+    RoomMember,
 } from "matrix-js-sdk/src/matrix";
 import { KnownMembership } from "matrix-js-sdk/src/types";
 import { render } from "test-utils-rtl";
@@ -554,6 +554,27 @@ describe("TextForEvent", () => {
                     mockClient,
                 ),
             ).toMatchInlineSnapshot(`"Andy changed their display name and profile picture"`);
+        });
+
+        it("names same-named members without their Matrix ID", () => {
+            const event = new MatrixEvent({
+                type: "m.room.member",
+                sender: "@dmitry:foo",
+                content: { membership: KnownMembership.Invite, displayname: "Дмитрий" },
+                state_key: "@testuser:foo",
+            });
+            const sender = new RoomMember("!room:foo", "@dmitry:foo");
+            sender.rawDisplayName = "Дмитрий";
+            sender.disambiguate = true;
+            sender.name = "Дмитрий (@dmitry:foo)";
+            const target = new RoomMember("!room:foo", "@testuser:foo");
+            target.rawDisplayName = "Дмитрий";
+            target.disambiguate = true;
+            target.name = "Дмитрий (@testuser:foo)";
+            event.sender = sender;
+            event.target = target;
+
+            expect(textForEvent(event, mockClient)).toBe("Дмитрий invited Дмитрий");
         });
 
         describe("knocks", () => {

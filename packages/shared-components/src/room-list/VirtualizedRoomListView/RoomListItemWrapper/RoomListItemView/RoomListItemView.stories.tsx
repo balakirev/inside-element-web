@@ -167,6 +167,14 @@ export const Muted: Story = {
     },
 };
 
+/** Inside: a favourite room without unread messages shows a pin in place of the badge. */
+export const Favourite: Story = {
+    args: {
+        timestamp: "20:20",
+        isFavourite: true,
+    },
+};
+
 export const LongContent: Story = {
     args: {
         name: "Loooooooooooooooooooooooooooooooooooooong name",
