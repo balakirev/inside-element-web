@@ -78,7 +78,7 @@ export default function InsideRoundVideoBody(props: IBodyProps): JSX.Element {
     );
 }
 
-const RING_R = 48.5;
+const RING_R = 48.6;
 const RING_C = 2 * Math.PI * RING_R;
 
 interface CircleProps {
@@ -305,19 +305,19 @@ export function RoundVideoCircle({ mxEvent, mediaEventHelper, inhibitInteraction
                         onPlay={() => sound && setPaused(false)}
                     />
                 )}
-                {sound && (
-                    <svg className="mx_InsideRoundVideoBody_ring" viewBox="0 0 100 100" aria-hidden>
-                        <circle
-                            cx="50"
-                            cy="50"
-                            r={RING_R}
-                            strokeDasharray={RING_C}
-                            strokeDashoffset={RING_C * (1 - progress)}
-                        />
-                    </svg>
-                )}
                 {sound && paused && <div className="mx_InsideRoundVideoBody_play" aria-hidden />}
             </div>
+            {sound && (
+                <svg className="mx_InsideRoundVideoBody_ring" viewBox="0 0 100 100" aria-hidden>
+                    <circle
+                        cx="50"
+                        cy="50"
+                        r={RING_R}
+                        strokeDasharray={RING_C}
+                        strokeDashoffset={RING_C * (1 - progress)}
+                    />
+                </svg>
+            )}
             <span className="mx_InsideRoundVideoBody_duration">
                 {label}
                 {!sound && <VolumeOffSolidIcon className="mx_InsideRoundVideoBody_muted" aria-hidden />}

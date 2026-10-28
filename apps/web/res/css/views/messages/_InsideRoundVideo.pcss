@@ -31,7 +31,7 @@ Please see LICENSE files in the repository root for full details.
     }
 
     /* The sender of a group message: a small pill over the circle, not a bubble strip. */
-    > [data-testid="event-tile-slot-sender"] {
+    &:not([class*="_stateOwnEvent_"]) > [data-testid="event-tile-slot-sender"] {
         width: fit-content !important;
         max-width: 260px !important;
         margin-block-end: 4px;
@@ -44,6 +44,8 @@ Please see LICENSE files in the repository root for full details.
 
 .mx_InsideRoundVideoBody {
     position: relative;
+    /* The body slot scrolls and clips its children; the pills sit over the edge of the circle. */
+    overflow: visible !important;
     width: 260px;
     max-width: min(260px, 70vw);
     aspect-ratio: 1;
@@ -60,6 +62,7 @@ Please see LICENSE files in the repository root for full details.
 
 .mx_InsideRoundVideoBody_circle {
     position: absolute;
+    z-index: 0;
     inset: 0;
     overflow: hidden;
     border-radius: 50%;
@@ -96,8 +99,8 @@ Please see LICENSE files in the repository root for full details.
     }
 }
 
-.mx_InsideRoundVideoBody_ring circle {
-    opacity: 0.9;
+.mx_InsideRoundVideoBody_ring {
+    z-index: 1;
 }
 
 /* Paused with sound: a play mark in the middle. */
@@ -124,6 +127,7 @@ Please see LICENSE files in the repository root for full details.
 /* Duration (remaining while playing), with the muted mark while it loops silently. */
 .mx_InsideRoundVideoBody_duration {
     position: absolute;
+    z-index: 2;
     inset-block-end: 6px;
     inset-inline-start: 6px;
     display: inline-flex;
