@@ -39,7 +39,6 @@ export function RoomListItemNotificationMenu({ vm }: RoomListItemNotificationMen
     const snapshot = useViewModel(vm);
     const [open, setOpen] = useState(false);
     const isMuted = snapshot.roomNotifState === RoomNotifState.Mute;
-    const checkComponent = <CheckIcon width="24px" height="24px" color="var(--cpd-color-icon-primary)" />;
 
     return (
         <Menu
@@ -63,43 +62,57 @@ export function RoomListItemNotificationMenu({ vm }: RoomListItemNotificationMen
                 // We don't want keyboard navigation events to bubble up to the ListView changing the focused item
                 onKeyDown={(e) => e.stopPropagation()}
             >
-                <MenuItem
-                    aria-selected={snapshot.roomNotifState === RoomNotifState.AllMessages}
-                    hideChevron={true}
-                    label={_t("notifications|default_settings")}
-                    onSelect={() => vm.onSetRoomNotifState(RoomNotifState.AllMessages)}
-                    onClick={(evt) => evt.stopPropagation()}
-                >
-                    {snapshot.roomNotifState === RoomNotifState.AllMessages && checkComponent}
-                </MenuItem>
-                <MenuItem
-                    aria-selected={snapshot.roomNotifState === RoomNotifState.AllMessagesLoud}
-                    hideChevron={true}
-                    label={_t("notifications|all_messages")}
-                    onSelect={() => vm.onSetRoomNotifState(RoomNotifState.AllMessagesLoud)}
-                    onClick={(evt) => evt.stopPropagation()}
-                >
-                    {snapshot.roomNotifState === RoomNotifState.AllMessagesLoud && checkComponent}
-                </MenuItem>
-                <MenuItem
-                    aria-selected={snapshot.roomNotifState === RoomNotifState.MentionsOnly}
-                    hideChevron={true}
-                    label={_t("notifications|mentions_keywords")}
-                    onSelect={() => vm.onSetRoomNotifState(RoomNotifState.MentionsOnly)}
-                    onClick={(evt) => evt.stopPropagation()}
-                >
-                    {snapshot.roomNotifState === RoomNotifState.MentionsOnly && checkComponent}
-                </MenuItem>
-                <MenuItem
-                    aria-selected={snapshot.roomNotifState === RoomNotifState.Mute}
-                    hideChevron={true}
-                    label={_t("notifications|mute_room")}
-                    onSelect={() => vm.onSetRoomNotifState(RoomNotifState.Mute)}
-                    onClick={(evt) => evt.stopPropagation()}
-                >
-                    {snapshot.roomNotifState === RoomNotifState.Mute && checkComponent}
-                </MenuItem>
+                <NotificationOptions vm={vm} />
             </div>
         </Menu>
+    );
+}
+
+/**
+ * The notification options, shared by this menu and (Inside) the room's context menu.
+ */
+export function NotificationOptions({ vm }: RoomListItemNotificationMenuProps): JSX.Element {
+    const snapshot = useViewModel(vm);
+    const checkComponent = <CheckIcon width="24px" height="24px" color="var(--cpd-color-icon-primary)" />;
+
+    return (
+        <>
+            <MenuItem
+                aria-selected={snapshot.roomNotifState === RoomNotifState.AllMessages}
+                hideChevron={true}
+                label={_t("notifications|default_settings")}
+                onSelect={() => vm.onSetRoomNotifState(RoomNotifState.AllMessages)}
+                onClick={(evt) => evt.stopPropagation()}
+            >
+                {snapshot.roomNotifState === RoomNotifState.AllMessages && checkComponent}
+            </MenuItem>
+            <MenuItem
+                aria-selected={snapshot.roomNotifState === RoomNotifState.AllMessagesLoud}
+                hideChevron={true}
+                label={_t("notifications|all_messages")}
+                onSelect={() => vm.onSetRoomNotifState(RoomNotifState.AllMessagesLoud)}
+                onClick={(evt) => evt.stopPropagation()}
+            >
+                {snapshot.roomNotifState === RoomNotifState.AllMessagesLoud && checkComponent}
+            </MenuItem>
+            <MenuItem
+                aria-selected={snapshot.roomNotifState === RoomNotifState.MentionsOnly}
+                hideChevron={true}
+                label={_t("notifications|mentions_keywords")}
+                onSelect={() => vm.onSetRoomNotifState(RoomNotifState.MentionsOnly)}
+                onClick={(evt) => evt.stopPropagation()}
+            >
+                {snapshot.roomNotifState === RoomNotifState.MentionsOnly && checkComponent}
+            </MenuItem>
+            <MenuItem
+                aria-selected={snapshot.roomNotifState === RoomNotifState.Mute}
+                hideChevron={true}
+                label={_t("notifications|mute_room")}
+                onSelect={() => vm.onSetRoomNotifState(RoomNotifState.Mute)}
+                onClick={(evt) => evt.stopPropagation()}
+            >
+                {snapshot.roomNotifState === RoomNotifState.Mute && checkComponent}
+            </MenuItem>
+        </>
     );
 }

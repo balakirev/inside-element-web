@@ -19,12 +19,16 @@ import {
     ArrowRightIcon,
     CheckIcon,
     MinusIcon,
+    NotificationsSolidIcon,
+    NotificationsOffSolidIcon,
 } from "@vector-im/compound-design-tokens/assets/web/icons";
 
 import { _t } from "../../../../core/i18n/i18n";
 import { useViewModel, type ViewModel } from "../../../../core/viewmodel";
 import type { RoomListItemViewSnapshot, RoomListItemViewActions } from "./RoomListItemView";
 import styles from "./RoomListItemMoreOptionsMenu.module.css";
+import { NotificationOptions } from "./RoomListItemNotificationMenu";
+import { RoomNotifState } from "./RoomNotifs";
 
 /**
  * View model type for room list item
@@ -116,6 +120,25 @@ export function MoreOptionContent({ vm }: MoreOptionContentProps): JSX.Element {
                         onClick={(evt) => evt.stopPropagation()}
                     />
                 </>
+            )}
+            {/* Inside: notification options live here, as Mute does in other messengers — the row has no
+                hover buttons in the Inside skin. */}
+            {snapshot.showNotificationMenu && (
+                <SubMenu
+                    trigger={
+                        <MenuItem
+                            Icon={
+                                snapshot.roomNotifState === RoomNotifState.Mute
+                                    ? NotificationsOffSolidIcon
+                                    : NotificationsSolidIcon
+                            }
+                            label={_t("room_list|notification_options")}
+                            onSelect={null}
+                        />
+                    }
+                >
+                    <NotificationOptions vm={vm} />
+                </SubMenu>
             )}
             <Separator />
             {snapshot.canInvite && (

@@ -15,6 +15,7 @@ import { useMockedViewModel } from "../../../../core/viewmodel";
 import type { RoomListItemViewSnapshot } from "./RoomListItemView";
 import { defaultSnapshot } from "./default-snapshot";
 import { mockedActions as mockCallbacks } from "./mocked-actions";
+import { RoomNotifState } from "./RoomNotifs";
 
 describe("<RoomListItemMoreOptionsMenu />", () => {
     const renderMenu = (overrides: Partial<RoomListItemViewSnapshot> = {}): ReturnType<typeof render> => {
@@ -102,6 +103,30 @@ describe("<RoomListItemMoreOptionsMenu />", () => {
         await user.click(markAsUnreadOption);
 
         expect(mockCallbacks.onMarkAsUnread).toHaveBeenCalled();
+    });
+
+    it("should not show notification options when showNotificationMenu is false", async () => {
+        const user = userEvent.setup();
+        renderMenu({ showNotificationMenu: false });
+
+        await user.click(screen.getByRole("button", { name: "More Options" }));
+
+        expect(screen.queryByRole("menuitem", { name: "Notification options" })).not.toBeInTheDocument();
+    });
+
+    it("should mute the room from the notification options submenu", async () => {
+        const user = userEvent.setup();
+        // Rendered directly, like the section submenu tests: radix menus misbehave in the test env.
+        const TestComponent = (): JSX.Element => {
+            const vm = useMockedViewModel({ ...defaultSnapshot, showNotificationMenu: true }, mockCallbacks);
+            return <MoreOptionContent vm={vm} />;
+        };
+        render(<TestComponent />);
+
+        expect(screen.getByRole("menuitem", { name: "Notification options" })).toBeInTheDocument();
+        await user.click(screen.getByRole("menuitem", { name: "Mute room" }));
+
+        expect(mockCallbacks.onSetRoomNotifState).toHaveBeenCalledWith(RoomNotifState.Mute);
     });
 
     it("should show favorite option and call onToggleFavorite", async () => {
