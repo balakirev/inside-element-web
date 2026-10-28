@@ -74,6 +74,40 @@ describe("playDustEffect", () => {
         expect(line.style.visibility).toBe("");
     });
 
+    it("inlines the computed styles of the bubble but not the custom properties", () => {
+        addTile("$ev-css");
+        const real = window.getComputedStyle.bind(window);
+        const spy = vi.spyOn(window, "getComputedStyle").mockImplementation((el, pseudo) => {
+            const cs = real(el, pseudo);
+            if (pseudo) return cs;
+            const names = ["color", "--cpd-color-text-primary", "--inside-accent"];
+            const fake: Record<string, unknown> = {
+                ...names,
+                length: names.length,
+                getPropertyValue: (name: string) => (name === "color" ? "rgb(1, 2, 3)" : "#123456"),
+                getPropertyPriority: () => "",
+            };
+            return new Proxy(cs, {
+                get: (target, key) => {
+                    if (typeof key === "string" && key in fake) return fake[key];
+                    const value = Reflect.get(target, key, target);
+                    return typeof value === "function" ? value.bind(target) : value;
+                },
+            });
+        });
+
+        try {
+            expect(playDustEffect("$ev-css")).toBe(true);
+        } finally {
+            spy.mockRestore();
+        }
+
+        const clone = document.querySelector<HTMLElement>(`.${DUST_OVERLAY_CLASS} .mx_EventTile_line`)!;
+        expect(clone.style.getPropertyValue("color")).toBe("rgb(1, 2, 3)");
+        expect(clone.style.getPropertyValue("--cpd-color-text-primary")).toBe("");
+        expect(clone.style.getPropertyValue("--inside-accent")).toBe("");
+    });
+
     it("does nothing when the user prefers reduced motion", () => {
         mockMatchMedia(true);
         const line = addTile("$ev2");

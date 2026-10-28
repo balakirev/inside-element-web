@@ -41,8 +41,11 @@ const PAD_BOTTOM = 24;
 
 /** Upper bound of particles per bubble; the sampling step grows for big bubbles. */
 const MAX_PARTICLES = 9000;
-/** Upper bound of elements whose styles are copied into the clone. */
-const MAX_CLONED_ELEMENTS = 800;
+/**
+ * Upper bound of elements whose styles are copied into the clone. The copy runs synchronously
+ * before the redaction request, so it is kept small (deeper elements keep only their classes).
+ */
+const MAX_CLONED_ELEMENTS = 400;
 
 interface Particle {
     x: number;
@@ -115,6 +118,10 @@ function findTargets(eventId: string): HTMLElement[] {
 function copyStyle(from: CSSStyleDeclaration, to: CSSStyleDeclaration): void {
     for (let i = 0; i < from.length; i++) {
         const name = from[i];
+        // Custom properties (hundreds of --cpd-*/--inside-* tokens, inherited by every element)
+        // are skipped: computed values already have var() resolved, and copying them would be
+        // about two thirds of the work.
+        if (name.startsWith("--")) continue;
         to.setProperty(name, from.getPropertyValue(name), from.getPropertyPriority(name));
     }
 }
