@@ -66,6 +66,7 @@ import { checkBrowserSupport } from "./SupportedBrowser";
 import { type URLParams } from "./vector/url_utils.ts";
 import { type OnLoggedInPayload } from "./dispatcher/payloads/OnLoggedInPayload.ts";
 import { clearUploadedMediaCache } from "./utils/UploadedMediaCache";
+import { clearMediaCache } from "./utils/media/mediaCacheShared";
 import { CallStatusListener } from "./CallStatusListener.ts";
 import { CallStore } from "./stores/CallStore.ts";
 import { ModuleApi } from "./modules/Api.ts";
@@ -1191,6 +1192,9 @@ export async function clearStorage(opts?: { deleteEverything?: boolean }): Promi
     }
 
     window.sessionStorage?.clear();
+
+    // Inside: the service worker's cache of media responses belongs to the session too.
+    await clearMediaCache();
 
     // create a temporary client to clear out the persistent stores.
     const cli = createMatrixClient({
