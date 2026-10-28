@@ -25,11 +25,14 @@ the next upstream release with `git rebase --onto <new-tag> <old-tag> inside/mai
 | Voice message button                   | While the composer is empty, the round button in place of "send" records a voice message, as in other messengers. Element only offered it in the "more options" menu. |
 | Editing in the composer                | Editing a message opens it in the main composer under an "Editing" bar, with a round save button in place of "send", as in other messengers; the bubble stays as it is. Element edited inside the bubble. The send composer unmounts meanwhile and gets its draft back from local storage. Not with the rich text editor (labs), which still edits in the timeline. |
 | Bar under the room list                | Contacts (start a chat), Chats (all chats) and the user's avatar with Element's user menu, moved from the top of the space panel — the bottom tab bar of other messengers. |
+| Media retry after a 401                | With MAS access tokens expire; the service worker used a stale stored token and avatars stayed broken. It now asks the tab to refresh the token and retries once. |
+| "Open here" on the other-tab screen    | The tab that lost the session to another tab gets a button to take it back in one click instead of only "close this tab". |
+| Notifications in the context menu       | Right-click on a room offers the notification options (mute and others), as Mute in other messengers; the Inside skin hides the hover buttons. |
 | Version script without `jq`            | Branch builds failed: the Docker builder image has no `jq`.                                                                                                                                                                                                                                                                                                               |
 
 ## Build
 
-`.github/workflows/inside-docker.yaml` runs the unit and browser tests related to our changes (not the Storybook
+`.github/workflows/inside-docker.yaml` runs, on `inside-v*` tags only, the unit and browser tests related to our changes (six shards, in parallel with the image build) (not the Storybook
 visual suite: its baselines are Element's) and builds
 `ghcr.io/balakirev/inside-element-web` from the stock `apps/web/Dockerfile`.
 

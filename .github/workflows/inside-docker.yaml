@@ -3,17 +3,17 @@
 # Upstream workflows stay untouched and none of them runs on our branches
 # (they trigger on develop/master/staging and on `v*` tags only).
 #
-#   push to inside/main     -> tests + image ghcr.io/<owner>/inside-element-web:main and :sha-<short>
 #   tag inside-v1.12.32-N   -> tests + image tagged with the same name (what production pins to)
-#   manual run              -> same as a push
+#   manual run              -> tests + image :sha-<short>
 #
-# The production stack (balakirev/inside-chat, compose.yml) pins an exact tag; a new image never
-# reaches users until that pin is changed and deployed.
+# Pushes to inside/main alone build nothing: every release is a tag, and building the branch too
+# only doubled the runs. Tests and the image run in parallel (≈6 min instead of ≈12): the image of
+# a tag whose tests failed still gets pushed, but production pins an exact tag and a new image never
+# reaches users until that pin is changed and deployed — deploy only tags with a green run.
 name: Inside / tests and image
 
 on:
     push:
-        branches: [inside/main]
         tags: ["inside-v*"]
     workflow_dispatch:
 
@@ -25,16 +25,16 @@ permissions: {}
 
 jobs:
     tests:
-        name: Unit tests for our changes (${{ matrix.shard }}/3)
+        name: Unit tests for our changes (${{ matrix.shard }}/6)
         runs-on: ubuntu-24.04
         permissions:
             contents: read
         strategy:
             fail-fast: false
             matrix:
-                # Three parallel parts, as Element's own CI runs them: one worker pool running every
+                # Six parallel parts (Element's own CI runs several too): one worker pool running every
                 # test touched by a change to shared UI hit a vitest teardown race on the runner.
-                shard: [1, 2, 3]
+                shard: [1, 2, 3, 4, 5, 6]
         steps:
             - uses: actions/checkout@v4
               with:
@@ -68,11 +68,10 @@ jobs:
             - name: Run tests touched by Inside changes
               run: |
                   base=$(cat .inside-base)
-                  pnpm vitest run --changed "$base" --project '!*storybook*' --passWithNoTests --shard "${{ matrix.shard }}/3"
+                  pnpm vitest run --changed "$base" --project '!*storybook*' --passWithNoTests --shard "${{ matrix.shard }}/6"
 
     image:
         name: Build and push image
-        needs: tests
         runs-on: ubuntu-24.04
         permissions:
             contents: read
@@ -98,7 +97,6 @@ jobs:
                   images: ghcr.io/${{ github.repository_owner }}/inside-element-web
                   tags: |
                       type=ref,event=tag
-                      type=raw,value=main,enable=${{ github.ref == 'refs/heads/inside/main' }}
                       type=sha,prefix=sha-
 
             - uses: docker/build-push-action@v6
