@@ -35,7 +35,8 @@ import { mkEvent, stubClient } from "test-utils";
 
 import { SDKContextClass } from "../../contexts/SDKContextClass";
 import { MatrixClientPeg } from "../../MatrixClientPeg";
-import { ElementWidgetDriver } from "./ElementWidgetDriver";
+import { ElementWidgetDriver, isTrustedCallWidget } from "./ElementWidgetDriver";
+import { OIDCState } from "./WidgetPermissionStore";
 import { ModuleApi } from "../../modules/Api";
 import dis from "../../dispatcher/dispatcher";
 import Modal from "../../Modal";
@@ -179,6 +180,51 @@ describe("ElementWidgetDriver", () => {
             token: await client.getOpenIdToken(),
         };
         expect(listener).toHaveBeenCalledWith(openIdUpdate);
+    });
+
+    describe("OpenID for Element Call (Inside)", () => {
+        const callWidget = (url: string): Widget =>
+            new Widget({ id: "group_call", creatorUserId: "@alice:example.org", type: WidgetType.CALL.preferred, url });
+
+        it("allows a virtual call widget at once, without a dialog", async () => {
+            const driver = new ElementWidgetDriver(
+                callWidget("https://call.example.org"),
+                WidgetKind.Room,
+                true,
+                "!1:example.org",
+            );
+            vi.spyOn(ModuleApi.instance.widgetLifecycle, "preapproveIdentity").mockResolvedValue(false);
+            vi.spyOn(SDKContextClass.instance.widgetPermissionStore, "getOIDCState").mockReturnValue(OIDCState.Unknown);
+            const listener = vi.fn();
+            const observer = new SimpleObservable<IOpenIDUpdate>();
+            observer.onUpdate(listener);
+            await driver.askOpenID(observer);
+            expect(listener).toHaveBeenCalledWith({
+                state: OpenIDRequestState.Allowed,
+                token: await client.getOpenIdToken(),
+            });
+        });
+
+        it("trusts a call widget from our own origin, not from another one", () => {
+            expect(
+                isTrustedCallWidget(
+                    callWidget(window.location.origin + "/widgets/element-call/"),
+                    WidgetKind.Room,
+                    false,
+                ),
+            ).toBe(true);
+            expect(isTrustedCallWidget(callWidget("https://evil.example.org/call"), WidgetKind.Room, false)).toBe(
+                false,
+            );
+            expect(isTrustedCallWidget(callWidget("https://call.example.org"), WidgetKind.Account, true)).toBe(false);
+            expect(
+                isTrustedCallWidget(
+                    new Widget({ id: "x", creatorUserId: "@a:b", type: "example", url: window.location.origin }),
+                    WidgetKind.Room,
+                    true,
+                ),
+            ).toBe(false);
+        });
     });
 
     describe("sendToDevice", () => {

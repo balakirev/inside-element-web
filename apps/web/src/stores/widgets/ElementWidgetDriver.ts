@@ -87,6 +87,9 @@ const normalizeTurnServer = ({ urls, username, credential }: IClientTurnServer):
 // Replace with matrix-rust-sdk?
 export class ElementWidgetDriver extends WidgetDriver {
     private allowedCapabilities: Set<Capability>;
+    // Inside: the Element Call widget we embed ourselves; its OpenID request is
+    // always allowed (see askOpenID).
+    private readonly trustedCall: boolean;
 
     // TODO: Refactor widgetKind into the Widget class
     public constructor(
@@ -96,6 +99,7 @@ export class ElementWidgetDriver extends WidgetDriver {
         private inRoomId?: string,
     ) {
         super();
+        this.trustedCall = isTrustedCallWidget(forWidget, forWidgetKind, virtual);
 
         // Always allow screenshots to be taken because it's a client-induced flow. The widget can't
         // spew screenshots at us and can't request screenshots of us, so it's up to us to provide the
@@ -641,6 +645,18 @@ export class ElementWidgetDriver extends WidgetDriver {
     }
 
     public async askOpenID(observer: SimpleObservable<IOpenIDUpdate>): Promise<void> {
+        // Inside: the constructor stores "allowed" for Element Call in the
+        // permission store, but a call joined from the incoming-call toast
+        // asked before that was readable and got the "verify your identity"
+        // dialog; while it was open Element Call did not hand its leave over
+        // to lk-jwt-service, so a closed tab stayed in the call for an hour.
+        if (this.trustedCall) {
+            return observer.update({
+                state: OpenIDRequestState.Allowed,
+                token: await MatrixClientPeg.safeGet().getOpenIdToken(),
+            });
+        }
+
         // Try the new module API first, then fall back to legacy path
         const approved = await ModuleApi.instance.widgetLifecycle.preapproveIdentity(
             toWidgetDescriptor(this.forWidget, this.inRoomId),
@@ -845,5 +861,21 @@ export class ElementWidgetDriver extends WidgetDriver {
      */
     public processError(error: unknown): IWidgetApiErrorResponseDataDetails | undefined {
         return error instanceof MatrixError ? { matrix_api_error: error.asWidgetApiErrorData() } : undefined;
+    }
+}
+
+/**
+ * Inside: whether a widget is the Element Call that this app embeds: a call
+ * widget in a room that is either virtual (created by the app) or served from
+ * the app's own origin. A call widget added by someone to a room with another
+ * URL is not trusted.
+ */
+export function isTrustedCallWidget(widget: Widget, kind: WidgetKind, virtual: boolean): boolean {
+    if (kind !== WidgetKind.Room || !WidgetType.CALL.matches(widget.type)) return false;
+    if (virtual) return true;
+    try {
+        return new URL(widget.templateUrl, window.location.href).origin === window.location.origin;
+    } catch {
+        return false;
     }
 }
