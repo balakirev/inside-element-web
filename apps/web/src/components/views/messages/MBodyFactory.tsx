@@ -32,6 +32,7 @@ import { VideoBodyViewModel } from "../../../viewmodels/message-body/VideoBodyVi
 import { isMimeTypeAllowed } from "../../../utils/blobs";
 import { type MediaEventHelper } from "../../../utils/MediaEventHelper";
 import { MBodyTileViewModel } from "../../../viewmodels/message-body/MBodyTileViewModel";
+import InsideDocumentTile from "./InsideDocumentTile";
 
 type MBodyComponent = React.ComponentType<IBodyProps>;
 
@@ -51,7 +52,22 @@ export function FileBodyFactory(props: FileBodyProps): JSX.Element {
         return <LegacyFileBody {...props} />;
     }
 
-    return <PreviewFileBody mediaEventHelper={props.mediaEventHelper} mxEvent={props.mxEvent} />;
+    return <InsideFileBody mediaEventHelper={props.mediaEventHelper} mxEvent={props.mxEvent} />;
+}
+
+/** Inside: the chat timelines show a file as a Telegram-like document tile; the panels keep Element's. */
+const DOCUMENT_TILE_TIMELINES: TimelineRenderingType[] = [
+    TimelineRenderingType.Room,
+    TimelineRenderingType.Thread,
+    TimelineRenderingType.Search,
+];
+
+function InsideFileBody({ mxEvent, mediaEventHelper }: PreviewFileBodyProps): JSX.Element {
+    const { timelineRenderingType } = useContext(RoomContext);
+    if (DOCUMENT_TILE_TIMELINES.includes(timelineRenderingType)) {
+        return <InsideDocumentTile mxEvent={mxEvent} mediaEventHelper={mediaEventHelper} />;
+    }
+    return <PreviewFileBody mediaEventHelper={mediaEventHelper} mxEvent={mxEvent} />;
 }
 
 /// the old look for files, still used for images, videos, audio, voice messages

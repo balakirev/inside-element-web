@@ -201,7 +201,7 @@ describe("MBodyFactory", () => {
         };
 
         it("offers the viewer only once the lab is turned on, without a remount", async () => {
-            // Inside: the lab is on by default.
+            // Inside: the lab is on by default; the document tile labels its whole area with the action.
             await SettingsStore.setValue("feature_pdf_viewer", null, SettingLevel.DEVICE, false);
             renderPdfBody();
             expect(screen.queryByRole("button", { name: "Open PDF" })).not.toBeInTheDocument();
@@ -221,7 +221,7 @@ describe("MBodyFactory", () => {
         });
 
         it("offers the viewer only once the lab is turned on, without a remount", async () => {
-            // Inside: the lab is on by default.
+            // Inside: the lab is on by default; the document tile labels its whole area with the action.
             await SettingsStore.setValue("feature_pdf_viewer", null, SettingLevel.DEVICE, false);
             const mediaEvent = mkEvent("m.file", { body: "README.md", info: { mimetype: "text/markdown" } });
 
@@ -272,7 +272,8 @@ describe("MBodyFactory", () => {
         expect(container).toMatchSnapshot();
     });
 
-    it.each([TimelineRenderingType.Room, TimelineRenderingType.File])(
+    // Inside: the chat timelines show the document tile instead (InsideDocumentTile.test.tsx).
+    it.each([TimelineRenderingType.File])(
         "renderMBody shows the preview tile for m.file in %s",
         async (timelineRenderingType) => {
             const mediaEvent = new MatrixEvent({
@@ -319,7 +320,8 @@ describe("MBodyFactory", () => {
         const renderPreview = (mediaEvent: MatrixEvent, mediaEventHelper: MediaEventHelper) =>
             renderInRoomContext(
                 <FileBodyFactory mxEvent={mediaEvent} mediaEventHelper={mediaEventHelper} showFileInfo={true} />,
-                TimelineRenderingType.Room,
+                // Inside: the room timeline shows the document tile instead.
+                TimelineRenderingType.File,
             );
 
         it("shows the file size as the tile body when the event declares one", () => {
