@@ -22,6 +22,7 @@ import {
 import { CallType } from "matrix-js-sdk/src/webrtc/call";
 import { createTestClient, flushPromises, mkMessage } from "test-utils";
 
+import { VIP_TAG } from "../../stores/room-list-v3/skip-list/filters/InsideFolderFilters";
 import { RoomNotificationState } from "../../stores/notifications/RoomNotificationState";
 import { RoomNotificationStateStore } from "../../stores/notifications/RoomNotificationStateStore";
 import { NotificationStateEvents } from "../../stores/notifications/NotificationState";
@@ -134,6 +135,27 @@ describe("RoomListItemViewModel", () => {
             await flushPromises();
 
             expect(viewModel.getSnapshot().messagePreview).toBeUndefined();
+        });
+    });
+
+    describe("VIP", () => {
+        it("marks the room VIP with a private room tag", async () => {
+            viewModel = new RoomListItemViewModel({ room, client: matrixClient });
+            expect(viewModel.getSnapshot().isVip).toBe(false);
+
+            viewModel.onToggleVip();
+
+            expect(matrixClient.setRoomTag).toHaveBeenCalledWith(room.roomId, VIP_TAG, {});
+        });
+
+        it("removes the VIP mark", async () => {
+            room.tags = { [VIP_TAG]: {} };
+            viewModel = new RoomListItemViewModel({ room, client: matrixClient });
+            expect(viewModel.getSnapshot().isVip).toBe(true);
+
+            viewModel.onToggleVip();
+
+            expect(matrixClient.deleteRoomTag).toHaveBeenCalledWith(room.roomId, VIP_TAG);
         });
     });
 

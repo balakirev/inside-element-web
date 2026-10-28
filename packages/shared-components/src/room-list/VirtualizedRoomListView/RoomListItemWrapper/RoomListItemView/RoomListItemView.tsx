@@ -96,6 +96,8 @@ export interface RoomListItemViewSnapshot {
     isFavourite: boolean;
     /** Whether the room is a low priority room */
     isLowPriority: boolean;
+    /** Inside: whether the user marked the room VIP; undefined hides the option */
+    isVip?: boolean;
     /** Whether the room is a direct message */
     isDm: boolean;
     /** Can invite other users in the room */
@@ -134,6 +136,8 @@ export interface RoomListItemViewActions {
     onToggleFavorite: () => void;
     /** Called when the room's low priority status should be toggled */
     onToggleLowPriority: () => void;
+    /** Inside: called when the room's VIP mark should be toggled */
+    onToggleVip?: () => void;
     /** Called when inviting users to the room */
     onInvite: () => void;
     /** Called when copying the room link */

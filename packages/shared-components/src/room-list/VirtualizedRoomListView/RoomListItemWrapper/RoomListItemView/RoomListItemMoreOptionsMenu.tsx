@@ -21,6 +21,7 @@ import {
     MinusIcon,
     NotificationsSolidIcon,
     NotificationsOffSolidIcon,
+    VerifiedIcon,
 } from "@vector-im/compound-design-tokens/assets/web/icons";
 
 import { _t } from "../../../../core/i18n/i18n";
@@ -99,6 +100,16 @@ export function MoreOptionContent({ vm }: MoreOptionContentProps): JSX.Element {
                     onSelect={vm.onMarkAsUnread}
                     onClick={(evt) => evt.stopPropagation()}
                     hideChevron={true}
+                />
+            )}
+            {/* Inside: VIP is a folder of the space panel; independent of sections, so always offered. */}
+            {snapshot.isVip !== undefined && vm.onToggleVip && (
+                <ToggleMenuItem
+                    checked={snapshot.isVip}
+                    Icon={VerifiedIcon}
+                    label={_t("room_list|more_options|vip")}
+                    onSelect={vm.onToggleVip}
+                    onClick={(evt) => evt.stopPropagation()}
                 />
             )}
             {/* Favourited and Low priority assign a section, so they are hidden for a room whose

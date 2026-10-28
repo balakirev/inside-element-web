@@ -211,7 +211,8 @@
             "low_priority": "Низкий приоритет",
             "mark_read": "Отметить как прочитанное",
             "mark_unread": "Отметить как непрочитанное",
-            "move_to_section": "Переместить в"
+            "move_to_section": "Переместить в",
+            "vip": "VIP"
         },
         "notification_options": "Параметры уведомлений",
         "open_space_menu": "Открыть меню пространств",

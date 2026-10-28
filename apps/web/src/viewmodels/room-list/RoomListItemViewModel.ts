@@ -34,6 +34,7 @@ import { UIComponent } from "../../settings/UIFeature";
 import { CallStore, CallStoreEvent } from "../../stores/CallStore";
 import { clearRoomNotification, setMarkedUnreadState } from "../../utils/notifications";
 import { tagRoom } from "../../utils/room/tagRoom";
+import { VIP_TAG } from "../../stores/room-list-v3/skip-list/filters/InsideFolderFilters";
 import { keepIfSame } from "../../utils/keepIfSame";
 import dispatcher from "../../dispatcher/dispatcher";
 import { Action } from "../../dispatcher/actions";
@@ -386,6 +387,7 @@ export class RoomListItemViewModel
 
         const isFavourite = Boolean(roomTags[DefaultTagID.Favourite]);
         const isLowPriority = Boolean(roomTags[DefaultTagID.LowPriority]);
+        const isVip = Boolean(roomTags[VIP_TAG]);
         const isArchived = Boolean(roomTags[DefaultTagID.Archived]);
 
         // More options menu state
@@ -461,6 +463,7 @@ export class RoomListItemViewModel
             showNotificationMenu,
             isFavourite,
             isLowPriority,
+            isVip,
             isDm,
             canInvite,
             canCopyRoomLink,
@@ -494,6 +497,15 @@ export class RoomListItemViewModel
     public onToggleFavorite = (): void => {
         tagRoom(this.props.room, DefaultTagID.Favourite);
         PosthogTrackers.trackInteraction("WebRoomListRoomTileContextMenuFavouriteToggle");
+    };
+
+    /** Inside: the VIP folder of the space panel; a private room tag, like Favourites. */
+    public onToggleVip = (): void => {
+        const { room } = this.props;
+        const request = room.tags[VIP_TAG]
+            ? room.client.deleteRoomTag(room.roomId, VIP_TAG)
+            : room.client.setRoomTag(room.roomId, VIP_TAG, {});
+        request.catch((e) => logger.warn(`Failed to toggle VIP for ${room.roomId}`, e));
     };
 
     public onToggleLowPriority = (): void => {

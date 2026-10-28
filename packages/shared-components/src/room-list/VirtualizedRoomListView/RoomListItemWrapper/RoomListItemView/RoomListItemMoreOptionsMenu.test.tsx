@@ -8,7 +8,7 @@
 import React, { type JSX } from "react";
 import { render, screen } from "@test-utils";
 import userEvent from "@testing-library/user-event";
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 
 import { RoomListItemMoreOptionsMenu, MoreOptionContent } from "./RoomListItemMoreOptionsMenu";
 import { useMockedViewModel } from "../../../../core/viewmodel";
@@ -127,6 +127,31 @@ describe("<RoomListItemMoreOptionsMenu />", () => {
         await user.click(screen.getByRole("menuitem", { name: "Mute room" }));
 
         expect(mockCallbacks.onSetRoomNotifState).toHaveBeenCalledWith(RoomNotifState.Mute);
+    });
+
+    it("should offer VIP and call onToggleVip", async () => {
+        const user = userEvent.setup();
+        const onToggleVip = vi.fn();
+        const TestComponent = (): JSX.Element => {
+            const vm = useMockedViewModel({ ...defaultSnapshot, isVip: false }, { ...mockCallbacks, onToggleVip });
+            return <MoreOptionContent vm={vm} />;
+        };
+        render(<TestComponent />);
+
+        const vip = screen.getByRole("menuitemcheckbox", { name: "VIP" });
+        expect(vip).toHaveAttribute("aria-checked", "false");
+        await user.click(vip);
+        expect(onToggleVip).toHaveBeenCalled();
+    });
+
+    it("should not offer VIP without the VIP state", () => {
+        const TestComponent = (): JSX.Element => {
+            const vm = useMockedViewModel(defaultSnapshot, mockCallbacks);
+            return <MoreOptionContent vm={vm} />;
+        };
+        render(<TestComponent />);
+
+        expect(screen.queryByRole("menuitemcheckbox", { name: "VIP" })).not.toBeInTheDocument();
     });
 
     it("should show favorite option and call onToggleFavorite", async () => {
