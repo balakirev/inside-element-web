@@ -31,6 +31,8 @@ Please see LICENSE files in the repository root for full details.
  * happens when the tile is not on screen.
  */
 
+import UIStore from "../stores/UIStore";
+
 /** Class name of the overlay holding the copy of the bubble (for the skin and for tests). */
 export const DUST_OVERLAY_CLASS = "mx_InsideDustOverlay";
 /** Class name of the shared particle canvas. */
@@ -133,7 +135,7 @@ function isTransparent(colour: string): boolean {
 }
 
 function windowBox(): Box {
-    return { left: 0, top: 0, right: window.innerWidth, bottom: window.innerHeight };
+    return { left: 0, top: 0, right: UIStore.instance.windowWidth, bottom: UIStore.instance.windowHeight };
 }
 
 function intersect(a: Box, b: Box): Box {
@@ -481,7 +483,10 @@ export function particleCell(area: number, dpr: number, maxParticles: number): n
 }
 
 /** Cuts an image of the bubble into particles with the colour of their pixel and their own motion. */
-export function particlesFromImage(image: Pick<ImageData, "data" | "width" | "height">, o: ParticleOptions): ParticleSet {
+export function particlesFromImage(
+    image: Pick<ImageData, "data" | "width" | "height">,
+    o: ParticleOptions,
+): ParticleSet {
     const random = o.random ?? Math.random;
     const { width: w, height: h, data } = image;
     const cell = particleCell(w * h, o.dpr, o.maxParticles);
@@ -549,8 +554,7 @@ function particleState(set: ParticleSet, i: number, age: number, out: Float32Arr
     const k = age / life;
     const s = age / 1000;
     const w = set.time[i * 4 + 2] * Math.PI * 2;
-    out[0] =
-        set.pos[i * 2] + set.motion[i * 4] * s + 0.5 * set.motion[i * 4 + 2] * s * s + Math.sin(w + s * 9) * 3 * k;
+    out[0] = set.pos[i * 2] + set.motion[i * 4] * s + 0.5 * set.motion[i * 4 + 2] * s * s + Math.sin(w + s * 9) * 3 * k;
     out[1] =
         set.pos[i * 2 + 1] +
         set.motion[i * 4 + 1] * s +
@@ -618,27 +622,28 @@ interface GlHandle {
 }
 
 function createWebGlRenderer(canvas: HTMLCanvasElement): Renderer | null {
-    let gl: WebGLRenderingContext | null = null;
+    let context: WebGLRenderingContext | null = null;
     try {
-        gl = canvas.getContext("webgl", {
+        context = canvas.getContext("webgl", {
             alpha: true,
             premultipliedAlpha: true,
             antialias: false,
             depth: false,
             stencil: false,
             preserveDrawingBuffer: false,
-        }) as WebGLRenderingContext | null;
+        });
     } catch {
-        gl = null;
+        context = null;
     }
-    if (!gl || typeof gl.createShader !== "function") return null;
+    if (!context || typeof context.createShader !== "function") return null;
+    const gl: WebGLRenderingContext = context;
 
     const compile = (type: number, source: string): WebGLShader | null => {
-        const shader = gl!.createShader(type);
+        const shader = gl.createShader(type);
         if (!shader) return null;
-        gl!.shaderSource(shader, source);
-        gl!.compileShader(shader);
-        return gl!.getShaderParameter(shader, gl!.COMPILE_STATUS) ? shader : null;
+        gl.shaderSource(shader, source);
+        gl.compileShader(shader);
+        return gl.getShaderParameter(shader, gl.COMPILE_STATUS) ? shader : null;
     };
     const vs = compile(gl.VERTEX_SHADER, VERTEX_SHADER);
     const fs = compile(gl.FRAGMENT_SHADER, FRAGMENT_SHADER);
@@ -660,9 +665,9 @@ function createWebGlRenderer(canvas: HTMLCanvasElement): Renderer | null {
     const handles = new Set<GlHandle>();
 
     const upload = (data: Float32Array | Uint8Array): WebGLBuffer => {
-        const buffer = gl!.createBuffer()!;
-        gl!.bindBuffer(gl!.ARRAY_BUFFER, buffer);
-        gl!.bufferData(gl!.ARRAY_BUFFER, data, gl!.STATIC_DRAW);
+        const buffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+        gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
         return buffer;
     };
 
@@ -687,10 +692,10 @@ function createWebGlRenderer(canvas: HTMLCanvasElement): Renderer | null {
         remove(handle) {
             const h = handle as GlHandle;
             if (!handles.delete(h)) return;
-            for (const b of h.buffers) gl!.deleteBuffer(b);
+            for (const b of h.buffers) gl.deleteBuffer(b);
         },
         draw(t, width, height, dpr) {
-            const g = gl!;
+            const g = gl;
             g.viewport(0, 0, Math.round(width * dpr), Math.round(height * dpr));
             g.clearColor(0, 0, 0, 0);
             g.clear(g.COLOR_BUFFER_BIT);
@@ -716,10 +721,10 @@ function createWebGlRenderer(canvas: HTMLCanvasElement): Renderer | null {
         },
         dispose() {
             for (const h of Array.from(handles)) this.remove(h);
-            gl!.deleteProgram(program);
-            gl!.deleteShader(vs);
-            gl!.deleteShader(fs);
-            gl!.getExtension("WEBGL_lose_context")?.loseContext();
+            gl.deleteProgram(program);
+            gl.deleteShader(vs);
+            gl.deleteShader(fs);
+            gl.getExtension("WEBGL_lose_context")?.loseContext();
         },
     };
 }
@@ -731,13 +736,14 @@ interface CanvasHandle {
 }
 
 function create2dRenderer(canvas: HTMLCanvasElement): Renderer | null {
-    let ctx: CanvasRenderingContext2D | null = null;
+    let context: CanvasRenderingContext2D | null = null;
     try {
-        ctx = canvas.getContext("2d");
+        context = canvas.getContext("2d");
     } catch {
-        ctx = null;
+        context = null;
     }
-    if (!ctx) return null;
+    if (!context) return null;
+    const ctx: CanvasRenderingContext2D = context;
     const handles = new Set<CanvasHandle>();
     const state = new Float32Array(4);
     return {
@@ -756,7 +762,7 @@ function create2dRenderer(canvas: HTMLCanvasElement): Renderer | null {
             handles.delete(handle as CanvasHandle);
         },
         draw(t, width, height, dpr) {
-            const c = ctx!;
+            const c = ctx;
             c.setTransform(dpr, 0, 0, dpr, 0, 0);
             c.clearRect(0, 0, width, height);
             for (const h of handles) {
@@ -904,8 +910,8 @@ class DustLoop {
 
     private resize(): void {
         if (!this.canvas) return;
-        this.width = window.innerWidth;
-        this.height = window.innerHeight;
+        this.width = UIStore.instance.windowWidth;
+        this.height = UIStore.instance.windowHeight;
         this.canvas.width = Math.max(1, Math.round(this.width * this.dpr));
         this.canvas.height = Math.max(1, Math.round(this.height * this.dpr));
     }
@@ -934,7 +940,8 @@ class DustLoop {
             }
         }
         if (this.renderer) {
-            if (window.innerWidth !== this.width || window.innerHeight !== this.height) this.resize();
+            if (UIStore.instance.windowWidth !== this.width || UIStore.instance.windowHeight !== this.height)
+                this.resize();
             this.renderer.draw(t, this.width, this.height, this.dpr);
         }
         const work = now() - workStart;
@@ -1230,7 +1237,10 @@ export interface DustOptions {
  * whether an effect started. Call it before sending the redaction, so the tiles still show the
  * original content; do not wait for it.
  */
-export function playDustEffect(eventIds: string | undefined | readonly (string | undefined)[], options: DustOptions = {}): boolean {
+export function playDustEffect(
+    eventIds: string | undefined | readonly (string | undefined)[],
+    options: DustOptions = {},
+): boolean {
     try {
         const ids = new Set((Array.isArray(eventIds) ? eventIds : [eventIds]).filter((id): id is string => !!id));
         if (!ids.size || typeof document === "undefined") return false;
