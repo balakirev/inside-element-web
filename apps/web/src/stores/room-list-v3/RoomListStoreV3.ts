@@ -37,6 +37,7 @@ import { isRoomVisible } from "./isRoomVisible";
 import { RoomSkipList } from "./skip-list/RoomSkipList";
 import { getTagsForRoom } from "../../utils/room/getTagsForRoom";
 import { SectionFilter } from "./skip-list/filters/SectionFilter";
+import { ClientsFilter, ColleaguesFilter, VipFilter } from "./skip-list/filters/InsideFolderFilters";
 import { filterBoolean } from "../../utils/arrays";
 import { CHATS_TAG, createSection, deleteSection, editSection, getOrderedSectionTags, reorderSection } from "./section";
 import { DefaultTagID, type TagID } from "./skip-list/tag";
@@ -150,6 +151,9 @@ export class RoomListStoreV3Class extends AsyncStoreWithClient<EmptyObject> {
             new InvitesFilter(),
             new MentionsFilter(),
             new LowPriorityFilter(),
+            new ColleaguesFilter(),
+            new ClientsFilter(),
+            new VipFilter(),
         ];
         filters.forEach((filter) => this.filterByFilterKey.set(filter.key, filter));
     }

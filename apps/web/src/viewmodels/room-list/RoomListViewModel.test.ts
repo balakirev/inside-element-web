@@ -8,6 +8,7 @@
 // @vitest-environment happy-dom
 
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
+import { InsideFolderStore } from "../../stores/room-list-v3/InsideFolderStore";
 import { KnownMembership, type MatrixClient, type Room } from "matrix-js-sdk/src/matrix";
 import { waitFor } from "test-utils-rtl";
 import {
@@ -106,6 +107,8 @@ describe("RoomListViewModel", () => {
     });
 
     afterEach(() => {
+        // Inside: the active folder outlives view models; don't let it leak into the next test.
+        InsideFolderStore.instance.setActiveFilter(undefined);
         viewModel?.dispose();
         vi.restoreAllMocks();
     });

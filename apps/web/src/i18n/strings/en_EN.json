@@ -4198,5 +4198,12 @@
             "userInputs": "There should not be any personal or page related data.",
             "wordByItself": "A word by itself is easy to guess"
         }
+    },
+    "space_panel": {
+        "inside_folder_clients": "Clients",
+        "inside_folder_colleagues": "Colleagues",
+        "inside_folder_favourites": "Favourites",
+        "inside_folder_groups": "Groups",
+        "inside_folder_vip": "VIP"
     }
 }

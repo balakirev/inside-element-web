@@ -14,6 +14,10 @@ export const enum FilterEnum {
     LowPriorityFilter = "low_priority",
     MentionsFilter = "mentions",
     InvitesFilter = "invites",
+    // Inside: folders of the space panel, see InsideFolderFilters.
+    ColleaguesFilter = "inside_colleagues",
+    ClientsFilter = "inside_clients",
+    VipFilter = "inside_vip",
 }
 
 export type FilterKey = FilterEnum | string;

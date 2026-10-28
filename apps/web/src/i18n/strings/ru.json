@@ -4163,5 +4163,12 @@
             "userInputs": "Не должно быть никаких личных данных или данных, связанных со страницами.",
             "wordByItself": "Общеупотребительные слова легко угадываемы"
         }
+    },
+    "space_panel": {
+        "inside_folder_clients": "Клиенты",
+        "inside_folder_colleagues": "Коллеги",
+        "inside_folder_favourites": "Избранное",
+        "inside_folder_groups": "Группы",
+        "inside_folder_vip": "VIP"
     }
 }

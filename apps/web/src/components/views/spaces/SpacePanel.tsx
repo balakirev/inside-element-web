@@ -30,6 +30,11 @@ import {
     VideoCallSolidIcon,
     PlusIcon,
     ChevronRightIcon,
+    GroupIcon,
+    UserSolidIcon,
+    UserProfileSolidIcon,
+    VerifiedIcon,
+    FavouriteSolidIcon,
 } from "@vector-im/compound-design-tokens/assets/web/icons";
 
 import { _t } from "../../../languageHandler";
@@ -47,6 +52,12 @@ import {
     UPDATE_TOP_LEVEL_SPACES,
 } from "../../../stores/spaces";
 import { RovingTabIndexProvider } from "../../../accessibility/RovingTabIndex";
+import { FilterEnum } from "../../../stores/room-list-v3/skip-list/filters";
+import {
+    INSIDE_FOLDERS,
+    InsideFolderStore,
+    InsideFolderStoreEvent,
+} from "../../../stores/room-list-v3/InsideFolderStore";
 import { UPDATE_STATUS_INDICATOR } from "../../../stores/notifications/RoomNotificationStateStore";
 import type SpaceContextMenu from "../context_menus/SpaceContextMenu";
 import IconizedContextMenu, {
@@ -173,6 +184,11 @@ const HomeButton: React.FC<MetaSpaceButtonProps> = ({ selected, isPanelCollapsed
             contextMenuTooltip={_t("common|options")}
             size="32px"
             icon={<HomeSolidIcon />}
+            onClick={() => {
+                // Inside: "All chats" also leaves any folder.
+                sdkContext.spaceStore.setActiveSpace(MetaSpace.Home);
+                InsideFolderStore.instance.setActiveFilter(undefined);
+            }}
         />
     );
 };
@@ -257,6 +273,51 @@ const CreateSpaceButton: React.FC<Pick<IInnerSpacePanelProps, "isPanelCollapsed"
     );
 };
 
+/** Inside: label and icon of each folder of the space panel. */
+const insideFolderButtons: Record<string, { label: TranslationKey; icon: JSX.Element }> = {
+    [FilterEnum.RoomsFilter]: { label: "space_panel|inside_folder_groups", icon: <GroupIcon /> },
+    [FilterEnum.ColleaguesFilter]: { label: "space_panel|inside_folder_colleagues", icon: <UserSolidIcon /> },
+    [FilterEnum.ClientsFilter]: { label: "space_panel|inside_folder_clients", icon: <UserProfileSolidIcon /> },
+    [FilterEnum.VipFilter]: { label: "space_panel|inside_folder_vip", icon: <VerifiedIcon /> },
+    [FilterEnum.FavouriteFilter]: { label: "space_panel|inside_folder_favourites", icon: <FavouriteSolidIcon /> },
+};
+
+/**
+ * Inside: folders under "All chats", as in other messengers — groups, colleagues, clients, VIP, favourites.
+ * Each one shows all chats through a room list filter.
+ */
+const InsideFolderButtons: React.FC<{ activeSpace: SpaceKey; isPanelCollapsed: boolean }> = ({
+    activeSpace,
+    isPanelCollapsed,
+}) => {
+    const sdkContext = useContext(SDKContext);
+    const activeFilter = useEventEmitterState(
+        InsideFolderStore.instance,
+        InsideFolderStoreEvent.Changed,
+        () => InsideFolderStore.instance.activeFilter,
+    );
+
+    return (
+        <>
+            {INSIDE_FOLDERS.map((filter) => (
+                <MetaSpaceButton
+                    key={filter}
+                    className={`mx_SpaceButton_insideFolder mx_SpaceButton_insideFolder_${filter}`}
+                    selected={activeSpace === MetaSpace.Home && activeFilter === filter}
+                    isPanelCollapsed={isPanelCollapsed}
+                    label={_t(insideFolderButtons[filter].label)}
+                    size="32px"
+                    icon={insideFolderButtons[filter].icon}
+                    onClick={() => {
+                        sdkContext.spaceStore.setActiveSpace(MetaSpace.Home);
+                        InsideFolderStore.instance.setActiveFilter(filter);
+                    }}
+                />
+            ))}
+        </>
+    );
+};
+
 const metaSpaceComponentMap: Record<MetaSpace, typeof HomeButton> = {
     [MetaSpace.Home]: HomeButton,
     [MetaSpace.Orphans]: OrphansButton,
@@ -280,11 +341,31 @@ const InnerSpacePanel = React.memo<IInnerSpacePanelProps>(
 
         const moduleSpaceItems = useModuleSpacePanelItems(ModuleApi.instance.extras);
 
+        // Inside: "All chats" is selected only while no folder is.
+        const activeFilter = useEventEmitterState(
+            InsideFolderStore.instance,
+            InsideFolderStoreEvent.Changed,
+            () => InsideFolderStore.instance.activeFilter,
+        );
+        const isFolderActive = activeFilter !== undefined && INSIDE_FOLDERS.includes(activeFilter);
+        // Inside: another space leaves the folder.
+        useEffect(() => {
+            if (activeSpace !== MetaSpace.Home) InsideFolderStore.instance.setActiveFilter(undefined);
+        }, [activeSpace]);
+
         const metaSpacesSection = metaSpaces
             .filter((key) => !(key === MetaSpace.VideoRooms && !SettingsStore.getValue("feature_video_rooms")))
             .map((key) => {
                 const Component = metaSpaceComponentMap[key];
-                return <Component key={key} selected={activeSpace === key} isPanelCollapsed={isPanelCollapsed} />;
+                const selected = activeSpace === key && !(key === MetaSpace.Home && isFolderActive);
+                return (
+                    <React.Fragment key={key}>
+                        <Component selected={selected} isPanelCollapsed={isPanelCollapsed} />
+                        {key === MetaSpace.Home && (
+                            <InsideFolderButtons activeSpace={activeSpace} isPanelCollapsed={isPanelCollapsed} />
+                        )}
+                    </React.Fragment>
+                );
             });
 
         return (

@@ -10,6 +10,8 @@ Please see LICENSE files in the repository root for full details.
 // @vitest-environment happy-dom
 
 import { vi, describe, it, expect, beforeAll, beforeEach, afterEach } from "vitest";
+import { InsideFolderStore } from "../../../stores/room-list-v3/InsideFolderStore";
+import { FilterEnum } from "../../../stores/room-list-v3/skip-list/filters";
 import React from "react";
 import { render, screen, fireEvent, act, cleanup, within } from "test-utils-rtl";
 import { type MatrixClient, type Room } from "matrix-js-sdk/src/matrix";
@@ -159,9 +161,55 @@ describe("<SpacePanel />", () => {
                 .getByRole("button", { name: /^(?!Options$).*/ }) // filter out the 'options' buttons within the buttons
                 .getAttribute("aria-label"),
         );
-        expect(metaSpaceLabels).toEqual(["Home", "Other rooms", "Conferences"]);
+        // Inside: the folders follow Home.
+        expect(metaSpaceLabels).toEqual([
+            "Home",
+            "Groups",
+            "Colleagues",
+            "Clients",
+            "VIP",
+            "Favourites",
+            "Other rooms",
+            "Conferences",
+        ]);
 
         spySettingsStore.mockRestore();
+    });
+
+    describe("Inside folders", () => {
+        /** The space panel button itself, not the jump-to-unread badge inside it labelled alike. */
+        const spaceButton = (name: string): HTMLElement =>
+            screen.getAllByRole("button", { name }).find((b) => b.classList.contains("mx_SpaceButton"))!;
+
+        afterEach(() => {
+            InsideFolderStore.instance.setActiveFilter(undefined);
+            (sdkContext.spaceStore as { activeSpace: SpaceKey }).activeSpace = "!space1";
+            sdkContext.spaceStore.enabledMetaSpaces.length = 0;
+        });
+
+        it("shows a folder's chats in all chats and selects it instead of Home", async () => {
+            sdkContext.spaceStore.enabledMetaSpaces.push(MetaSpace.Home);
+            (sdkContext.spaceStore as { activeSpace: SpaceKey }).activeSpace = MetaSpace.Home;
+            render(<SpacePanel />);
+
+            fireEvent.click(spaceButton("Colleagues"));
+
+            expect(sdkContext.spaceStore.setActiveSpace).toHaveBeenCalledWith(MetaSpace.Home);
+            expect(InsideFolderStore.instance.activeFilter).toBe(FilterEnum.ColleaguesFilter);
+            expect(spaceButton("Colleagues")).toHaveClass("mx_SpaceButton_active");
+            expect(spaceButton("Home")).not.toHaveClass("mx_SpaceButton_active");
+        });
+
+        it("leaves the folder from Home", async () => {
+            sdkContext.spaceStore.enabledMetaSpaces.push(MetaSpace.Home);
+            (sdkContext.spaceStore as { activeSpace: SpaceKey }).activeSpace = MetaSpace.Home;
+            InsideFolderStore.instance.setActiveFilter(FilterEnum.VipFilter);
+            render(<SpacePanel />);
+
+            fireEvent.click(spaceButton("Home"));
+
+            expect(InsideFolderStore.instance.activeFilter).toBeUndefined();
+        });
     });
 
     describe("create new space button", () => {

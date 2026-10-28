@@ -29,6 +29,7 @@ import RoomListStoreV3, {
     type Section,
 } from "../../stores/room-list-v3/RoomListStoreV3";
 import { FilterEnum } from "../../stores/room-list-v3/skip-list/filters";
+import { InsideFolderStore, InsideFolderStoreEvent } from "../../stores/room-list-v3/InsideFolderStore";
 import {
     RoomNotificationStateStore,
     UPDATE_STATUS_INDICATOR,
@@ -211,8 +212,11 @@ export class RoomListViewModel
     public constructor(props: RoomListViewModelProps) {
         const activeSpace = props.spaceStore.activeSpaceRoom;
 
-        // Get initial rooms
-        const roomsResult = RoomListStoreV3.instance.getSortedRoomsInActiveSpace(undefined);
+        // Get initial rooms. Inside: with the folder the user chose, which outlives this view model.
+        const initialFilter = InsideFolderStore.instance.activeFilter;
+        const roomsResult = RoomListStoreV3.instance.getSortedRoomsInActiveSpace(
+            initialFilter !== undefined ? [initialFilter] : undefined,
+        );
         const canCreateRoom = hasCreateRoomRights(props.client, activeSpace);
 
         const filterIds = getVisibleFilterIds();
@@ -228,19 +232,27 @@ export class RoomListViewModel
             isLoadingRooms: RoomListStoreV3.instance.isLoadingRooms,
             isRoomListEmpty,
             filterIds,
-            activeFilterId: undefined,
+            activeFilterId: initialFilter !== undefined ? filterKeyToIdMap.get(initialFilter) : undefined,
             roomListState: {
                 activeRoomIndex: undefined,
                 spaceId: roomsResult.spaceId,
-                filterKeys: undefined,
+                filterKeys: roomsResult.filterKeys?.map((k) => String(k)),
             },
             isFlatList,
             sections: toRoomListSection(sections),
             canCreateRoom,
         });
 
+        this.activeFilter = initialFilter;
         this.roomsResult = roomsResult;
         this.sections = sections;
+
+        // Inside: a folder chosen in the space panel
+        this.disposables.trackListener(
+            InsideFolderStore.instance,
+            InsideFolderStoreEvent.Changed,
+            this.onInsideFolderChange as (...args: unknown[]) => void,
+        );
 
         // Build initial roomsMap from roomsResult
         this.updateRoomsMap(roomsResult);
@@ -393,9 +405,17 @@ export class RoomListViewModel
 
         if (filterKey === undefined) return;
 
-        // Toggle the filter - if it's already active, deactivate it
-        const newFilter = this.activeFilter === filterKey ? undefined : filterKey;
-        this.activeFilter = newFilter;
+        // Toggle the filter - if it's already active, deactivate it.
+        // Inside: through the folder store, which also lights the matching folder of the space panel.
+        InsideFolderStore.instance.setActiveFilter(this.activeFilter === filterKey ? undefined : filterKey);
+    };
+
+    /**
+     * Inside: show the filter chosen in the space panel or with the filter chips.
+     */
+    private readonly onInsideFolderChange = (filter: FilterEnum | undefined): void => {
+        if (this.activeFilter === filter) return;
+        this.activeFilter = filter;
 
         // Update rooms result with new filter
         const filterKeys = this.activeFilter !== undefined ? [this.activeFilter] : undefined;
@@ -414,6 +434,7 @@ export class RoomListViewModel
      */
     private readonly onShowSectionsChange = (): void => {
         this.activeFilter = undefined;
+        InsideFolderStore.instance.setActiveFilter(undefined);
         this.clearViewModels();
         this.roomsResult = RoomListStoreV3.instance.getSortedRoomsInActiveSpace();
         this.updateRoomsMap(this.roomsResult);
