@@ -20,6 +20,7 @@ import NewRoomIntro from "../../views/rooms/NewRoomIntro";
 import GenericEventListSummary from "../../views/elements/GenericEventListSummary";
 import { DateSeparatorViewModel } from "../../../viewmodels/room/timeline/DateSeparatorViewModel";
 import { SDKContext } from "../../../contexts/SDKContext.ts";
+import { getMemberNameWithoutMxid } from "../../../utils/event/getSenderName";
 
 // Wrap initial room creation events into a GenericEventListSummary
 // Grouping only events sent by the same user that sent the `m.room.create` and only until
@@ -134,7 +135,7 @@ export class CreationGrouper extends BaseGrouper {
 
         let summaryText: string;
         const roomId = ev.getRoomId();
-        const creator = ev.sender?.name ?? ev.getSender();
+        const creator = ev.sender ? getMemberNameWithoutMxid(ev.sender) : ev.getSender();
         if (roomId && DMRoomMap.shared().getUserIdForRoomId(roomId)) {
             summaryText = _t("timeline|creation_summary_dm", { creator });
         } else {

@@ -22,6 +22,7 @@ import { LiveContentSummary } from "../rooms/LiveContentSummary";
 import FacePile from "../elements/FacePile";
 import MatrixClientContext from "../../../contexts/MatrixClientContext";
 import { CallDuration, SessionDuration } from "../voip/CallDuration";
+import { getMemberNameWithoutMxid } from "../../../utils/event/getSenderName";
 
 const MAX_FACES = 8;
 
@@ -46,7 +47,10 @@ const ActiveCallEvent = ({
     onButtonClick,
     ref,
 }: ActiveCallEventProps): JSX.Element => {
-    const senderName = useMemo(() => mxEvent.sender?.name ?? mxEvent.getSender(), [mxEvent]);
+    const senderName = useMemo(
+        () => (mxEvent.sender ? getMemberNameWithoutMxid(mxEvent.sender) : mxEvent.getSender()),
+        [mxEvent],
+    );
 
     const facePileMembers = useMemo(() => participatingMembers.slice(0, MAX_FACES), [participatingMembers]);
     const facePileOverflow = participatingMembers.length > facePileMembers.length;

@@ -21,6 +21,7 @@ import ViewSource from "../../structures/ViewSource";
 import SettingsStore from "../../../settings/SettingsStore";
 import MatrixClientContext from "../../../contexts/MatrixClientContext";
 import { RedactedBodyFactory } from "./MBodyFactory";
+import { getMemberNameWithoutMxid } from "../../../utils/event/getSenderName";
 
 function getReplacedContent(event: MatrixEvent): IContent {
     const originalContent = event.getOriginalContent();
@@ -168,7 +169,7 @@ export default class EditHistoryMessage extends React.PureComponent<IProps, ISta
                 contentElements = <EventContentBodyView vm={this.eventContentBodyViewModel} as="span" />;
             }
             if (mxEvent.getContent().msgtype === MsgType.Emote) {
-                const name = mxEvent.sender ? mxEvent.sender.name : mxEvent.getSender();
+                const name = mxEvent.sender ? getMemberNameWithoutMxid(mxEvent.sender) : mxEvent.getSender();
                 contentContainer = (
                     <div className="mx_EventTile_content" ref={this.content}>
                         *&nbsp;

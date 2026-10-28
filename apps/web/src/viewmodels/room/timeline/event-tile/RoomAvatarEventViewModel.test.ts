@@ -64,6 +64,21 @@ describe("RoomAvatarEventViewModel", () => {
         });
     });
 
+    it("leaves out the Matrix ID of a same-named member", () => {
+        const mxEvent = createEvent("mxc://example.org/avatar");
+        mxEvent.sender = {
+            userId: "@alice:example.org",
+            name: "Alice (@alice:example.org)",
+            rawDisplayName: "Alice",
+            disambiguate: true,
+        } as MatrixEvent["sender"];
+
+        const vm = new RoomAvatarEventViewModel({ cli, mxEvent });
+
+        expect(vm.getSnapshot().senderDisplayName).toBe("Alice");
+        expect(vm.getSnapshot().lightboxLabel).toBe("Alice changed the avatar for General");
+    });
+
     it("falls back to the sender ID when no sender member is available", () => {
         const vm = new RoomAvatarEventViewModel({ cli, mxEvent: createEvent("mxc://example.org/avatar") });
 

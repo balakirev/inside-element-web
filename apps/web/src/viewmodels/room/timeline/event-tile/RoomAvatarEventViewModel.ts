@@ -17,6 +17,7 @@ import { mediaFromMxc } from "../../../../customisations/Media";
 import { _t } from "../../../../languageHandler";
 import Modal from "../../../../Modal";
 import ImageView from "../../../../components/views/elements/ImageView";
+import { getMemberNameWithoutMxid } from "../../../../utils/event/getSenderName";
 
 export interface RoomAvatarEventViewModelProps {
     /**
@@ -90,7 +91,7 @@ export class RoomAvatarEventViewModel
     }
 
     private static getSenderDisplayName(mxEvent: MatrixEvent): string {
-        return mxEvent.sender?.name || mxEvent.getSender() || "";
+        return (mxEvent.sender ? getMemberNameWithoutMxid(mxEvent.sender) : undefined) || mxEvent.getSender() || "";
     }
 
     private static getRoomName({ cli, mxEvent }: RoomAvatarEventViewModelProps): string {

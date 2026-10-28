@@ -48,6 +48,7 @@ import ToastStore from "./stores/ToastStore";
 import { stripPlainReply } from "./utils/Reply";
 import { BackgroundAudio } from "./audio/BackgroundAudio";
 import { type MatrixDispatcher } from "./dispatcher/dispatcher.ts";
+import { getMemberNameWithoutMxid } from "./utils/event/getSenderName";
 
 /*
  * Dispatches:
@@ -196,7 +197,7 @@ export default class Notifier extends TypedEventEmitter<keyof EmittedEvents, Emi
         */
         this.msgTypeHandlers = {
             [MsgType.KeyVerificationRequest]: (event: MatrixEvent) => {
-                const name = event.sender?.name;
+                const name = event.sender ? getMemberNameWithoutMxid(event.sender) : undefined;
                 return _t("notifier|m.key.verification.request", { name });
             },
             [M_LOCATION.name]: (event: MatrixEvent) => {
@@ -239,7 +240,7 @@ export default class Notifier extends TypedEventEmitter<keyof EmittedEvents, Emi
         if (!msg) return;
 
         let title: string | undefined;
-        if (!ev.sender || room.name === ev.sender.name) {
+        if (!ev.sender || room.name === ev.sender.name || room.name === getMemberNameWithoutMxid(ev.sender)) {
             title = room.name;
             // notificationMessageForEvent includes sender, but we already have the sender here
             const msgType = ev.getContent().msgtype;
@@ -251,7 +252,7 @@ export default class Notifier extends TypedEventEmitter<keyof EmittedEvents, Emi
             // to display sender info
             title = room.name;
         } else if (ev.sender) {
-            title = ev.sender.name + " (" + room.name + ")";
+            title = getMemberNameWithoutMxid(ev.sender) + " (" + room.name + ")";
             // notificationMessageForEvent includes sender, but we've just out sender in the title
             const msgType = ev.getContent().msgtype;
             if (ev.getContent().body && (!msgType || !this.msgTypeHandlers.hasOwnProperty(msgType))) {

@@ -27,6 +27,7 @@ import RoomContext from "../../../contexts/RoomContext";
 import { arrayHasDiff } from "../../../utils/arrays.ts";
 import { objectHasDiff } from "../../../utils/objects.ts";
 import Spoiler from "./Spoiler.tsx";
+import { getMemberNameWithoutMxid } from "../../../utils/event/getSenderName";
 
 const onPinnedMessagesClick = (): void => {
     RightPanelStore.instance.setCard({ phase: RightPanelPhases.PinnedMessages }, false);
@@ -143,14 +144,14 @@ export default class EventListSummary extends React.Component<Props, State> {
             if (e.isRedacted()) {
                 const sender = this.context?.room?.getMember(userKey);
                 if (sender) {
-                    displayName = sender.name;
+                    displayName = getMemberNameWithoutMxid(sender);
                     latestUserAvatarMember.set(userKey, sender);
                 }
             } else if (e.target && TARGET_AS_DISPLAY_NAME_EVENTS.includes(type as EventType)) {
-                displayName = e.target.name;
+                displayName = getMemberNameWithoutMxid(e.target);
                 latestUserAvatarMember.set(userKey, e.target);
             } else if (e.sender && type !== EventType.RoomThirdPartyInvite) {
-                displayName = e.sender.name;
+                displayName = getMemberNameWithoutMxid(e.sender);
                 latestUserAvatarMember.set(userKey, e.sender);
             }
 

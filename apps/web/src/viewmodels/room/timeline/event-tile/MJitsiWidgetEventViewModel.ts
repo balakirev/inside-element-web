@@ -17,6 +17,7 @@ import { _t } from "../../../../languageHandler";
 import WidgetStore, { type IApp } from "../../../../stores/WidgetStore";
 import { UPDATE_EVENT } from "../../../../stores/AsyncStore";
 import { WidgetLayoutStore } from "../../../../stores/widgets/WidgetLayoutStore";
+import { getMemberNameWithoutMxid } from "../../../../utils/event/getSenderName";
 
 export interface MJitsiWidgetEventViewModelProps {
     /**
@@ -107,7 +108,8 @@ export class MJitsiWidgetEventViewModel
 
         const content = mxEvent.getContent<{ url?: string }>();
         const prevContent = mxEvent.getPrevContent() as { url?: string };
-        const senderName = mxEvent.sender?.name || mxEvent.getSender() || "";
+        const senderName =
+            (mxEvent.sender ? getMemberNameWithoutMxid(mxEvent.sender) : undefined) || mxEvent.getSender() || "";
         const widget = MJitsiWidgetEventViewModel.getWidget(props);
         let subtitle: string | null = null;
 

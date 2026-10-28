@@ -25,6 +25,7 @@ import { Action } from "../../../../../dispatcher/actions";
 import { type ViewUserPayload } from "../../../../../dispatcher/payloads/ViewUserPayload";
 import MessageEditHistoryDialog from "../../../../../components/views/dialogs/MessageEditHistoryDialog";
 import { type TimelineRenderingType } from "../../../../../contexts/RoomContext";
+import { getMemberNameWithoutMxid } from "../../../../../utils/event/getSenderName";
 
 const CAPTION_MESSAGE_TYPES = new Set<MsgType>([MsgType.Image, MsgType.File, MsgType.Audio, MsgType.Video]);
 
@@ -169,7 +170,9 @@ export class TextualBodyViewModel
         | "emoteSenderName"
     > => ({
         kind: TextualBodyViewModel.getKind(props.mxEvent),
-        emoteSenderName: props.mxEvent.sender?.name ?? props.mxEvent.getSender(),
+        emoteSenderName: props.mxEvent.sender
+            ? getMemberNameWithoutMxid(props.mxEvent.sender)
+            : props.mxEvent.getSender(),
         ...TextualBodyViewModel.computeBodyWrapperSnapshot(props),
         ...TextualBodyViewModel.computeEditedMarkerSnapshot(props),
         ...TextualBodyViewModel.computePendingModerationSnapshot(props),

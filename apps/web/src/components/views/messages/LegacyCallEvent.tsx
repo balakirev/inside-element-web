@@ -29,6 +29,7 @@ import { LegacyCallEventGrouperEvent } from "../../structures/LegacyCallEventGro
 import AccessibleButton from "../elements/AccessibleButton";
 import InfoTooltip, { InfoTooltipKind } from "../elements/InfoTooltip";
 import { formatPreciseDuration } from "../../../DateUtils";
+import { getMemberNameWithoutMxid } from "../../../utils/event/getSenderName";
 
 const MAX_NON_NARROW_WIDTH = (450 / 70) * 100;
 
@@ -278,7 +279,7 @@ export default class LegacyCallEvent extends React.PureComponent<IProps, IState>
 
     public render(): React.ReactNode {
         const event = this.props.mxEvent;
-        const sender = event.sender ? event.sender.name : event.getSender();
+        const sender = event.sender ? getMemberNameWithoutMxid(event.sender) : event.getSender();
         const isVoice = this.props.callEventGrouper.isVoice;
         const callType = isVoice ? _t("voip|voice_call") : _t("voip|video_call");
         const callState = this.state.callState;

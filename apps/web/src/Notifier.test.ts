@@ -29,6 +29,7 @@ import {
     MsgType,
     type IContent,
     MatrixEvent,
+    RoomMember,
     SyncState,
     type AccountDataEvents,
 } from "matrix-js-sdk/src/matrix";
@@ -466,6 +467,28 @@ describe("Notifier", () => {
                 "data:image/png;base64,00",
                 testRoom,
                 audioEvent,
+            );
+        });
+
+        it("leaves the Matrix ID of a same-named sender out of the title", () => {
+            const event = mkMessage({
+                msg: "Test",
+                event: true,
+                user: "@bob:example.org",
+                room: testRoom.roomId,
+            });
+            const sender = new RoomMember(testRoom.roomId, "@bob:example.org");
+            sender.name = "Bob (@bob:example.org)";
+            sender.rawDisplayName = "Bob";
+            sender.disambiguate = true;
+            event.sender = sender;
+            notifier.displayPopupNotification(event, testRoom);
+            expect(MockPlatform.displayNotification).toHaveBeenCalledWith(
+                "Bob (!room1:server)",
+                "Test",
+                expect.any(String),
+                testRoom,
+                event,
             );
         });
 
