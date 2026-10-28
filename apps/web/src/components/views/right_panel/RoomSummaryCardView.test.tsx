@@ -33,6 +33,12 @@ vi.mock("../../viewmodels/right_panel/RoomSummaryCardViewModel", () => ({
     useRoomSummaryCardViewModel: vi.fn(),
 }));
 
+// Inside: the tiles and the media tabs have their own tests (InsideRoomSummary.test.tsx)
+vi.mock("./InsideRoomSummary.tsx", () => ({
+    InsideRoomSummaryTiles: () => <div data-testid="inside-tiles" />,
+    InsideRoomMedia: () => <div data-testid="inside-media" />,
+}));
+
 describe("<RoomSummaryCard />", () => {
     const userId = "@alice:domain.org";
 
@@ -187,6 +193,12 @@ describe("<RoomSummaryCard />", () => {
         });
     });
 
+    it("renders the Inside tiles and media tabs", () => {
+        getComponent();
+        expect(screen.getByTestId("inside-tiles")).toBeInTheDocument();
+        expect(screen.getByTestId("inside-media")).toBeInTheDocument();
+    });
+
     it("opens room file panel on button click", () => {
         const { getByText } = getComponent();
 
@@ -270,6 +282,7 @@ describe("<RoomSummaryCard />", () => {
         expect(queryByText("Files")).not.toBeInTheDocument();
         expect(queryByText("Pinned")).not.toBeInTheDocument();
         expect(queryByText("Export chat")).not.toBeInTheDocument();
+        expect(screen.queryByTestId("inside-media")).not.toBeInTheDocument();
     });
 
     describe("pinning", () => {

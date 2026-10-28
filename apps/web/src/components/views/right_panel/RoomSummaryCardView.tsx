@@ -50,6 +50,7 @@ import { topicToHtml } from "../../../HtmlUtils.tsx";
 import { useRoomSummaryCardViewModel } from "../../viewmodels/right_panel/RoomSummaryCardViewModel";
 import { useRoomTopicViewModel } from "../../viewmodels/right_panel/RoomSummaryCardTopicViewModel";
 import { useRoomName } from "../../../hooks/useRoomName.ts";
+import { InsideRoomMedia, InsideRoomSummaryTiles } from "./InsideRoomSummary.tsx";
 
 interface IProps {
     room: Room;
@@ -234,6 +235,8 @@ const RoomSummaryCardView: React.FC<IProps> = ({
         >
             {roomInfo}
 
+            <InsideRoomSummaryTiles room={room} />
+
             <Separator />
 
             <div role="menubar" aria-orientation="vertical">
@@ -316,6 +319,8 @@ const RoomSummaryCardView: React.FC<IProps> = ({
                     />
                 </div>
             </div>
+
+            {!vm.isVideoRoom && <InsideRoomMedia room={room} permalinkCreator={permalinkCreator} />}
         </BaseCard>
     );
 };

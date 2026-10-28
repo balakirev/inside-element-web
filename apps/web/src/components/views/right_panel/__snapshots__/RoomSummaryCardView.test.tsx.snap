@@ -196,6 +196,9 @@ exports[`<RoomSummaryCard /> > has button to edit topic 1`] = `
         </section>
       </header>
       <div
+        data-testid="inside-tiles"
+      />
+      <div
         class="_separator"
         data-kind="primary"
         data-orientation="horizontal"
@@ -734,6 +737,9 @@ exports[`<RoomSummaryCard /> > has button to edit topic 1`] = `
           </button>
         </div>
       </div>
+      <div
+        data-testid="inside-media"
+      />
     </div>
   </div>
 </div>
@@ -893,6 +899,9 @@ exports[`<RoomSummaryCard /> > renders the room summary 1`] = `
         </section>
       </header>
       <div
+        data-testid="inside-tiles"
+      />
+      <div
         class="_separator"
         data-kind="primary"
         data-orientation="horizontal"
@@ -1431,6 +1440,9 @@ exports[`<RoomSummaryCard /> > renders the room summary 1`] = `
           </button>
         </div>
       </div>
+      <div
+        data-testid="inside-media"
+      />
     </div>
   </div>
 </div>
@@ -1632,6 +1644,9 @@ exports[`<RoomSummaryCard /> > renders the room topic in the summary 1`] = `
         </section>
       </header>
       <div
+        data-testid="inside-tiles"
+      />
+      <div
         class="_separator"
         data-kind="primary"
         data-orientation="horizontal"
@@ -2170,6 +2185,9 @@ exports[`<RoomSummaryCard /> > renders the room topic in the summary 1`] = `
           </button>
         </div>
       </div>
+      <div
+        data-testid="inside-media"
+      />
     </div>
   </div>
 </div>

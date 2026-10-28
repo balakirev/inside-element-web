@@ -43,7 +43,7 @@ export function InsideSearchButton(): JSX.Element {
 }
 
 /** The menu of the room list item's "…", built for the room only while the menu is open. */
-function MoreMenuContent({ room, client }: { room: Room; client: MatrixClient }): JSX.Element {
+export function MoreMenuContent({ room, client }: { room: Room; client: MatrixClient }): JSX.Element {
     const vm = useCreateAutoDisposedViewModel(() => new RoomListItemViewModel({ room, client }));
     return <MoreOptionContent vm={vm} />;
 }
