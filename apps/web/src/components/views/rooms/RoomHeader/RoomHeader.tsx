@@ -56,6 +56,7 @@ import { LocalRoom } from "../../../../models/LocalRoom.ts";
 import { useIsEncrypted } from "../../../../hooks/useIsEncrypted.ts";
 import { useUserStatus } from "../../../../hooks/useUserStatus.ts";
 import { SDKContext } from "../../../../contexts/SDKContext.ts";
+import { InsideMoreButton, InsideSearchButton } from "./InsideHeaderButtons.tsx";
 
 function RoomHeaderButtons({ room, extraButtons }: { room: Room; extraButtons?: JSX.Element }): JSX.Element {
     const sdkContext = useContext(SDKContext);
@@ -306,6 +307,9 @@ function RoomHeaderButtons({ room, extraButtons }: { room: Room; extraButtons?: 
 
             {showChatButton && <VideoRoomChatButton room={room} />}
 
+            {/* Inside: search, threads, room info, more — the button capsule of the Lobby header */}
+            <InsideSearchButton />
+
             <Tooltip label={_t("common|threads")}>
                 <IconButton
                     indicator={notificationLevelToIndicator(threadNotifications)}
@@ -345,6 +349,8 @@ function RoomHeaderButtons({ room, extraButtons }: { room: Room; extraButtons?: 
                     <ToggleableIcon Icon={RoomInfoIcon} phase={RightPanelPhases.RoomSummary} />
                 </IconButton>
             </Tooltip>
+
+            {sdkContext.client && <InsideMoreButton room={room} client={sdkContext.client} />}
 
             {!isDirectMessage && (
                 <Text as="div" size="sm" weight="medium">

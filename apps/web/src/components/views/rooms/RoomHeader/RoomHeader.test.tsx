@@ -50,6 +50,7 @@ import { RightPanelPhases } from "../../../../stores/right-panel/RightPanelStore
 import SettingsStore from "../../../../settings/SettingsStore";
 import SdkConfig from "../../../../SdkConfig";
 import dispatcher from "../../../../dispatcher/dispatcher";
+import { Action } from "../../../../dispatcher/actions";
 import { CallStore } from "../../../../stores/CallStore";
 import { type Call } from "../../../../models/Call";
 import * as ShieldUtils from "../../../../utils/ShieldUtils";
@@ -220,6 +221,41 @@ describe("RoomHeader", () => {
 
         await user.click(getByLabelText(document.body, "Threads"));
         expect(setCardSpy).toHaveBeenCalledWith({ phase: RightPanelPhases.ThreadPanel });
+    });
+
+    describe("Inside search and more buttons", () => {
+        it("orders search, threads, room info and more", () => {
+            render(<RoomHeader room={room} />, getWrapper());
+            const labels = Array.from(document.querySelectorAll("header > button[class*='_icon-button']")).map(
+                (button) => button.getAttribute("aria-label"),
+            );
+            expect(labels.slice(-4)).toEqual(["Search", "Threads", "Room info", "More"]);
+        });
+
+        it("opens the message search of the room", async () => {
+            const user = userEvent.setup();
+            const fireSpy = vi.spyOn(dispatcher, "fire");
+            render(<RoomHeader room={room} />, getWrapper());
+
+            await user.click(document.querySelector(".mx_RoomHeader_inside_search")!);
+            expect(fireSpy).toHaveBeenCalledWith(Action.FocusMessageSearch);
+        });
+
+        it("opens the room options menu of the room list", async () => {
+            const user = userEvent.setup();
+            const dispatchSpy = vi.spyOn(dispatcher, "dispatch");
+            render(<RoomHeader room={room} />, getWrapper());
+
+            await user.click(document.querySelector(".mx_RoomHeader_inside_more")!);
+            await user.click(await screen.findByRole("menuitem", { name: "Leave room" }));
+            expect(dispatchSpy).toHaveBeenCalledWith({ action: "leave_room", room_id: ROOM_ID });
+        });
+
+        it("has no more button without access to the room options", () => {
+            vi.spyOn(room, "getMyMembership").mockReturnValue(KnownMembership.Knock);
+            render(<RoomHeader room={room} />, getWrapper());
+            expect(document.querySelector(".mx_RoomHeader_inside_more")).toBeNull();
+        });
     });
 
     it("opens the notifications panel", async () => {

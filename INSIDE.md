@@ -35,6 +35,7 @@ the next upstream release with `git rebase --onto <new-tag> <old-tag> inside/mai
 | Robust media auth in the service worker | The worker waits up to 5 s for the tab's token, and on a 401 asks the tab to refresh once (shared by all requests of a burst) and retries with auth — no broken avatars right after start. |
 | Dust when deleting a message          | After the delete confirmation the message tile crumbles into dust, as in Telegram (`utils/DustEffect.ts`). |
 | Favicon badge in the brand red        | The unread counter drawn over the tab icon uses the Lobby signal red `#C8102E` instead of Element's `#d00`. |
+| Search and More in the room header    | The right side of the room header is the Lobby button capsule: search, threads, room info, more. Search opens the room's message search as Ctrl+F does; More opens the room list item's options menu below the button (`RoomHeader/InsideHeaderButtons.tsx`). |
 | Version script without `jq`            | Branch builds failed: the Docker builder image has no `jq`.                                                                                                                                                                                                                                                                                                               |
 
 ## Build
