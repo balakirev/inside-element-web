@@ -152,22 +152,21 @@ const IMAGE_THUMBNAIL_MIN_REDUCTION_PERCENT = 0.1; // 10%
 const ALWAYS_INCLUDE_THUMBNAIL = ["image/avif", "image/webp", "image/svg+xml"];
 
 /**
- * Read the metadata for an image file and create and upload a thumbnail of the image.
- *
- * @param {MatrixClient} matrixClient A matrixClient to upload the thumbnail with.
- * @param {String} roomId The ID of the room the image will be uploaded in.
- * @param {File} imageFile The image to read and thumbnail.
- * @param {Function?} thumbnailProgressHandler Inside: optional progress callback for the thumbnail upload.
- * @param {AbortController?} controller Inside: optional abortController for the thumbnail upload.
- * @returns {Promise} A promise that resolves with the attachment info.
+ * Inside: what the event says about a medium besides the file itself, and the thumbnail to upload
+ * with it. Making it no longer uploads the thumbnail, so that it can go up next to the file.
  */
-async function infoForImageFile(
-    matrixClient: MatrixClient,
-    roomId: string,
-    imageFile: File,
-    thumbnailProgressHandler?: UploadOpts["progressHandler"],
-    controller?: AbortController,
-): Promise<ImageInfo> {
+interface MediaDescription<T> {
+    info: T;
+    thumbnail?: Blob;
+}
+
+/**
+ * Read the metadata for an image file and create a thumbnail of the image.
+ *
+ * @param {File} imageFile The image to read and thumbnail.
+ * @returns {Promise} A promise that resolves with the attachment info and the thumbnail to upload, if any.
+ */
+async function infoForImageFile(imageFile: File): Promise<MediaDescription<ImageInfo>> {
     let thumbnailType = "image/png";
     if (imageFile.type === "image/jpeg") {
         thumbnailType = "image/jpeg";
@@ -198,15 +197,11 @@ async function infoForImageFile(
                 sizeDifference <= imageFile.size * IMAGE_THUMBNAIL_MIN_REDUCTION_PERCENT)
         ) {
             delete imageInfo["thumbnail_info"];
-            return imageInfo;
+            return { info: imageInfo };
         }
     }
 
-    const uploadResult = await uploadFile(matrixClient, roomId, result.thumbnail, thumbnailProgressHandler, controller);
-
-    imageInfo["thumbnail_url"] = uploadResult.url;
-    imageInfo["thumbnail_file"] = uploadResult.file;
-    return imageInfo;
+    return { info: imageInfo, thumbnail: result.thumbnail };
 }
 
 /**
@@ -291,71 +286,39 @@ function loadVideoElement(videoFile: File): Promise<HTMLVideoElement> {
 }
 
 /**
- * Read the metadata for a video file and create and upload a thumbnail of the video.
+ * Read the metadata for a video file and create a thumbnail of the video.
  *
- * @param {MatrixClient} matrixClient A matrixClient to upload the thumbnail with.
- * @param {String} roomId The ID of the room the video will be uploaded to.
  * @param {File} videoFile The video to read and thumbnail.
- * @param {Function?} thumbnailProgressHandler Inside: optional progress callback for the thumbnail upload.
- * @param {AbortController?} controller Inside: optional abortController for the thumbnail upload.
- * @returns {Promise} A promise that resolves with the attachment info.
+ * @returns {Promise} A promise that resolves with the attachment info and the thumbnail to upload.
  */
-function infoForVideoFile(
-    matrixClient: MatrixClient,
-    roomId: string,
-    videoFile: File,
-    thumbnailProgressHandler?: UploadOpts["progressHandler"],
-    controller?: AbortController,
-): Promise<VideoInfo> {
+async function infoForVideoFile(videoFile: File): Promise<MediaDescription<VideoInfo>> {
     const thumbnailType = "image/jpeg";
 
-    const videoInfo: VideoInfo = {};
-    return loadVideoElement(videoFile)
-        .then((video) => {
-            videoInfo.duration = Math.ceil(video.duration * 1000);
-            return createThumbnail(video, video.videoWidth, video.videoHeight, thumbnailType);
-        })
-        .then((result) => {
-            Object.assign(videoInfo, result.info);
-            return uploadFile(matrixClient, roomId, result.thumbnail, thumbnailProgressHandler, controller);
-        })
-        .then((result) => {
-            videoInfo.thumbnail_url = result.url;
-            videoInfo.thumbnail_file = result.file;
-            return videoInfo;
-        });
+    const video = await loadVideoElement(videoFile);
+    const videoInfo: VideoInfo = { duration: Math.ceil(video.duration * 1000) };
+    const result = await createThumbnail(video, video.videoWidth, video.videoHeight, thumbnailType);
+    Object.assign(videoInfo, result.info);
+    return { info: videoInfo, thumbnail: result.thumbnail };
 }
 
 /**
- * Inside: draw the first page of a PDF and upload it as the thumbnail of the file. Resolves to no
- * thumbnail if the page cannot be drawn or its upload fails; only cancelling the upload throws.
+ * Inside: draw the first page of a PDF as the thumbnail of the file. Resolves to no thumbnail if
+ * the page cannot be drawn.
  */
-async function infoForPdfFile(
-    matrixClient: MatrixClient,
-    roomId: string,
-    pdfFile: File,
-    thumbnailProgressHandler?: UploadOpts["progressHandler"],
-    controller?: AbortController,
-): Promise<FileInfo> {
+async function infoForPdfFile(pdfFile: File): Promise<MediaDescription<FileInfo>> {
     const thumbnail = await pdfThumbnailForFile(pdfFile);
-    if (!thumbnail) return {};
-    try {
-        const result = await uploadFile(matrixClient, roomId, thumbnail.blob, thumbnailProgressHandler, controller);
-        return {
-            thumbnail_url: result.url,
-            thumbnail_file: result.file,
+    if (!thumbnail) return { info: {} };
+    return {
+        info: {
             thumbnail_info: {
                 w: thumbnail.width,
                 h: thumbnail.height,
                 mimetype: thumbnail.blob.type,
                 size: thumbnail.blob.size,
             },
-        };
-    } catch (e) {
-        if (e instanceof UploadCanceledError) throw e;
-        logger.warn("Unable to upload the thumbnail of a PDF", e);
-        return {};
-    }
+        },
+        thumbnail: thumbnail.blob,
+    };
 }
 
 /**
@@ -805,70 +768,20 @@ export default class ContentMessages {
             dis.dispatch<UploadProgressPayload>({ action: Action.UploadProgress, upload });
         }
 
-        if (file.type.startsWith("image/")) {
-            content.msgtype = MsgType.Image;
-            try {
-                const imageInfo = await infoForImageFile(
-                    matrixClient,
-                    roomId,
-                    file,
-                    onThumbnailProgress,
-                    upload.abortController,
-                );
-                Object.assign(content.info, imageInfo);
-            } catch (e) {
-                if (e instanceof UploadFailedError) {
-                    // re-throw to main upload error handler
-                    throw e;
-                }
-                // Otherwise we failed to thumbnail, fall back to uploading an m.file
-                logger.error(`Expected file of type "${file.type}" to be an image, but got`, e);
-                content.msgtype = MsgType.File;
-            }
-        } else if (file.type.startsWith("audio/")) {
-            content.msgtype = MsgType.Audio;
-            try {
-                const audioInfo = await infoForAudioFile(file);
-                Object.assign(content.info, audioInfo);
-            } catch (e) {
-                // Failed to process audio file, fall back to uploading an m.file
-                logger.error(e);
-                content.msgtype = MsgType.File;
-            }
-        } else if (file.type.startsWith("video/")) {
-            content.msgtype = MsgType.Video;
-            try {
-                const videoInfo = await infoForVideoFile(
-                    matrixClient,
-                    roomId,
-                    file,
-                    onThumbnailProgress,
-                    upload.abortController,
-                );
-                Object.assign(content.info, videoInfo);
-            } catch (e) {
-                // Failed to thumbnail, fall back to uploading an m.file
-                logger.error(e);
-                content.msgtype = MsgType.File;
-            }
+        // Inside: the file goes up at once, and its thumbnail next to it as soon as it is made, rather
+        // than the thumbnail first and the file after it.
+        const filePromise = uploadFile(matrixClient, roomId, file, onProgress, upload.abortController);
+        const thumbnailPromise = this.describeMedia(file, content).then((thumbnail) =>
+            thumbnail ? this.uploadThumbnail(matrixClient, roomId, thumbnail, onThumbnailProgress, upload) : undefined,
+        );
+        const [result, thumbnailResult] = await Promise.all([filePromise, thumbnailPromise]);
+        const info = content.info as ImageInfo;
+        if (thumbnailResult) {
+            info.thumbnail_url = thumbnailResult.url;
+            info.thumbnail_file = thumbnailResult.file;
         } else {
-            content.msgtype = MsgType.File;
-            if (isPdfFile(file)) {
-                // Inside: the first page as the thumbnail of the file, as in Telegram. Without it the
-                // file is still sent, just with the document icon.
-                const pdfInfo = await infoForPdfFile(
-                    matrixClient,
-                    roomId,
-                    file,
-                    onThumbnailProgress,
-                    upload.abortController,
-                );
-                Object.assign(content.info, pdfInfo);
-            }
+            delete info.thumbnail_info;
         }
-
-        if (upload.cancelled) throw new UploadCanceledError();
-        const result = await uploadFile(matrixClient, roomId, file, onProgress, upload.abortController);
         content.file = result.file;
         content.url = result.url;
         upload.contentUri = result.url ?? result.file?.url;
@@ -888,6 +801,75 @@ export default class ContentMessages {
 
         dis.dispatch<UploadFinishedPayload>({ action: Action.UploadFinished, upload });
         dis.dispatch({ action: "message_sent" });
+    }
+
+    /**
+     * Set the msgtype and the info of a media event from its file; resolves to the thumbnail to
+     * upload with it, if there is one. A file that cannot be read as what its type says goes as
+     * m.file.
+     */
+    private async describeMedia(
+        file: File,
+        content: { msgtype: string; info: Partial<MediaEventInfo> },
+    ): Promise<Blob | undefined> {
+        let description: MediaDescription<MediaEventInfo> | undefined;
+        if (file.type.startsWith("image/")) {
+            content.msgtype = MsgType.Image;
+            try {
+                description = await infoForImageFile(file);
+            } catch (e) {
+                // We failed to thumbnail, fall back to uploading an m.file
+                logger.error(`Expected file of type "${file.type}" to be an image, but got`, e);
+                content.msgtype = MsgType.File;
+            }
+        } else if (file.type.startsWith("audio/")) {
+            content.msgtype = MsgType.Audio;
+            try {
+                description = { info: await infoForAudioFile(file) };
+            } catch (e) {
+                // Failed to process audio file, fall back to uploading an m.file
+                logger.error(e);
+                content.msgtype = MsgType.File;
+            }
+        } else if (file.type.startsWith("video/")) {
+            content.msgtype = MsgType.Video;
+            try {
+                description = await infoForVideoFile(file);
+            } catch (e) {
+                // Failed to thumbnail, fall back to uploading an m.file
+                logger.error(e);
+                content.msgtype = MsgType.File;
+            }
+        } else {
+            content.msgtype = MsgType.File;
+            if (isPdfFile(file)) {
+                // Inside: the first page as the thumbnail of the file, as in Telegram. Without it the
+                // file is still sent, just with the document icon.
+                description = await infoForPdfFile(file);
+            }
+        }
+        if (description) Object.assign(content.info, description.info);
+        return description?.thumbnail;
+    }
+
+    /**
+     * Inside: upload the thumbnail of a medium. The medium is sent without one if this fails; only
+     * cancelling the upload throws.
+     */
+    private async uploadThumbnail(
+        matrixClient: MatrixClient,
+        roomId: string,
+        thumbnail: Blob,
+        progressHandler: UploadOpts["progressHandler"],
+        upload: RoomUpload,
+    ): Promise<{ url?: string; file?: EncryptedFile } | undefined> {
+        try {
+            return await uploadFile(matrixClient, roomId, thumbnail, progressHandler, upload.abortController);
+        } catch (e) {
+            if (e instanceof UploadCanceledError || upload.cancelled) throw new UploadCanceledError();
+            logger.warn("Unable to upload a thumbnail, sending without it", e);
+            return undefined;
+        }
     }
 
     /** Report a failed upload: in place in the main timeline (Inside), in a dialog in threads. */

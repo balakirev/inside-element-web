@@ -460,13 +460,62 @@ describe("ContentMessages", () => {
 
                 await contentMessages.sendContentToRoom(file, roomId, undefined, client, undefined);
 
-                // First the thumbnail, then the file on top of it.
+                // The file and the thumbnail, together.
                 expect(client.uploadContent).toHaveBeenCalledTimes(2);
                 expect(progress).toEqual([
                     [50, 100],
                     [100, 200],
                 ]);
                 dispatchSpy.mockRestore();
+            });
+
+            it("uploads the thumbnail next to the file rather than before it", async () => {
+                const pending: Array<PromiseWithResolvers<UploadResponse>> = [];
+                const bodies: unknown[] = [];
+                vi.mocked(client.uploadContent).mockImplementation((body) => {
+                    bodies.push(body);
+                    const deferred = Promise.withResolvers<UploadResponse>();
+                    pending.push(deferred);
+                    return deferred.promise;
+                });
+                const file = new File([], "photo.webp", { type: "image/webp" });
+
+                const sent = contentMessages.sendContentToRoom(file, roomId, undefined, client, undefined);
+                await vi.waitFor(() => expect(pending).toHaveLength(2));
+
+                // The file went first, the thumbnail while it is still going.
+                expect(bodies[0]).toBe(file);
+                expect(bodies[1]).toBeInstanceOf(Blob);
+                pending[1].resolve({ content_uri: "mxc://server/thumb" });
+                pending[0].resolve({ content_uri: "mxc://server/file" });
+                await sent;
+                expect(client.sendMessage).toHaveBeenCalledWith(
+                    roomId,
+                    null,
+                    expect.objectContaining({
+                        url: "mxc://server/file",
+                        info: expect.objectContaining({ thumbnail_url: "mxc://server/thumb" }),
+                    }),
+                );
+            });
+
+            it("sends a photo without its thumbnail when only the thumbnail fails", async () => {
+                vi.mocked(client.uploadContent).mockImplementation(async (body) => {
+                    if (body instanceof File) return { content_uri: "mxc://server/file" };
+                    throw new Error("network");
+                });
+                const file = new File([], "photo.webp", { type: "image/webp" });
+
+                await contentMessages.sendContentToRoom(file, roomId, undefined, client, undefined);
+
+                const content = vi.mocked(client.sendMessage).mock.calls.at(-1)![2] as unknown as {
+                    msgtype: string;
+                    info: Record<string, unknown>;
+                };
+                expect(content.msgtype).toBe("m.image");
+                expect(content.info.thumbnail_url).toBeUndefined();
+                expect(content.info.thumbnail_info).toBeUndefined();
+                expect(content.info["xyz.amorgan.blurhash"]).toBe("blurhashstring");
             });
 
             it("sends the first page of a PDF as its thumbnail", async () => {
@@ -499,9 +548,10 @@ describe("ContentMessages", () => {
             it("sends a PDF without a thumbnail when its page cannot be drawn or uploaded", async () => {
                 const thumbnail = { blob: new Blob(["jpeg"], { type: "image/jpeg" }), width: 226, height: 320 };
                 const spy = vi.spyOn(pdfThumbnail, "pdfThumbnailForFile").mockResolvedValue(thumbnail);
-                vi.mocked(client.uploadContent)
-                    .mockRejectedValueOnce(new Error("network"))
-                    .mockResolvedValue({ content_uri: "mxc://server/file" });
+                vi.mocked(client.uploadContent).mockImplementation(async (body) => {
+                    if (body === thumbnail.blob) throw new Error("network");
+                    return { content_uri: "mxc://server/file" };
+                });
                 const file = new File(["%PDF-1.7"], "spec.pdf", { type: "application/pdf" });
 
                 await contentMessages.sendContentToRoom(file, roomId, undefined, client, undefined);
