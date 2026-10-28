@@ -217,7 +217,7 @@ describe("<UploadConfirmDialog />", () => {
             );
             const meta = container.querySelector(".mx_UploadConfirmDialog_inside_fileMeta");
             expect(meta).toHaveTextContent(name);
-            expect(meta).toHaveTextContent("2 KB");
+            expect(meta).toHaveTextContent("2 kB");
             // No icon tile next to the name.
             expect(container.querySelector(".mx_UploadConfirmDialog_previewInner svg")).toBeNull();
         });

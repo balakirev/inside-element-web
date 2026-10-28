@@ -714,7 +714,7 @@ test.describe("Timeline", () => {
                 page
                     .locator(".mx_EventTile")
                     .last()
-                    .getByText(/1.12 KB/),
+                    .getByText(/1.1 kB/),
             ).toBeVisible();
         });
 

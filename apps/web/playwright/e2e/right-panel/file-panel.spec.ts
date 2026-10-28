@@ -153,7 +153,7 @@ test.describe("FilePanel", () => {
             // Assert that the audio file information is rendered;
             await expect(audioBody.getByText("1sec.ogg")).toBeVisible(); // extension
             await expect(audioBody.getByRole("time")).toHaveText("00:01"); // duration
-            await expect(audioBody.getByText("(3.56 KB)")).toBeVisible(); // actual size;
+            await expect(audioBody.getByText("(3.6 kB)")).toBeVisible(); // actual size;
 
             // Assert that the duration counter is 00:01 before clicking the play button
             await expect(audioBody.getByRole("time")).toHaveText("00:01");
@@ -175,7 +175,7 @@ test.describe("FilePanel", () => {
         });
 
         test("should render file size in kibibytes on a file tile", async ({ page, app }) => {
-            const size = "1.12 KB"; // actual file size in kibibytes (1024 bytes)
+            const size = "1.1 kB"; // actual file size in kibibytes (1024 bytes)
 
             // Upload a file
             await uploadFile(app, "matrix-org-client-versions.json");

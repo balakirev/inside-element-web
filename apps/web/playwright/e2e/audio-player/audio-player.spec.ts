@@ -94,7 +94,7 @@ test.describe("Audio player", { tag: ["@no-firefox", "@no-webkit"] }, () => {
             const mediaInfo = locator.getByRole("region", { name: "Audio player" });
             await expect(mediaInfo.getByText(".ogg")).toBeVisible(); // extension
             await expect(mediaInfo.getByRole("time")).toHaveText("00:01"); // duration
-            await expect(mediaInfo.getByText("(3.56 KB)")).toBeVisible(); // actual size;
+            await expect(mediaInfo.getByText("(3.6 kB)")).toBeVisible(); // actual size;
 
             // Assert that the play button can be found and is visible
             await expect(locator.getByRole("button", { name: "Play" })).toBeVisible();

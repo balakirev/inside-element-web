@@ -166,7 +166,7 @@ describe("<EventIndexPanel />", () => {
             // message for enabled event index
             expect(
                 screen.getByText(
-                    "Securely cache encrypted messages locally for them to appear in search results, using 0 Bytes to store messages from 0 rooms.",
+                    "Securely cache encrypted messages locally for them to appear in search results, using 0 bytes to store messages from 0 rooms.",
                 ),
             ).toBeInTheDocument();
         });

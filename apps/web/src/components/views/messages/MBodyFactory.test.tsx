@@ -320,7 +320,7 @@ describe("MBodyFactory", () => {
             renderPreview(mediaEvent, mkFileHelper("report.pdf", new Blob(["pdf"])));
 
             expect(screen.getByText("report.pdf")).toBeInTheDocument();
-            expect(screen.getByText("2 KB")).toBeInTheDocument();
+            expect(screen.getByText("2 kB")).toBeInTheDocument();
         });
 
         it("shows a placeholder as the tile body when the event declares no size", () => {

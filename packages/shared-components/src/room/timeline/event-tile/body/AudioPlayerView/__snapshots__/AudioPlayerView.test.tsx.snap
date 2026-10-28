@@ -59,7 +59,7 @@ exports[`AudioPlayerView > renders the audio player in default state 1`] = `
           >
             05:00
           </time>
-          (3.42 KB)
+          (3.4 kB)
         </div>
       </div>
     </div>
@@ -150,7 +150,7 @@ exports[`AudioPlayerView > renders the audio player in error state 1`] = `
           >
             05:00
           </time>
-          (3.42 KB)
+          (3.4 kB)
         </div>
       </div>
     </div>
@@ -246,7 +246,7 @@ exports[`AudioPlayerView > renders the audio player without media name 1`] = `
           >
             05:00
           </time>
-          (3.42 KB)
+          (3.4 kB)
         </div>
       </div>
     </div>

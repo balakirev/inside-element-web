@@ -11,6 +11,7 @@ import { filesize, type FilesizeOptions, type FilesizeReturn } from "filesize";
 import { type MediaEventContent } from "matrix-js-sdk/src/types";
 
 import { _t } from "../languageHandler";
+import { formatBytes } from "./FormattingUtils";
 
 export function downloadLabelForFile(content: MediaEventContent, withSize = true): string {
     let text = _t("action|download");
@@ -92,5 +93,10 @@ export function presentableTextForFile(
  */
 export function fileSize<O extends FilesizeOptions>(byteCount: number, options?: O): FilesizeReturn<O> {
     const defaultOption = { base: 2, standard: "jedec", ...options } as O;
+    // Inside: sizes as text are written in the app language ("8,6 МБ"), see formatBytes; filesize only has
+    // English units.
+    if (defaultOption.base === 2 && (defaultOption.output === undefined || defaultOption.output === "string")) {
+        return formatBytes(byteCount) as FilesizeReturn<O>;
+    }
     return filesize<O>(byteCount, defaultOption);
 }

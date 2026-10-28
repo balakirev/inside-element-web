@@ -5,7 +5,7 @@ exports[`<EventIndexPanel /> > when event index is initialised > renders event i
   <div
     class="mx_SettingsSubsection_text"
   >
-    Securely cache encrypted messages locally for them to appear in search results, using 0 Bytes to store messages from 0 rooms.
+    Securely cache encrypted messages locally for them to appear in search results, using 0 bytes to store messages from 0 rooms.
   </div>
   <div
     class="mx_AccessibleButton mx_AccessibleButton_hasKind mx_AccessibleButton_kind_primary"

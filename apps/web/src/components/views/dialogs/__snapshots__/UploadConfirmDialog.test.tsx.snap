@@ -56,7 +56,7 @@ exports[`<UploadConfirmDialog /> > should display image preview 1`] = `
               <span
                 class="mx_UploadConfirmDialog_inside_fileSize"
               >
-                124 KB
+                124 kB
               </span>
             </div>
           </div>

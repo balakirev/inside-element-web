@@ -32,7 +32,7 @@ describe("UploadBar", () => {
         ]);
 
         const { getByText } = render(<UploadBar room={room} />);
-        expect(getByText("Uploading file1.jpg and 4 others (420 B)")).toBeInTheDocument();
+        expect(getByText("Uploading file1.jpg and 4 others (420 bytes)")).toBeInTheDocument();
     });
 
     it("should render a single upload correctly", () => {
@@ -41,6 +41,6 @@ describe("UploadBar", () => {
         ]);
 
         const { getByText } = render(<UploadBar room={room} />);
-        expect(getByText("Uploading file1.zip (400.54 MB)")).toBeInTheDocument();
+        expect(getByText("Uploading file1.zip (400.5 MB)")).toBeInTheDocument();
     });
 });

@@ -258,7 +258,7 @@ describe("Inside room summary", () => {
             await userEvent.click(screen.getByRole("tab", { name: "Files" }));
             const fileItem = await screen.findByText("deck.pdf");
             expect(container.querySelector(".mx_RoomSummaryCard_inside_list")).toBeInTheDocument();
-            expect(screen.getByText(/2 KB/)).toBeInTheDocument();
+            expect(screen.getByText(/2 kB/)).toBeInTheDocument();
             await userEvent.click(fileItem);
             expect(dispatch).toHaveBeenCalledWith(
                 expect.objectContaining({ action: Action.ViewRoom, event_id: fileEv.getId(), highlighted: true }),
