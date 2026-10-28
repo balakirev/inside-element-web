@@ -10,8 +10,8 @@ Please see LICENSE files in the repository root for full details.
  * event whose content carries {@link ROUND_VIDEO_FLAG}; other clients show it as a normal video.
  */
 
-/** Content flag of a round video message (`"estate.inside.lobby.round_video": true`). */
-export const ROUND_VIDEO_FLAG = "estate.inside.lobby.round_video";
+/** Content flag of a round video message (`"estate.inside.lobby.video_note": true`). */
+export const ROUND_VIDEO_FLAG = "estate.inside.lobby.video_note";
 
 /** Longest recording, as in Telegram (all clients stop at 60 s). */
 export const ROUND_VIDEO_MAX_MS = 60_000;
@@ -44,9 +44,16 @@ export const ROUND_VIDEO_MIME_TYPES = [
     "video/webm",
 ];
 
-/** Whether the content of an event is a round video message. */
+/**
+ * Whether the content of an event is a round video message, as the Lobby contract says: the flag,
+ * a square picture (`info.w == info.h`) and at most 60 s (`info.duration`). Anything else with the
+ * flag is shown as an ordinary video.
+ */
 export function isRoundVideoContent(content: { msgtype?: string; [key: string]: unknown } | undefined): boolean {
-    return content?.msgtype === "m.video" && content[ROUND_VIDEO_FLAG] === true;
+    if (content?.msgtype !== "m.video" || content[ROUND_VIDEO_FLAG] !== true) return false;
+    const info = content.info as { w?: unknown; h?: unknown; duration?: unknown } | undefined;
+    if (typeof info?.w !== "number" || info.w <= 0 || info.w !== info.h) return false;
+    return typeof info.duration === "number" && info.duration > 0 && info.duration <= ROUND_VIDEO_MAX_MS;
 }
 
 /** The first of {@link ROUND_VIDEO_MIME_TYPES} that the recorder supports, or undefined. */

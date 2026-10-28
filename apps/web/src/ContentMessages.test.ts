@@ -268,10 +268,10 @@ describe("ContentMessages", () => {
             });
 
             vi.mocked(client.uploadContent).mockResolvedValue({ content_uri: "mxc://server/round" });
-            const file = new File(["x"], "round-video.webm", { type: "video/webm" });
+            const file = new File(["x"], "video_note.webm", { type: "video/webm" });
             await contentMessages.sendContentToRoom(file, roomId, undefined, client, undefined, undefined, undefined, {
                 compress: false,
-                extraContent: { "estate.inside.lobby.round_video": true },
+                extraContent: { "estate.inside.lobby.video_note": true },
                 info: { duration: 7200, w: 384, h: 384 },
             });
             expect(client.sendMessage).toHaveBeenCalledWith(
@@ -280,7 +280,7 @@ describe("ContentMessages", () => {
                 expect.objectContaining({
                     "url": "mxc://server/round",
                     "msgtype": "m.video",
-                    "estate.inside.lobby.round_video": true,
+                    "estate.inside.lobby.video_note": true,
                     "info": expect.objectContaining({
                         duration: 7200,
                         w: 384,

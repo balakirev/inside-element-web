@@ -174,10 +174,10 @@ describe("MessageEvent", () => {
             room: room.roomId,
             content: {
                 "msgtype": MsgType.Video,
-                "body": "round-video.mp4",
+                "body": "video_note.mp4",
                 "url": "mxc://server/round",
                 "info": { mimetype: "video/mp4", w: 384, h: 384, duration: 5000 },
-                "estate.inside.lobby.round_video": true,
+                "estate.inside.lobby.video_note": true,
             },
         });
 

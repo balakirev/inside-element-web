@@ -11,14 +11,9 @@ import ContentMessages from "../ContentMessages";
 import { ROUND_VIDEO_FLAG } from "./roundVideo";
 import { type RoundVideoResult } from "./RoundVideoRecorder";
 
-/** The file name of a recorded round video ("round-video-2026-10-29-14-05-33.mp4"). */
-export function roundVideoFileName(mimeType: string, date = new Date()): string {
-    const ext = mimeType.includes("mp4") ? "mp4" : "webm";
-    const pad = (n: number): string => n.toString().padStart(2, "0");
-    const stamp = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}-${pad(
-        date.getHours(),
-    )}-${pad(date.getMinutes())}-${pad(date.getSeconds())}`;
-    return `round-video-${stamp}.${ext}`;
+/** The file name (and body) of a recorded round video, as the Lobby contract has it: "video_note.mp4". */
+export function roundVideoFileName(mimeType: string): string {
+    return mimeType.includes("mp4") ? "video_note.mp4" : "video_note.webm";
 }
 
 /**

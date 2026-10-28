@@ -24,10 +24,10 @@ function mkEvent(id: string): MatrixEvent {
         event_id: id,
         content: {
             "msgtype": "m.video",
-            "body": "round-video.mp4",
+            "body": "video_note.mp4",
             "url": "mxc://server/round",
             "info": { mimetype: "video/mp4", w: 384, h: 384, duration: 7000, size: 1000 },
-            "estate.inside.lobby.round_video": true,
+            "estate.inside.lobby.video_note": true,
         },
     });
 }
@@ -49,12 +49,12 @@ function setOnScreen(onScreen: boolean): void {
 }
 
 describe("RoundVideoCircle", () => {
-    let autoplay: boolean;
+    let lowBandwidth: boolean;
     let play: ReturnType<typeof vi.spyOn>;
     let pause: ReturnType<typeof vi.spyOn>;
 
     beforeEach(() => {
-        autoplay = true;
+        lowBandwidth = false;
         observers = [];
         vi.stubGlobal(
             "IntersectionObserver",
@@ -68,7 +68,11 @@ describe("RoundVideoCircle", () => {
         );
         const getValue = SettingsStore.getValue.bind(SettingsStore);
         vi.spyOn(SettingsStore, "getValue").mockImplementation(((name: string, ...rest: unknown[]) =>
-            name === "autoplayVideo" ? autoplay : (getValue as any)(name, ...rest)) as typeof SettingsStore.getValue);
+            name === "lowBandwidth"
+                ? lowBandwidth
+                : name === "autoplayVideo"
+                  ? false // round videos loop whatever this says
+                  : (getValue as any)(name, ...rest)) as typeof SettingsStore.getValue);
         play = vi.spyOn(HTMLMediaElement.prototype, "play").mockImplementation(function (this: HTMLMediaElement) {
             Object.defineProperty(this, "paused", { value: false, configurable: true });
             return Promise.resolve();
@@ -85,7 +89,7 @@ describe("RoundVideoCircle", () => {
 
     const video = (container: HTMLElement): HTMLVideoElement => container.querySelector("video")!;
 
-    it("is a circle with the duration and loops muted while on screen", async () => {
+    it("is a circle with the duration and loops muted while on screen, even with autoplay videos off", async () => {
         const { container } = render(<RoundVideoCircle mxEvent={mkEvent("$a")} mediaEventHelper={mkHelper()} />);
         expect(screen.getByTestId("round-video")).toHaveAccessibleName("Video message, 0:07");
         expect(container.querySelector(".mx_InsideRoundVideoBody_duration")).toHaveTextContent("0:07");
@@ -101,8 +105,19 @@ describe("RoundVideoCircle", () => {
         expect(pause).toHaveBeenCalled();
     });
 
-    it("shows the poster and does not play without autoplay", async () => {
-        autoplay = false;
+    it.each([
+        ["low bandwidth", () => (lowBandwidth = true)],
+        [
+            "reduced motion",
+            () =>
+                vi.stubGlobal(
+                    "matchMedia",
+                    vi.fn().mockReturnValue({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() }),
+                ),
+        ],
+        ["Save-Data", () => vi.stubGlobal("navigator", { ...navigator, connection: { saveData: true } })],
+    ])("shows the first frame and does not play with %s", async (_name, setUp) => {
+        setUp();
         const { container } = render(<RoundVideoCircle mxEvent={mkEvent("$a")} mediaEventHelper={mkHelper()} />);
         setOnScreen(true);
         await waitFor(() =>
@@ -165,7 +180,7 @@ describe("RoundVideoCircle", () => {
     });
 
     it("loads the video on a click when it does not autoplay, then plays it with sound", async () => {
-        autoplay = false;
+        lowBandwidth = true;
         const { container } = render(<RoundVideoCircle mxEvent={mkEvent("$a")} mediaEventHelper={mkHelper()} />);
         fireEvent.click(screen.getByTestId("round-video"));
         await waitFor(() => expect(video(container)).toBeTruthy());

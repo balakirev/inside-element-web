@@ -6,6 +6,7 @@ Please see LICENSE files in the repository root for full details.
 */
 
 import { beforeEach, describe, expect, it, type Mock, vi } from "vitest";
+import { type MatrixClient } from "matrix-js-sdk/src/matrix";
 
 import {
     type RecorderLike,
@@ -14,6 +15,8 @@ import {
     type RoundVideoRecorderDeps,
     classifyMediaError,
 } from "./RoundVideoRecorder";
+import { sendRoundVideo, roundVideoFileName } from "./sendRoundVideo";
+import type ContentMessages from "../ContentMessages";
 import { ROUND_VIDEO_MAX_MS, pickRoundVideoMimeType, isRoundVideoContent, formatRoundDuration } from "./roundVideo";
 
 class FakeRecorder implements RecorderLike {
@@ -214,11 +217,52 @@ describe("round video helpers", () => {
         ).toBeUndefined();
     });
 
-    it("recognises round video content only with the flag on an m.video", () => {
-        expect(isRoundVideoContent({ "msgtype": "m.video", "estate.inside.lobby.round_video": true })).toBe(true);
-        expect(isRoundVideoContent({ msgtype: "m.video" })).toBe(false);
-        expect(isRoundVideoContent({ "msgtype": "m.image", "estate.inside.lobby.round_video": true })).toBe(false);
-        expect(isRoundVideoContent({ "msgtype": "m.video", "estate.inside.lobby.round_video": "yes" })).toBe(false);
+    it("recognises a round video as the Lobby contract says: flag, square, at most 60 s", () => {
+        const info = { w: 384, h: 384, duration: 7000 };
+        const flag = "estate.inside.lobby.video_note";
+        expect(isRoundVideoContent({ msgtype: "m.video", [flag]: true, info })).toBe(true);
+        expect(isRoundVideoContent({ msgtype: "m.video", [flag]: true, info: { ...info, duration: 60000 } })).toBe(
+            true,
+        );
+        expect(isRoundVideoContent({ msgtype: "m.video", info })).toBe(false);
+        expect(isRoundVideoContent({ msgtype: "m.image", [flag]: true, info })).toBe(false);
+        expect(isRoundVideoContent({ msgtype: "m.video", [flag]: "yes", info })).toBe(false);
+        expect(isRoundVideoContent({ msgtype: "m.video", [flag]: true, info: { ...info, h: 400 } })).toBe(false);
+        expect(isRoundVideoContent({ msgtype: "m.video", [flag]: true, info: { ...info, duration: 60001 } })).toBe(
+            false,
+        );
+        expect(isRoundVideoContent({ msgtype: "m.video", [flag]: true, info: { w: 384, h: 384 } })).toBe(false);
+        expect(isRoundVideoContent({ msgtype: "m.video", [flag]: true })).toBe(false);
+    });
+
+    it("sends a recording as video_note with the flag and the recorder's info, uncompressed", async () => {
+        const sendContentToRoom = vi.fn().mockResolvedValue(undefined);
+        const client = {} as MatrixClient;
+        await sendRoundVideo(
+            {
+                blob: new Blob(["x"], { type: "video/mp4" }),
+                mimeType: "video/mp4",
+                durationMs: 5300,
+                width: 384,
+                height: 384,
+            },
+            "!room:server",
+            undefined,
+            client,
+            undefined,
+            { sendContentToRoom } as unknown as ContentMessages,
+        );
+        const [file, roomId, , , , , caption, options] = sendContentToRoom.mock.calls[0];
+        expect(file.name).toBe("video_note.mp4");
+        expect(file.type).toBe("video/mp4");
+        expect(roomId).toBe("!room:server");
+        expect(caption).toBeUndefined();
+        expect(options).toEqual({
+            compress: false,
+            extraContent: { "estate.inside.lobby.video_note": true },
+            info: { duration: 5300, w: 384, h: 384 },
+        });
+        expect(roundVideoFileName("video/webm")).toBe("video_note.webm");
     });
 
     it("formats durations", () => {

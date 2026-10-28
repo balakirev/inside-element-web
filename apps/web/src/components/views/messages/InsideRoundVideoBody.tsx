@@ -29,6 +29,10 @@ const ROUND_TIMELINES: TimelineRenderingType[] = [
     TimelineRenderingType.Search,
 ];
 
+function saveData(): boolean {
+    return !!(navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData;
+}
+
 /** Something that plays a round video with sound and can be told to stop. */
 interface SoundOwner {
     stopSound(): void;
@@ -54,8 +58,8 @@ export const RoundVideoSound = {
 
 /**
  * Inside: a round video message («кружок»), as in Telegram: a circle without a bubble that loops
- * muted while it is on screen (not with reduced motion or "autoplay videos" off: then the first
- * frame), and on a click plays from the start with sound and a progress ring around its edge; a
+ * muted while it is on screen, whatever "autoplay videos" says (not with reduced motion, low
+ * bandwidth or Save-Data: then the first frame), and on a click plays from the start with sound and a progress ring around its edge; a
  * click again pauses, the end goes back to the muted loop. Elsewhere it is Element's video.
  */
 export default function InsideRoundVideoBody(props: IBodyProps): JSX.Element {
@@ -90,8 +94,10 @@ interface CircleProps {
 export function RoundVideoCircle({ mxEvent, mediaEventHelper, inhibitInteraction }: CircleProps): JSX.Element {
     const content = mxEvent.getContent<MediaEventContent>();
     const infoDurationMs = (content.info as { duration?: number } | undefined)?.duration ?? 0;
-    const autoplaySetting = useSettingValue("autoplayVideo");
-    const autoplay = !!autoplaySetting && !inhibitInteraction && !prefersReducedMotion();
+    // As in Telegram, round videos loop muted whatever "autoplay videos" says; not with reduced
+    // motion, low bandwidth or Save-Data (then the first frame).
+    const lowBandwidth = useSettingValue("lowBandwidth");
+    const autoplay = !inhibitInteraction && !lowBandwidth && !prefersReducedMotion() && !saveData();
 
     const rootRef = useRef<HTMLDivElement>(null);
     const videoRef = useRef<HTMLVideoElement>(null);
