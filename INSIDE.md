@@ -48,6 +48,7 @@ the next upstream release with `git rebase --onto <new-tag> <old-tag> inside/mai
 | Pin for favourite rooms                | A favourite room without unread messages shows a pin where the unread badge would be (`mx_RoomListItemView_inside_pin`). |
 | Counter on muted rooms                 | A muted room keeps a grey counter of its unread messages in the room list (`mx_RoomListItemView_inside_muted`), counted on the client because servers do not count them; folders and the favicon still leave it out. |
 | File sizes in the app language         | "8,6 МБ", "861 Б" instead of "8.63 MB", "861 Bytes": `formatBytes` (shared components) uses the units of `Intl.NumberFormat` in the current language, one decimal place, and `fileSize` (file tiles, upload dialog and bar) uses it; English writes "861 bytes", "8.6 MB", "1 kB". |
+| Document viewer on by default          | The PDF (and Markdown) viewer of the right panel, Element's "document previews" lab (`feature_pdf_viewer`), is on by default, so a PDF opens in the app instead of downloading; `features` in config.json can still turn it off. |
 | Version script without `jq`            | Branch builds failed: the Docker builder image has no `jq`.                                                                                                                                                                                                                                                                                                               |
 
 ## Build

@@ -665,7 +665,9 @@ export const SETTINGS: Settings = {
         description: _td("labs|document_previews_description"),
         supportedLevels: LEVELS_DEVICE_ONLY_SETTINGS_WITH_CONFIG_PRIORITISED,
         supportedLevelsAreOrdered: true,
-        default: false,
+        // Inside: on for everyone, so a PDF opens in the viewer rather than downloading; config.json
+        // `features` can still turn it off.
+        default: true,
     },
     "feature_login_with_qr": {
         supportedLevels: [SettingLevel.CONFIG],

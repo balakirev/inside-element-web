@@ -178,6 +178,10 @@ describe("MBodyFactory", () => {
     });
 
     describe("FileBodyFactory and the document previews lab, for a PDF", () => {
+        it("Inside: has the lab on by default", () => {
+            expect(SettingsStore.getValue("feature_pdf_viewer")).toBe(true);
+        });
+
         afterEach(async () => {
             // Both viewers share the lab, so a value left on the device would leak into the next test.
             await SettingsStore.setValue("feature_pdf_viewer", null, SettingLevel.DEVICE, false);
@@ -197,6 +201,8 @@ describe("MBodyFactory", () => {
         };
 
         it("offers the viewer only once the lab is turned on, without a remount", async () => {
+            // Inside: the lab is on by default.
+            await SettingsStore.setValue("feature_pdf_viewer", null, SettingLevel.DEVICE, false);
             renderPdfBody();
             expect(screen.queryByRole("button", { name: "Open PDF" })).not.toBeInTheDocument();
 
@@ -215,6 +221,8 @@ describe("MBodyFactory", () => {
         });
 
         it("offers the viewer only once the lab is turned on, without a remount", async () => {
+            // Inside: the lab is on by default.
+            await SettingsStore.setValue("feature_pdf_viewer", null, SettingLevel.DEVICE, false);
             const mediaEvent = mkEvent("m.file", { body: "README.md", info: { mimetype: "text/markdown" } });
 
             renderInRoomContext(
