@@ -36,6 +36,7 @@ the next upstream release with `git rebase --onto <new-tag> <old-tag> inside/mai
 | Dust when deleting a message          | After the delete confirmation the message tile crumbles into dust, as in Telegram (`utils/DustEffect.ts`). |
 | Favicon badge in the brand red        | The unread counter drawn over the tab icon uses the Lobby signal red `#C8102E` instead of Element's `#d00`. |
 | Search and More in the room header    | The right side of the room header is the Lobby button capsule: search, threads, room info, more. Search opens the room's message search as Ctrl+F does; More opens the room list item's options menu below the button (`RoomHeader/InsideHeaderButtons.tsx`). |
+| Escape closes the right panel          | As in Telegram, Escape closes the open thread, room or user info panel (`RoomView.closeRightPanelOnEscape`) and puts focus back into the composer if it was in the panel. Dialogs, menus, autocomplete and cancelling a reply or an edit take the press first; a text field with text and the room search keep it. |
 | Version script without `jq`            | Branch builds failed: the Docker builder image has no `jq`.                                                                                                                                                                                                                                                                                                               |
 
 ## Build
