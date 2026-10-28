@@ -152,9 +152,17 @@ const ALWAYS_INCLUDE_THUMBNAIL = ["image/avif", "image/webp", "image/svg+xml"];
  * @param {MatrixClient} matrixClient A matrixClient to upload the thumbnail with.
  * @param {String} roomId The ID of the room the image will be uploaded in.
  * @param {File} imageFile The image to read and thumbnail.
+ * @param {Function?} thumbnailProgressHandler Inside: optional progress callback for the thumbnail upload.
+ * @param {AbortController?} controller Inside: optional abortController for the thumbnail upload.
  * @returns {Promise} A promise that resolves with the attachment info.
  */
-async function infoForImageFile(matrixClient: MatrixClient, roomId: string, imageFile: File): Promise<ImageInfo> {
+async function infoForImageFile(
+    matrixClient: MatrixClient,
+    roomId: string,
+    imageFile: File,
+    thumbnailProgressHandler?: UploadOpts["progressHandler"],
+    controller?: AbortController,
+): Promise<ImageInfo> {
     let thumbnailType = "image/png";
     if (imageFile.type === "image/jpeg") {
         thumbnailType = "image/jpeg";
@@ -189,7 +197,7 @@ async function infoForImageFile(matrixClient: MatrixClient, roomId: string, imag
         }
     }
 
-    const uploadResult = await uploadFile(matrixClient, roomId, result.thumbnail);
+    const uploadResult = await uploadFile(matrixClient, roomId, result.thumbnail, thumbnailProgressHandler, controller);
 
     imageInfo["thumbnail_url"] = uploadResult.url;
     imageInfo["thumbnail_file"] = uploadResult.file;
@@ -290,9 +298,17 @@ function loadVideoElement(videoFile: File): Promise<HTMLVideoElement> {
  * @param {MatrixClient} matrixClient A matrixClient to upload the thumbnail with.
  * @param {String} roomId The ID of the room the video will be uploaded to.
  * @param {File} videoFile The video to read and thumbnail.
+ * @param {Function?} thumbnailProgressHandler Inside: optional progress callback for the thumbnail upload.
+ * @param {AbortController?} controller Inside: optional abortController for the thumbnail upload.
  * @returns {Promise} A promise that resolves with the attachment info.
  */
-function infoForVideoFile(matrixClient: MatrixClient, roomId: string, videoFile: File): Promise<VideoInfo> {
+function infoForVideoFile(
+    matrixClient: MatrixClient,
+    roomId: string,
+    videoFile: File,
+    thumbnailProgressHandler?: UploadOpts["progressHandler"],
+    controller?: AbortController,
+): Promise<VideoInfo> {
     const thumbnailType = "image/jpeg";
 
     const videoInfo: VideoInfo = {};
@@ -303,7 +319,7 @@ function infoForVideoFile(matrixClient: MatrixClient, roomId: string, videoFile:
         })
         .then((result) => {
             Object.assign(videoInfo, result.info);
-            return uploadFile(matrixClient, roomId, result.thumbnail);
+            return uploadFile(matrixClient, roomId, result.thumbnail, thumbnailProgressHandler, controller);
         })
         .then((result) => {
             videoInfo.thumbnail_url = result.url;
@@ -669,12 +685,24 @@ export default class ContentMessages {
             upload.onProgress(progress);
             dis.dispatch<UploadProgressPayload>({ action: Action.UploadProgress, upload });
         }
+        // Inside: images and videos first upload a thumbnail; count it into the progress, so the bubble
+        // does not stand at zero meanwhile.
+        function onThumbnailProgress(progress: UploadProgress): void {
+            upload.onThumbnailProgress(progress);
+            dis.dispatch<UploadProgressPayload>({ action: Action.UploadProgress, upload });
+        }
 
         try {
             if (file.type.startsWith("image/")) {
                 content.msgtype = MsgType.Image;
                 try {
-                    const imageInfo = await infoForImageFile(matrixClient, roomId, file);
+                    const imageInfo = await infoForImageFile(
+                        matrixClient,
+                        roomId,
+                        file,
+                        onThumbnailProgress,
+                        upload.abortController,
+                    );
                     Object.assign(content.info, imageInfo);
                 } catch (e) {
                     if (e instanceof UploadFailedError) {
@@ -698,7 +726,13 @@ export default class ContentMessages {
             } else if (file.type.startsWith("video/")) {
                 content.msgtype = MsgType.Video;
                 try {
-                    const videoInfo = await infoForVideoFile(matrixClient, roomId, file);
+                    const videoInfo = await infoForVideoFile(
+                        matrixClient,
+                        roomId,
+                        file,
+                        onThumbnailProgress,
+                        upload.abortController,
+                    );
                     Object.assign(content.info, videoInfo);
                 } catch (e) {
                     // Failed to thumbnail, fall back to uploading an m.file

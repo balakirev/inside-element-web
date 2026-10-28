@@ -57,6 +57,18 @@ Please see LICENSE files in the repository root for full details.
     fill: none;
     stroke-width: 3px;
     stroke-linecap: round;
+    /* Turns all the time, as in Telegram, so a slow start never looks frozen. */
+    animation: mx_InsidePendingUpload_spin 2s linear infinite;
+
+    @media (prefers-reduced-motion: reduce) {
+        animation: none;
+    }
+}
+
+@keyframes mx_InsidePendingUpload_spin {
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .mx_InsidePendingUpload_ringTrack {

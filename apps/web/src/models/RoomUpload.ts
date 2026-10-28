@@ -13,6 +13,9 @@ export class RoomUpload {
     public readonly abortController = new AbortController();
     public promise?: Promise<{ url?: string; file?: EncryptedFile }>;
     private uploaded = 0;
+    // Inside: the thumbnail that images and videos upload before the file itself.
+    private thumbnailUploaded = 0;
+    private thumbnailSize = 0;
 
     /**
      * Inside: the file being sent, so the timeline can show a preview of it while it uploads.
@@ -48,6 +51,14 @@ export class RoomUpload {
         this.fileSize = progress.total;
     }
 
+    /**
+     * Inside: progress of the thumbnail upload, counted into {@link loaded} and {@link total}.
+     */
+    public onThumbnailProgress(progress: UploadProgress): void {
+        this.thumbnailUploaded = progress.loaded;
+        this.thumbnailSize = progress.total;
+    }
+
     public abort(): void {
         this.abortController.abort();
     }
@@ -57,10 +68,10 @@ export class RoomUpload {
     }
 
     public get total(): number {
-        return this.fileSize;
+        return this.fileSize + this.thumbnailSize;
     }
 
     public get loaded(): number {
-        return this.uploaded;
+        return this.uploaded + this.thumbnailUploaded;
     }
 }

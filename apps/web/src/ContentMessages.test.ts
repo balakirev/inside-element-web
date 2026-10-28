@@ -426,6 +426,33 @@ describe("ContentMessages", () => {
                 dispatchSpy.mockRestore();
             });
 
+            it("counts the thumbnail upload into the progress", async () => {
+                vi.mocked(client.uploadContent).mockImplementation(async (_body, opts) => {
+                    opts?.progressHandler?.({ loaded: 50, total: 100 });
+                    return { content_uri: "mxc://server/file" };
+                });
+                const progress: Array<[number, number]> = [];
+                const dispatchSpy = vi.spyOn(dispatcher, "dispatch").mockImplementation((payload) => {
+                    if (payload.action === Action.UploadProgress) {
+                        const { upload } = payload as UploadFinishedPayload;
+                        progress.push([upload.loaded, upload.total]);
+                    }
+                });
+                vi.mocked(BlurhashEncoder.instance.getBlurhash).mockResolvedValue("blurhashstring");
+                // A WebP always gets a thumbnail, whatever its size.
+                const file = new File([], "photo.webp", { type: "image/webp" });
+
+                await contentMessages.sendContentToRoom(file, roomId, undefined, client, undefined);
+
+                // First the thumbnail, then the file on top of it.
+                expect(client.uploadContent).toHaveBeenCalledTimes(2);
+                expect(progress).toEqual([
+                    [50, 100],
+                    [100, 200],
+                ]);
+                dispatchSpy.mockRestore();
+            });
+
             it("forgets a failed upload on delete", async () => {
                 vi.mocked(client.uploadContent).mockRejectedValueOnce(new Error("network"));
                 const file = new File(["x"], "doc.pdf", { type: "application/pdf" });

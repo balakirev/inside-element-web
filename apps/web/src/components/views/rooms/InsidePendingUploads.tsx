@@ -35,6 +35,9 @@ const RECENT_EVENTS = 30;
 
 const UNITS = ["kilobyte", "megabyte", "gigabyte"] as const;
 
+// The smallest arc the progress ring draws.
+const MIN_RING_PERCENT = 5;
+
 /**
  * Formats upload progress as "12.3 of 42.5 MB" in the user's language: both numbers in the unit of
  * the total, the unit written once.
@@ -103,6 +106,9 @@ function ProgressRing({ upload }: RingProps): JSX.Element {
     const percent = upload.total > 0 ? Math.round((Math.min(upload.loaded, upload.total) / upload.total) * 100) : 0;
     const radius = 20;
     const circumference = 2 * Math.PI * radius;
+    // A short arc even at zero: with the ring turning it shows the upload is under way while the
+    // thumbnail is made and the first bytes go out.
+    const shownPercent = Math.max(percent, MIN_RING_PERCENT);
 
     const onCancel = useCallback((): void => {
         ContentMessages.sharedInstance().cancelUpload(upload);
@@ -126,7 +132,7 @@ function ProgressRing({ upload }: RingProps): JSX.Element {
                     cy="24"
                     r={radius}
                     strokeDasharray={circumference}
-                    strokeDashoffset={circumference * (1 - percent / 100)}
+                    strokeDashoffset={circumference * (1 - shownPercent / 100)}
                     transform="rotate(-90 24 24)"
                 />
             </svg>
