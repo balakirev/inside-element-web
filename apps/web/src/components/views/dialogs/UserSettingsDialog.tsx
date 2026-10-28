@@ -47,7 +47,17 @@ import { type NonEmptyArray } from "../../../@types/common";
 import { SDKContext } from "../../../contexts/SDKContext";
 import { type SDKContextClass } from "../../../contexts/SDKContextClass";
 import { useSettingValue } from "../../../hooks/useSettings";
-import { NoChange, useEventEmitterAsyncState, type AsyncStateCallbackResult } from "../../../hooks/useEventEmitter";
+import { MatrixClientPeg } from "../../../MatrixClientPeg";
+import AccessibleButton from "../elements/AccessibleButton";
+import { OwnAvatar } from "../rooms/RoomListPanel/OwnAvatarButton";
+import { OwnProfileStore } from "../../../stores/OwnProfileStore";
+import { UPDATE_EVENT } from "../../../stores/AsyncStore";
+import {
+    NoChange,
+    useEventEmitterAsyncState,
+    useEventEmitterState,
+    type AsyncStateCallbackResult,
+} from "../../../hooks/useEventEmitter";
 import { EncryptionUserSettingsTab, type State } from "../settings/tabs/user/EncryptionUserSettingsTab";
 
 interface IProps {
@@ -65,6 +75,28 @@ interface IProps {
     initialEncryptionState?: State;
     sdkContext: SDKContextClass;
     onFinished(this: void): void;
+}
+
+/**
+ * Inside: the profile at the top of the settings, as in other messengers; opens the account tab.
+ */
+function SettingsProfileHeader({ onClick }: { onClick: () => void }): JSX.Element {
+    const client = MatrixClientPeg.safeGet();
+    const displayName = useEventEmitterState(
+        OwnProfileStore.instance,
+        UPDATE_EVENT,
+        () => OwnProfileStore.instance.displayName,
+    );
+    const userId = client.getSafeUserId();
+    return (
+        <AccessibleButton className="mx_UserSettingsDialog_profile" onClick={onClick}>
+            <OwnAvatar size="64px" userId={userId} />
+            <div className="mx_UserSettingsDialog_profile_text">
+                <div className="mx_UserSettingsDialog_profile_name">{displayName ?? userId}</div>
+                <div className="mx_UserSettingsDialog_profile_id">{userId}</div>
+            </div>
+        </AccessibleButton>
+    );
 }
 
 function titleForTabID(tabId: UserTab): React.ReactNode {
@@ -289,6 +321,7 @@ export default function UserSettingsDialog(props: IProps): JSX.Element {
                             screenName="UserSettings"
                             onChange={setActiveTabId}
                             responsive={true}
+                            tabListHeader={<SettingsProfileHeader onClick={() => setActiveTabId(UserTab.Account)} />}
                         />
                     </div>
                     <div className="mx_SettingsDialog_toastContainer">

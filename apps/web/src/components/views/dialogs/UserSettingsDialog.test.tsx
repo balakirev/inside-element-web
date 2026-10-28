@@ -10,7 +10,7 @@ Please see LICENSE files in the repository root for full details.
 
 import React, { type ReactElement } from "react";
 import { vi, describe, it, expect, beforeEach, type MockedObject } from "vitest";
-import { render, screen, waitFor } from "test-utils-rtl";
+import { fireEvent, render, screen, waitFor } from "test-utils-rtl";
 import { ClientEvent, MatrixEvent, type MatrixClient } from "matrix-js-sdk/src/matrix";
 import {
     getMockClientWithEventEmitter,
@@ -95,6 +95,16 @@ describe("<UserSettingsDialog />", () => {
 
     it("should render general settings tab when no initialTabId", () => {
         const { container } = render(getComponent());
+
+        expect(getActiveTabLabel(container)).toEqual("Account");
+    });
+
+    it("shows the profile above the tabs and opens the account tab from it", () => {
+        const { container } = render(getComponent({ initialTabId: UserTab.Help }));
+        const profile = container.querySelector(".mx_UserSettingsDialog_profile")!;
+        expect(profile).toHaveTextContent(mockClient.getSafeUserId());
+
+        fireEvent.click(profile);
 
         expect(getActiveTabLabel(container)).toEqual("Account");
     });

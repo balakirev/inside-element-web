@@ -6,7 +6,6 @@ Please see LICENSE files in the repository root for full details.
 */
 
 import React, { useContext, type JSX } from "react";
-import { useCreateAutoDisposedViewModel, UserMenu } from "@element-hq/web-shared-components";
 import { ChatSolidIcon, UserProfileIcon } from "@vector-im/compound-design-tokens/assets/web/icons";
 
 import AccessibleButton from "../../elements/AccessibleButton";
@@ -14,27 +13,20 @@ import { _t } from "../../../../languageHandler";
 import defaultDispatcher from "../../../../dispatcher/dispatcher";
 import { Action } from "../../../../dispatcher/actions";
 import { useDispatcher } from "../../../../hooks/useDispatcher";
-import { useMatrixClientContext } from "../../../../contexts/MatrixClientContext";
 import { SDKContext } from "../../../../contexts/SDKContext.ts";
 import { MetaSpace } from "../../../../stores/spaces";
-import { OwnProfileStore } from "../../../../stores/OwnProfileStore.ts";
-import { UserMenuViewModel } from "../../../../viewmodels/menus/UserMenuViewModel.ts";
+import { OwnAvatarButton } from "./OwnAvatarButton";
 
 /**
  * Inside: the bar at the bottom of the room list, as in other messengers — contacts, chats and the
- * user's own avatar. The avatar is Element's user menu, moved here from the top of the space panel.
+ * user's own avatar, which opens the settings with the profile on top (the user menu's shortcut too).
  */
 export function RoomListBottomBar(): JSX.Element {
-    const client = useMatrixClientContext();
     const sdkContext = useContext(SDKContext);
+    const openSettings = (): void => defaultDispatcher.dispatch({ action: Action.ViewUserSettings });
 
-    const userMenuVm = useCreateAutoDisposedViewModel(
-        () => new UserMenuViewModel({ ownProfileStore: OwnProfileStore.instance }, defaultDispatcher, client, true),
-    );
     useDispatcher(defaultDispatcher, (payload) => {
-        if (payload.action === Action.ToggleUserMenu) {
-            userMenuVm.setOpen(!userMenuVm.getSnapshot().open);
-        }
+        if (payload.action === Action.ToggleUserMenu) openSettings();
     });
 
     return (
@@ -54,7 +46,12 @@ export function RoomListBottomBar(): JSX.Element {
             >
                 <ChatSolidIcon />
             </AccessibleButton>
-            <UserMenu vm={userMenuVm} className="mx_UserMenu mx_RoomListBottomBar_userMenu" />
+            <OwnAvatarButton
+                className="mx_RoomListBottomBar_button mx_RoomListBottomBar_profile"
+                title={_t("common|settings")}
+                size="30px"
+                onClick={openSettings}
+            />
         </div>
     );
 }

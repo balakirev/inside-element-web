@@ -30,6 +30,7 @@ the next upstream release with `git rebase --onto <new-tag> <old-tag> inside/mai
 | Notifications in the context menu       | Right-click on a room offers the notification options (mute and others), as Mute in other messengers; the Inside skin hides the hover buttons. |
 | Folders in the space panel             | Under "All chats": Groups, Colleagues, Clients, VIP, Favourites — room list filters, as folders of other messengers. Colleagues/clients: the other side of a DM is on our server, or on another server / a bridged network. |
 | VIP in the room context menu           | A private room tag (`u.inside.vip`) for the VIP folder, independent of the room list sections. |
+| Own avatar opens the settings          | The last tab of the bar under the room list is the user's avatar and opens the settings, which show the profile (avatar, name, ID) above their tabs — the Settings screen of other messengers. |
 | Version script without `jq`            | Branch builds failed: the Docker builder image has no `jq`.                                                                                                                                                                                                                                                                                                               |
 
 ## Build

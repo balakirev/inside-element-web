@@ -139,6 +139,11 @@ interface IProps<T extends string> {
      * Default: false.
      */
     responsive?: boolean;
+    /**
+     * Inside: shown above the tab labels, e.g. the profile at the top of the settings as in other messengers.
+     * Only applies if `tabLocation === TabLocation.LEFT`.
+     */
+    tabListHeader?: React.ReactNode;
 }
 
 /**
@@ -185,16 +190,25 @@ export default function TabbedView<T extends string>(props: IProps<T>): JSX.Elem
                 handleLeftRight={tabLocation == TabLocation.TOP}
                 handleUpDown={tabLocation == TabLocation.LEFT}
             >
-                {({ onKeyDownHandler }) => (
-                    <ul
-                        className="mx_TabbedView_tabLabels"
-                        role="tablist"
-                        aria-orientation={tabLocation == TabLocation.LEFT ? "vertical" : "horizontal"}
-                        onKeyDown={onKeyDownHandler}
-                    >
-                        {labels}
-                    </ul>
-                )}
+                {({ onKeyDownHandler }) => {
+                    const tabList = (
+                        <ul
+                            className="mx_TabbedView_tabLabels"
+                            role="tablist"
+                            aria-orientation={tabLocation == TabLocation.LEFT ? "vertical" : "horizontal"}
+                            onKeyDown={onKeyDownHandler}
+                        >
+                            {labels}
+                        </ul>
+                    );
+                    if (!props.tabListHeader || tabLocation !== TabLocation.LEFT) return tabList;
+                    return (
+                        <div className="mx_TabbedView_tabList">
+                            {props.tabListHeader}
+                            {tabList}
+                        </div>
+                    );
+                }}
             </RovingTabIndexProvider>
             {panel}
         </div>

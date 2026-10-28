@@ -9,7 +9,7 @@ Please see LICENSE files in the repository root for full details.
 
 import { vi, describe, it, expect, beforeEach } from "vitest";
 import React from "react";
-import { render, screen, waitFor } from "test-utils-rtl";
+import { render, screen } from "test-utils-rtl";
 import { clientAndSDKContextRenderOptions, createTestClient, TestSDKContext } from "test-utils";
 import userEvent from "@testing-library/user-event";
 
@@ -48,12 +48,17 @@ describe("<RoomListBottomBar />", () => {
         expect(sdkContext.spaceStore.setActiveSpace).toHaveBeenCalledWith(MetaSpace.Home);
     });
 
-    it("opens the user menu via dispatcher", async () => {
-        const { baseElement } = renderComponent();
-        defaultDispatcher.dispatch({ action: Action.ToggleUserMenu });
-        await waitFor(() => {
-            // Menu exists outside the component due to Portals, so select it manually.
-            expect(baseElement.querySelector("div[aria-label='User menu']")).toBeInTheDocument();
-        });
+    it("opens the settings from the own avatar", async () => {
+        const dispatch = vi.spyOn(defaultDispatcher, "dispatch");
+        renderComponent();
+        await userEvent.click(screen.getByRole("button", { name: "Settings" }));
+        expect(dispatch).toHaveBeenCalledWith({ action: Action.ViewUserSettings });
+    });
+
+    it("opens the settings with the user menu shortcut", () => {
+        const dispatch = vi.spyOn(defaultDispatcher, "dispatch");
+        renderComponent();
+        defaultDispatcher.dispatch({ action: Action.ToggleUserMenu }, true);
+        expect(dispatch).toHaveBeenCalledWith({ action: Action.ViewUserSettings });
     });
 });
