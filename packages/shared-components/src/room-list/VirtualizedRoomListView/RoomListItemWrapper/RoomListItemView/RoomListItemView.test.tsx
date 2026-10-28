@@ -31,6 +31,7 @@ const {
     OwnMessageRead,
     OwnMessageSent,
     Muted,
+    Favourite,
 } = composeStories(stories);
 
 describe("<RoomListItemView />", () => {
@@ -118,6 +119,17 @@ describe("<RoomListItemView />", () => {
     it("shows the muted icon for muted rooms", () => {
         const { container } = render(<Muted />);
         expect(container).toMatchSnapshot();
+    });
+
+    it("shows a pin for favourite rooms without unread messages", () => {
+        render(<Favourite />);
+        expect(screen.getByTestId("room-list-item-pin")).toHaveClass("mx_RoomListItemView_inside_pin");
+    });
+
+    it("shows the unread badge instead of the pin for favourite rooms with unread messages", () => {
+        render(<WithNotification isFavourite={true} />);
+        expect(screen.queryByTestId("room-list-item-pin")).toBeNull();
+        expect(screen.getByTestId("notification-decoration")).toBeInTheDocument();
     });
 
     it("should call onOpenRoom when clicked", async () => {
