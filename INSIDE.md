@@ -36,6 +36,7 @@ the next upstream release with `git rebase --onto <new-tag> <old-tag> inside/mai
 | Dust when deleting a message          | After the delete confirmation the message tile crumbles into dust, as in Telegram (`utils/DustEffect.ts`). |
 | Favicon badge in the brand red        | The unread counter drawn over the tab icon uses the Lobby signal red `#C8102E` instead of Element's `#d00`. |
 | Search and More in the room header    | The right side of the room header is the Lobby button capsule: search, threads, room info, more. Search opens the room's message search as Ctrl+F does; More opens the room list item's options menu below the button (`RoomHeader/InsideHeaderButtons.tsx`). |
+| Muted text follows the theme       | The legacy `$muted-fg-color` (blue-grey `#61708b`, used by the upload bar, home page and others) now points at `--cpd-color-text-secondary`, so skins recolour it with the rest of the theme. |
 | Version script without `jq`            | Branch builds failed: the Docker builder image has no `jq`.                                                                                                                                                                                                                                                                                                               |
 
 ## Build
