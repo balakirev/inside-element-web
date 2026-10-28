@@ -1665,6 +1665,9 @@
         "share_type_prompt": "Каким типом местоположения вы хотите поделиться?",
         "toggle_attribution": "Переключить атрибуцию"
     },
+    "markdown_viewer": {
+        "open": "Открыть Markdown"
+    },
     "member_list": {
         "count": {
             "one": "%(count)s участник",
@@ -1739,6 +1742,9 @@
     "pill": {
         "permalink_other_room": "Сообщение в %(room)s",
         "permalink_this_room": "Сообщение от %(user)s"
+    },
+    "plain_text_viewer": {
+        "open": "Открыть текст"
     },
     "poll": {
         "create_poll_action": "Создать опрос",

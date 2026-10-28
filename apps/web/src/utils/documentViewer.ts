@@ -14,6 +14,7 @@ import { _t } from "../languageHandler";
 import { MediaEventHelper } from "./MediaEventHelper";
 import { isPdfEvent } from "./pdfViewer";
 import { isMarkdownEvent } from "./markdownViewer";
+import { isPlainTextEvent } from "./plainTextViewer";
 import defaultDispatcher from "../dispatcher/dispatcher";
 import { Action } from "../dispatcher/actions";
 import { type OpenDocumentViewerPayload } from "../dispatcher/payloads/OpenDocumentViewerPayload";
@@ -60,6 +61,16 @@ const DOCUMENT_VIEWERS: readonly DocumentViewer[] = [
             import("../components/views/right_panel/MarkdownViewer").then((module) => module.MarkdownViewer),
         ),
     },
+    // Inside: plain text, shown as it is.
+    {
+        matches: isPlainTextEvent,
+        openLabel: () => _t("plain_text_viewer|open"),
+        Component: lazyViewer(() =>
+            import("../components/views/right_panel/InsidePlainTextViewer").then(
+                (module) => module.InsidePlainTextViewer,
+            ),
+        ),
+    },
 ];
 
 /** The viewer, if any, that can open this event's attachment. */
@@ -85,16 +96,28 @@ export function documentMediaForEvent(mxEvent: MatrixEvent, helper?: MediaEventH
     };
 }
 
+/** Inside: what kind of document the Quick Look window shows for this event, if it can show it. */
+export type QuickLookKind = "pdf" | "markdown" | "text";
+
+/** Inside: the kind of Quick Look for an event's attachment: every file a viewer can open has one. */
+export function quickLookKindForEvent(mxEvent: MatrixEvent): QuickLookKind | undefined {
+    if (isPdfEvent(mxEvent)) return "pdf";
+    if (isMarkdownEvent(mxEvent)) return "markdown";
+    if (isPlainTextEvent(mxEvent)) return "text";
+    return undefined;
+}
+
 /**
  * Open the given event's attachment in the right panel of the room it belongs to. The card picks the
- * viewer with {@link documentViewerForEvent}. Inside: a PDF opens in the Quick Look window instead.
+ * viewer with {@link documentViewerForEvent}. Inside: PDF, Markdown and text files open in the Quick
+ * Look window instead.
  *
  * Dispatched rather than calling RightPanelStore directly: this module is reached from the message
  * body view models, and the store leads back round to the message bodies via SDKContextClass.
  */
 export function openDocumentViewer(mxEvent: MatrixEvent, helper?: MediaEventHelper): void {
-    // Inside: a PDF opens in the Quick Look window over the app, never in the right panel.
-    if (isPdfEvent(mxEvent)) {
+    // Inside: a document opens in the Quick Look window over the app, never in the right panel.
+    if (quickLookKindForEvent(mxEvent)) {
         void import("../components/views/elements/InsideQuickLook").then(({ openInsideQuickLook }) =>
             openInsideQuickLook(mxEvent, helper),
         );

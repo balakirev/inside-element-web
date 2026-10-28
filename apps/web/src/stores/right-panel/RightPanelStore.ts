@@ -30,13 +30,19 @@ import { type ActiveRoomChangedPayload } from "../../dispatcher/payloads/ActiveR
 import { type OpenDocumentViewerPayload } from "../../dispatcher/payloads/OpenDocumentViewerPayload";
 import { SDKContextClass } from "../../contexts/SDKContextClass";
 import { MatrixClientPeg } from "../../MatrixClientPeg";
-import { isPdfEvent } from "../../utils/pdfViewer";
-import { openDocumentViewer } from "../../utils/documentViewer";
+import { openDocumentViewer, quickLookKindForEvent } from "../../utils/documentViewer";
 
-/** Inside: whether a document card is for a PDF, which opens in the Quick Look window instead. */
-function isInsidePdfCardEvent(event: MatrixEvent | undefined): boolean {
+/**
+ * Inside: whether a document card is for a file that opens in the Quick Look window instead (PDF,
+ * Markdown, text).
+ */
+function isInsideQuickLookCardEvent(event: MatrixEvent | undefined): boolean {
     // Cards restored from storage or built in tests may hold a partial event.
-    return typeof event?.getContent === "function" && typeof event.isRedacted === "function" && isPdfEvent(event);
+    return (
+        typeof event?.getContent === "function" &&
+        typeof event.isRedacted === "function" &&
+        !!quickLookKindForEvent(event)
+    );
 }
 
 /**
@@ -104,8 +110,8 @@ export default class RightPanelStore extends ReadyWatchingStore {
 
             case Action.OpenDocumentViewer: {
                 const { event } = <OpenDocumentViewerPayload>payload;
-                // Inside: a PDF opens in the Quick Look window, never in the right panel.
-                if (isInsidePdfCardEvent(event)) {
+                // Inside: a PDF, Markdown or text file opens in the Quick Look window, never in the right panel.
+                if (isInsideQuickLookCardEvent(event)) {
                     openDocumentViewer(event);
                     break;
                 }
@@ -408,8 +414,8 @@ export default class RightPanelStore extends ReadyWatchingStore {
                 if (!card.state?.documentViewerEvent) {
                     logger.warn("removed card from right panel because of missing documentViewerEvent in card state");
                 }
-                // Inside: PDFs open in the Quick Look window; drop a PDF card stored before that.
-                if (isInsidePdfCardEvent(card.state?.documentViewerEvent)) return false;
+                // Inside: documents open in the Quick Look window; drop a card stored before that.
+                if (isInsideQuickLookCardEvent(card.state?.documentViewerEvent)) return false;
                 return !!card.state?.documentViewerEvent;
         }
         return true;

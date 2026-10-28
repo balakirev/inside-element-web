@@ -18,18 +18,24 @@ import { _t } from "../../../languageHandler";
 import { FileDownloader } from "../../../utils/FileDownloader";
 import { fileSize } from "../../../utils/FileUtils";
 import { type MediaEventHelper } from "../../../utils/MediaEventHelper";
-import { documentMediaForEvent } from "../../../utils/documentViewer";
+import { documentMediaForEvent, type QuickLookKind, quickLookKindForEvent } from "../../../utils/documentViewer";
 import { flushPdfViewerState, getPdfViewerState, setPdfViewerState } from "../../../utils/pdfViewerState";
 import {
     type PdfHostMessage,
     type PdfKeyAction,
+    type PdfScrollStep,
     parsePdfUsercontentMessage,
     pdfKeyAction,
 } from "../../../usercontent/pdf/protocol";
 import { hasPdfHeader, MAX_PDF_BYTES, PDF_IFRAME_PERMISSIONS, PDF_USERCONTENT_URL } from "../right_panel/PdfViewer";
+import { MarkdownViewer } from "../right_panel/MarkdownViewer";
+import { InsidePlainTextViewer } from "../right_panel/InsidePlainTextViewer";
 import AccessibleButton from "./AccessibleButton";
 
 const loggerQuickLook = logger.getChild("InsideQuickLook");
+
+/** The element that scrolls a Markdown or text document. */
+const TEXT_SCROLLER_SELECTOR = "[data-testid='markdown-content'], .mx_InsidePlainTextViewer";
 
 /** How long the window takes to appear and to go, as Quick Look's zoom; nothing with reduced motion. */
 export const QUICK_LOOK_ANIMATION_MS = 160;
@@ -151,6 +157,23 @@ function usePdfSession(
     return { status, currentPage, pageCount, send };
 }
 
+/** A line of text for the arrow keys in a Markdown or text document, px. */
+const TEXT_LINE_STEP = 40;
+
+/** Scrolls a Markdown or text document as the PDF frame scrolls its pages for the same keys. */
+function scrollText(scroller: HTMLElement, step: PdfScrollStep): void {
+    const page = Math.max(TEXT_LINE_STEP, scroller.clientHeight - TEXT_LINE_STEP);
+    const delta: Record<PdfScrollStep, number> = {
+        line_up: -TEXT_LINE_STEP,
+        line_down: TEXT_LINE_STEP,
+        page_up: -page,
+        page_down: page,
+        start: -scroller.scrollHeight,
+        end: scroller.scrollHeight,
+    };
+    scroller.scrollTop = Math.max(0, scroller.scrollTop + delta[step]);
+}
+
 function prefersReducedMotion(): boolean {
     return !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 }
@@ -159,18 +182,22 @@ interface Props {
     media: DocumentMedia;
     /** The file name shown in the title and given to the download. */
     name: string;
+    /** What the file is: a PDF (the default), Markdown or plain text. */
+    kind?: QuickLookKind;
     onFinished: () => void;
 }
 
 /**
- * Inside: a PDF in a window over the app, as macOS Quick Look shows a file on Space: the pages scroll
- * inside it, "Download" saves the file, and Escape, the backdrop or the close button put it away. The
- * pages are drawn by the same sandboxed usercontent frame as Element's right panel viewer.
+ * Inside: a document in a window over the app, as macOS Quick Look shows a file on Space: it scrolls
+ * inside the window, "Download" saves the file, and Escape, the backdrop or the close button put it
+ * away. A PDF's pages are drawn by the same sandboxed usercontent frame as Element's right panel
+ * viewer; Markdown is rendered and sanitized by Element's Markdown viewer, plain text shown as it is.
  *
- * Keys: Escape closes; ↑/↓, Page Up/Down, Space (Shift+Space back), Home/End scroll the pages; ⌘/Ctrl
- * +/− zoom. With the focus in the frame it handles them itself and hands Escape back.
+ * Keys: Escape closes; ↑/↓, Page Up/Down, Space (Shift+Space back), Home/End scroll; ⌘/Ctrl +/− zoom a
+ * PDF. With the focus in the PDF frame it handles them itself and hands Escape back.
  */
-export default function InsideQuickLook({ media, name, onFinished }: Props): JSX.Element {
+export default function InsideQuickLook({ media, name, kind = "pdf", onFinished }: Props): JSX.Element {
+    const isPdf = kind === "pdf";
     const iframeRef = useRef<HTMLIFrameElement>(null);
     const bodyRef = useRef<HTMLDivElement>(null);
     const [closing, setClosing] = useState(false);
@@ -226,17 +253,26 @@ export default function InsideQuickLook({ media, name, onFinished }: Props): JSX
 
     const runAction = useCallback(
         (action: PdfKeyAction): void => {
-            if (action.type === "dismiss") close();
-            else if (action.type === "zoom") send({ type: "zoom", direction: action.direction });
-            else send({ type: "scroll", step: action.step });
+            if (action.type === "dismiss") {
+                close();
+            } else if (action.type === "zoom") {
+                send({ type: "zoom", direction: action.direction });
+            } else if (isPdf) {
+                send({ type: "scroll", step: action.step });
+            } else {
+                const scroller = bodyRef.current?.querySelector<HTMLElement>(TEXT_SCROLLER_SELECTOR);
+                if (scroller) scrollText(scroller, action.step);
+            }
         },
-        [close, send],
+        [close, send, isPdf],
     );
 
     const onKeyDown = useCallback(
         (ev: React.KeyboardEvent): void => {
             const action = pdfKeyAction(ev);
             if (!action) return;
+            // Only a PDF zooms; elsewhere ⌘/Ctrl +/− stay the browser's.
+            if (!isPdf && action.type === "zoom") return;
             // Space and the arrows on a focused button are the button's own.
             const onButton = ev.target instanceof HTMLElement && !!ev.target.closest("button, [role=button]");
             if (onButton && action.type === "scroll" && ev.key === " ") return;
@@ -246,7 +282,16 @@ export default function InsideQuickLook({ media, name, onFinished }: Props): JSX
             ev.stopPropagation();
             runAction(action);
         },
-        [runAction],
+        [runAction, isPdf],
+    );
+
+    // A link in a Markdown document that the viewer follows inside the app (a room, a user, a
+    // message) takes the user there: the window goes out of the way.
+    const onBodyClick = useCallback(
+        (ev: React.MouseEvent): void => {
+            if (ev.defaultPrevented && ev.target instanceof Element && ev.target.closest("a")) close();
+        },
+        [close],
     );
 
     const sizeText = typeof media.size === "number" ? fileSize(media.size) : undefined;
@@ -273,26 +318,28 @@ export default function InsideQuickLook({ media, name, onFinished }: Props): JSX
                             </span>
                             {meta && <span className="mx_InsideQuickLook_meta">{meta}</span>}
                         </div>
-                        <div className="mx_InsideQuickLook_zoom">
-                            <AccessibleButton
-                                className="mx_InsideQuickLook_iconButton"
-                                onClick={zoomOut}
-                                disabled={status !== "ready"}
-                                aria-label={_t("action|zoom_out")}
-                                title={_t("action|zoom_out")}
-                            >
-                                <ZoomOutIcon />
-                            </AccessibleButton>
-                            <AccessibleButton
-                                className="mx_InsideQuickLook_iconButton"
-                                onClick={zoomIn}
-                                disabled={status !== "ready"}
-                                aria-label={_t("action|zoom_in")}
-                                title={_t("action|zoom_in")}
-                            >
-                                <ZoomInIcon />
-                            </AccessibleButton>
-                        </div>
+                        {isPdf && (
+                            <div className="mx_InsideQuickLook_zoom">
+                                <AccessibleButton
+                                    className="mx_InsideQuickLook_iconButton"
+                                    onClick={zoomOut}
+                                    disabled={status !== "ready"}
+                                    aria-label={_t("action|zoom_out")}
+                                    title={_t("action|zoom_out")}
+                                >
+                                    <ZoomOutIcon />
+                                </AccessibleButton>
+                                <AccessibleButton
+                                    className="mx_InsideQuickLook_iconButton"
+                                    onClick={zoomIn}
+                                    disabled={status !== "ready"}
+                                    aria-label={_t("action|zoom_in")}
+                                    title={_t("action|zoom_in")}
+                                >
+                                    <ZoomInIcon />
+                                </AccessibleButton>
+                            </div>
+                        )}
                         <AccessibleButton className="mx_InsideQuickLook_download" onClick={onDownloadClick}>
                             <DownloadIcon />
                             <span>{_t("action|download")}</span>
@@ -306,23 +353,41 @@ export default function InsideQuickLook({ media, name, onFinished }: Props): JSX
                             <CloseIcon />
                         </AccessibleButton>
                     </div>
-                    <div className="mx_InsideQuickLook_body" ref={bodyRef} tabIndex={-1}>
-                        {/* `src` is set by usePdfSession, once it listens for the frame's `ready`. */}
-                        <iframe
-                            ref={iframeRef}
-                            className="mx_InsideQuickLook_frame"
-                            data-testid="pdf-iframe"
-                            sandbox={PDF_IFRAME_PERMISSIONS}
-                            title={name}
-                        />
-                        {status === "loading" && (
-                            <div className="mx_InsideQuickLook_status">
-                                <InlineSpinner size={24} />
-                            </div>
-                        )}
-                        {status === "error" && (
-                            <div className="mx_InsideQuickLook_status mx_InsideQuickLook_error">
-                                {_t("pdf_viewer|inside_error")}
+                    {/* oxlint-disable-next-line jsx-a11y/click-events-have-key-events -- only watches the document's own link clicks */}
+                    <div
+                        className="mx_InsideQuickLook_body"
+                        ref={bodyRef}
+                        tabIndex={-1}
+                        onClick={isPdf ? undefined : onBodyClick}
+                    >
+                        {isPdf ? (
+                            <>
+                                {/* `src` is set by usePdfSession, once it listens for the frame's `ready`. */}
+                                <iframe
+                                    ref={iframeRef}
+                                    className="mx_InsideQuickLook_frame"
+                                    data-testid="pdf-iframe"
+                                    sandbox={PDF_IFRAME_PERMISSIONS}
+                                    title={name}
+                                />
+                                {status === "loading" && (
+                                    <div className="mx_InsideQuickLook_status">
+                                        <InlineSpinner size={24} />
+                                    </div>
+                                )}
+                                {status === "error" && (
+                                    <div className="mx_InsideQuickLook_status mx_InsideQuickLook_error">
+                                        {_t("pdf_viewer|inside_error")}
+                                    </div>
+                                )}
+                            </>
+                        ) : (
+                            <div className="mx_InsideQuickLook_document">
+                                {kind === "markdown" ? (
+                                    <MarkdownViewer media={media} />
+                                ) : (
+                                    <InsidePlainTextViewer media={media} />
+                                )}
                             </div>
                         )}
                     </div>
@@ -333,15 +398,16 @@ export default function InsideQuickLook({ media, name, onFinished }: Props): JSX
 }
 
 /**
- * Inside: open an event's PDF in the Quick Look window. `helper` is the tile's, so the file it may
- * already have fetched is not fetched again.
+ * Inside: open an event's PDF, Markdown or text file in the Quick Look window. `helper` is the tile's,
+ * so the file it may already have fetched is not fetched again.
  */
 export function openInsideQuickLook(mxEvent: MatrixEvent, helper?: MediaEventHelper): void {
-    const media = documentMediaForEvent(mxEvent, helper);
+    const kind = quickLookKindForEvent(mxEvent);
+    const media = kind && documentMediaForEvent(mxEvent, helper);
     if (!media) return;
     Modal.createDialog(
         InsideQuickLook,
-        { media, name: media.name || _t("common|attachment") },
+        { media, name: media.name || _t("common|attachment"), kind },
         QUICK_LOOK_DIALOG_CLASS,
         false,
         true,
