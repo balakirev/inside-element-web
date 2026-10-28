@@ -653,26 +653,48 @@ exports[`RoomView > for a local room > in state NEW > should match the snapshot 
                 </svg>
               </div>
               <div
-                aria-label="Voice Message"
-                class="mx_AccessibleButton mx_MessageComposer_sendMessage mx_MessageComposer_voiceMessage"
+                aria-label="Hold to record a voice message, tap to switch to video"
+                class="mx_AccessibleButton mx_MessageComposer_sendMessage mx_InsideRecordButton mx_MessageComposer_voiceMessage"
+                data-mode="voice"
                 data-testid="voicemessagebtn"
                 role="button"
                 tabindex="0"
               >
-                <svg
-                  fill="currentColor"
-                  height="1em"
-                  viewBox="0 0 24 24"
-                  width="1em"
-                  xmlns="http://www.w3.org/2000/svg"
+                <span
+                  aria-hidden="true"
+                  class="mx_InsideRecordButton_icon mx_InsideRecordButton_mic"
                 >
-                  <path
-                    d="M8 6a4 4 0 1 1 8 0v6a4 4 0 0 1-8 0z"
-                  />
-                  <path
-                    d="M5 11a1 1 0 0 1 1 1 6 6 0 0 0 12 0 1 1 0 1 1 2 0 8 8 0 0 1-7 7.938V21a1 1 0 1 1-2 0v-1.062A8 8 0 0 1 4 12a1 1 0 0 1 1-1"
-                  />
-                </svg>
+                  <svg
+                    fill="currentColor"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    width="1em"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M8 6a4 4 0 1 1 8 0v6a4 4 0 0 1-8 0z"
+                    />
+                    <path
+                      d="M5 11a1 1 0 0 1 1 1 6 6 0 0 0 12 0 1 1 0 1 1 2 0 8 8 0 0 1-7 7.938V21a1 1 0 1 1-2 0v-1.062A8 8 0 0 1 4 12a1 1 0 0 1 1-1"
+                    />
+                  </svg>
+                </span>
+                <span
+                  aria-hidden="true"
+                  class="mx_InsideRecordButton_icon mx_InsideRecordButton_camera"
+                >
+                  <svg
+                    fill="currentColor"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    width="1em"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M6 4h10a2 2 0 0 1 2 2v4.286l3.35-2.871a1 1 0 0 1 1.65.76v7.65a1 1 0 0 1-1.65.76L18 13.715V18a2 2 0 0 1-2 2H6a4 4 0 0 1-4-4V8a4 4 0 0 1 4-4"
+                    />
+                  </svg>
+                </span>
               </div>
             </div>
           </div>
@@ -1056,26 +1078,48 @@ exports[`RoomView > for a local room > in state NEW > that is encrypted > should
                 </svg>
               </div>
               <div
-                aria-label="Voice Message"
-                class="mx_AccessibleButton mx_MessageComposer_sendMessage mx_MessageComposer_voiceMessage"
+                aria-label="Hold to record a voice message, tap to switch to video"
+                class="mx_AccessibleButton mx_MessageComposer_sendMessage mx_InsideRecordButton mx_MessageComposer_voiceMessage"
+                data-mode="voice"
                 data-testid="voicemessagebtn"
                 role="button"
                 tabindex="0"
               >
-                <svg
-                  fill="currentColor"
-                  height="1em"
-                  viewBox="0 0 24 24"
-                  width="1em"
-                  xmlns="http://www.w3.org/2000/svg"
+                <span
+                  aria-hidden="true"
+                  class="mx_InsideRecordButton_icon mx_InsideRecordButton_mic"
                 >
-                  <path
-                    d="M8 6a4 4 0 1 1 8 0v6a4 4 0 0 1-8 0z"
-                  />
-                  <path
-                    d="M5 11a1 1 0 0 1 1 1 6 6 0 0 0 12 0 1 1 0 1 1 2 0 8 8 0 0 1-7 7.938V21a1 1 0 1 1-2 0v-1.062A8 8 0 0 1 4 12a1 1 0 0 1 1-1"
-                  />
-                </svg>
+                  <svg
+                    fill="currentColor"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    width="1em"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M8 6a4 4 0 1 1 8 0v6a4 4 0 0 1-8 0z"
+                    />
+                    <path
+                      d="M5 11a1 1 0 0 1 1 1 6 6 0 0 0 12 0 1 1 0 1 1 2 0 8 8 0 0 1-7 7.938V21a1 1 0 1 1-2 0v-1.062A8 8 0 0 1 4 12a1 1 0 0 1 1-1"
+                    />
+                  </svg>
+                </span>
+                <span
+                  aria-hidden="true"
+                  class="mx_InsideRecordButton_icon mx_InsideRecordButton_camera"
+                >
+                  <svg
+                    fill="currentColor"
+                    height="1em"
+                    viewBox="0 0 24 24"
+                    width="1em"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M6 4h10a2 2 0 0 1 2 2v4.286l3.35-2.871a1 1 0 0 1 1.65.76v7.65a1 1 0 0 1-1.65.76L18 13.715V18a2 2 0 0 1-2 2H6a4 4 0 0 1-4-4V8a4 4 0 0 1 4-4"
+                    />
+                  </svg>
+                </span>
               </div>
             </div>
           </div>
@@ -1763,26 +1807,48 @@ exports[`RoomView > should hide the header when hideHeader=true 1`] = `
                   </svg>
                 </div>
                 <div
-                  aria-label="Voice Message"
-                  class="mx_AccessibleButton mx_MessageComposer_sendMessage mx_MessageComposer_voiceMessage"
+                  aria-label="Hold to record a voice message, tap to switch to video"
+                  class="mx_AccessibleButton mx_MessageComposer_sendMessage mx_InsideRecordButton mx_MessageComposer_voiceMessage"
+                  data-mode="voice"
                   data-testid="voicemessagebtn"
                   role="button"
                   tabindex="0"
                 >
-                  <svg
-                    fill="currentColor"
-                    height="1em"
-                    viewBox="0 0 24 24"
-                    width="1em"
-                    xmlns="http://www.w3.org/2000/svg"
+                  <span
+                    aria-hidden="true"
+                    class="mx_InsideRecordButton_icon mx_InsideRecordButton_mic"
                   >
-                    <path
-                      d="M8 6a4 4 0 1 1 8 0v6a4 4 0 0 1-8 0z"
-                    />
-                    <path
-                      d="M5 11a1 1 0 0 1 1 1 6 6 0 0 0 12 0 1 1 0 1 1 2 0 8 8 0 0 1-7 7.938V21a1 1 0 1 1-2 0v-1.062A8 8 0 0 1 4 12a1 1 0 0 1 1-1"
-                    />
-                  </svg>
+                    <svg
+                      fill="currentColor"
+                      height="1em"
+                      viewBox="0 0 24 24"
+                      width="1em"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M8 6a4 4 0 1 1 8 0v6a4 4 0 0 1-8 0z"
+                      />
+                      <path
+                        d="M5 11a1 1 0 0 1 1 1 6 6 0 0 0 12 0 1 1 0 1 1 2 0 8 8 0 0 1-7 7.938V21a1 1 0 1 1-2 0v-1.062A8 8 0 0 1 4 12a1 1 0 0 1 1-1"
+                      />
+                    </svg>
+                  </span>
+                  <span
+                    aria-hidden="true"
+                    class="mx_InsideRecordButton_icon mx_InsideRecordButton_camera"
+                  >
+                    <svg
+                      fill="currentColor"
+                      height="1em"
+                      viewBox="0 0 24 24"
+                      width="1em"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M6 4h10a2 2 0 0 1 2 2v4.286l3.35-2.871a1 1 0 0 1 1.65.76v7.65a1 1 0 0 1-1.65.76L18 13.715V18a2 2 0 0 1-2 2H6a4 4 0 0 1-4-4V8a4 4 0 0 1 4-4"
+                      />
+                    </svg>
+                  </span>
                 </div>
               </div>
             </div>
@@ -2328,26 +2394,48 @@ exports[`RoomView > should hide the pinned message banner when hidePinnedMessage
                   </svg>
                 </div>
                 <div
-                  aria-label="Voice Message"
-                  class="mx_AccessibleButton mx_MessageComposer_sendMessage mx_MessageComposer_voiceMessage"
+                  aria-label="Hold to record a voice message, tap to switch to video"
+                  class="mx_AccessibleButton mx_MessageComposer_sendMessage mx_InsideRecordButton mx_MessageComposer_voiceMessage"
+                  data-mode="voice"
                   data-testid="voicemessagebtn"
                   role="button"
                   tabindex="0"
                 >
-                  <svg
-                    fill="currentColor"
-                    height="1em"
-                    viewBox="0 0 24 24"
-                    width="1em"
-                    xmlns="http://www.w3.org/2000/svg"
+                  <span
+                    aria-hidden="true"
+                    class="mx_InsideRecordButton_icon mx_InsideRecordButton_mic"
                   >
-                    <path
-                      d="M8 6a4 4 0 1 1 8 0v6a4 4 0 0 1-8 0z"
-                    />
-                    <path
-                      d="M5 11a1 1 0 0 1 1 1 6 6 0 0 0 12 0 1 1 0 1 1 2 0 8 8 0 0 1-7 7.938V21a1 1 0 1 1-2 0v-1.062A8 8 0 0 1 4 12a1 1 0 0 1 1-1"
-                    />
-                  </svg>
+                    <svg
+                      fill="currentColor"
+                      height="1em"
+                      viewBox="0 0 24 24"
+                      width="1em"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M8 6a4 4 0 1 1 8 0v6a4 4 0 0 1-8 0z"
+                      />
+                      <path
+                        d="M5 11a1 1 0 0 1 1 1 6 6 0 0 0 12 0 1 1 0 1 1 2 0 8 8 0 0 1-7 7.938V21a1 1 0 1 1-2 0v-1.062A8 8 0 0 1 4 12a1 1 0 0 1 1-1"
+                      />
+                    </svg>
+                  </span>
+                  <span
+                    aria-hidden="true"
+                    class="mx_InsideRecordButton_icon mx_InsideRecordButton_camera"
+                  >
+                    <svg
+                      fill="currentColor"
+                      height="1em"
+                      viewBox="0 0 24 24"
+                      width="1em"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M6 4h10a2 2 0 0 1 2 2v4.286l3.35-2.871a1 1 0 0 1 1.65.76v7.65a1 1 0 0 1-1.65.76L18 13.715V18a2 2 0 0 1-2 2H6a4 4 0 0 1-4-4V8a4 4 0 0 1 4-4"
+                      />
+                    </svg>
+                  </span>
                 </div>
               </div>
             </div>
@@ -2893,26 +2981,48 @@ exports[`RoomView > should hide the right panel when hideRightPanel=true 1`] = `
                   </svg>
                 </div>
                 <div
-                  aria-label="Voice Message"
-                  class="mx_AccessibleButton mx_MessageComposer_sendMessage mx_MessageComposer_voiceMessage"
+                  aria-label="Hold to record a voice message, tap to switch to video"
+                  class="mx_AccessibleButton mx_MessageComposer_sendMessage mx_InsideRecordButton mx_MessageComposer_voiceMessage"
+                  data-mode="voice"
                   data-testid="voicemessagebtn"
                   role="button"
                   tabindex="0"
                 >
-                  <svg
-                    fill="currentColor"
-                    height="1em"
-                    viewBox="0 0 24 24"
-                    width="1em"
-                    xmlns="http://www.w3.org/2000/svg"
+                  <span
+                    aria-hidden="true"
+                    class="mx_InsideRecordButton_icon mx_InsideRecordButton_mic"
                   >
-                    <path
-                      d="M8 6a4 4 0 1 1 8 0v6a4 4 0 0 1-8 0z"
-                    />
-                    <path
-                      d="M5 11a1 1 0 0 1 1 1 6 6 0 0 0 12 0 1 1 0 1 1 2 0 8 8 0 0 1-7 7.938V21a1 1 0 1 1-2 0v-1.062A8 8 0 0 1 4 12a1 1 0 0 1 1-1"
-                    />
-                  </svg>
+                    <svg
+                      fill="currentColor"
+                      height="1em"
+                      viewBox="0 0 24 24"
+                      width="1em"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M8 6a4 4 0 1 1 8 0v6a4 4 0 0 1-8 0z"
+                      />
+                      <path
+                        d="M5 11a1 1 0 0 1 1 1 6 6 0 0 0 12 0 1 1 0 1 1 2 0 8 8 0 0 1-7 7.938V21a1 1 0 1 1-2 0v-1.062A8 8 0 0 1 4 12a1 1 0 0 1 1-1"
+                      />
+                    </svg>
+                  </span>
+                  <span
+                    aria-hidden="true"
+                    class="mx_InsideRecordButton_icon mx_InsideRecordButton_camera"
+                  >
+                    <svg
+                      fill="currentColor"
+                      height="1em"
+                      viewBox="0 0 24 24"
+                      width="1em"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M6 4h10a2 2 0 0 1 2 2v4.286l3.35-2.871a1 1 0 0 1 1.65.76v7.65a1 1 0 0 1-1.65.76L18 13.715V18a2 2 0 0 1-2 2H6a4 4 0 0 1-4-4V8a4 4 0 0 1 4-4"
+                      />
+                    </svg>
+                  </span>
                 </div>
               </div>
             </div>
@@ -3765,26 +3875,48 @@ exports[`RoomView > should not display the timeline when the room encryption is 
                   </svg>
                 </div>
                 <div
-                  aria-label="Voice Message"
-                  class="mx_AccessibleButton mx_MessageComposer_sendMessage mx_MessageComposer_voiceMessage"
+                  aria-label="Hold to record a voice message, tap to switch to video"
+                  class="mx_AccessibleButton mx_MessageComposer_sendMessage mx_InsideRecordButton mx_MessageComposer_voiceMessage"
+                  data-mode="voice"
                   data-testid="voicemessagebtn"
                   role="button"
                   tabindex="0"
                 >
-                  <svg
-                    fill="currentColor"
-                    height="1em"
-                    viewBox="0 0 24 24"
-                    width="1em"
-                    xmlns="http://www.w3.org/2000/svg"
+                  <span
+                    aria-hidden="true"
+                    class="mx_InsideRecordButton_icon mx_InsideRecordButton_mic"
                   >
-                    <path
-                      d="M8 6a4 4 0 1 1 8 0v6a4 4 0 0 1-8 0z"
-                    />
-                    <path
-                      d="M5 11a1 1 0 0 1 1 1 6 6 0 0 0 12 0 1 1 0 1 1 2 0 8 8 0 0 1-7 7.938V21a1 1 0 1 1-2 0v-1.062A8 8 0 0 1 4 12a1 1 0 0 1 1-1"
-                    />
-                  </svg>
+                    <svg
+                      fill="currentColor"
+                      height="1em"
+                      viewBox="0 0 24 24"
+                      width="1em"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M8 6a4 4 0 1 1 8 0v6a4 4 0 0 1-8 0z"
+                      />
+                      <path
+                        d="M5 11a1 1 0 0 1 1 1 6 6 0 0 0 12 0 1 1 0 1 1 2 0 8 8 0 0 1-7 7.938V21a1 1 0 1 1-2 0v-1.062A8 8 0 0 1 4 12a1 1 0 0 1 1-1"
+                      />
+                    </svg>
+                  </span>
+                  <span
+                    aria-hidden="true"
+                    class="mx_InsideRecordButton_icon mx_InsideRecordButton_camera"
+                  >
+                    <svg
+                      fill="currentColor"
+                      height="1em"
+                      viewBox="0 0 24 24"
+                      width="1em"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M6 4h10a2 2 0 0 1 2 2v4.286l3.35-2.871a1 1 0 0 1 1.65.76v7.65a1 1 0 0 1-1.65.76L18 13.715V18a2 2 0 0 1-2 2H6a4 4 0 0 1-4-4V8a4 4 0 0 1 4-4"
+                      />
+                    </svg>
+                  </span>
                 </div>
               </div>
             </div>
@@ -4412,26 +4544,48 @@ exports[`RoomView > video rooms > should render joined video room view 1`] = `
                       </svg>
                     </div>
                     <div
-                      aria-label="Voice Message"
-                      class="mx_AccessibleButton mx_MessageComposer_sendMessage mx_MessageComposer_voiceMessage"
+                      aria-label="Hold to record a voice message, tap to switch to video"
+                      class="mx_AccessibleButton mx_MessageComposer_sendMessage mx_InsideRecordButton mx_MessageComposer_voiceMessage"
+                      data-mode="voice"
                       data-testid="voicemessagebtn"
                       role="button"
                       tabindex="0"
                     >
-                      <svg
-                        fill="currentColor"
-                        height="1em"
-                        viewBox="0 0 24 24"
-                        width="1em"
-                        xmlns="http://www.w3.org/2000/svg"
+                      <span
+                        aria-hidden="true"
+                        class="mx_InsideRecordButton_icon mx_InsideRecordButton_mic"
                       >
-                        <path
-                          d="M8 6a4 4 0 1 1 8 0v6a4 4 0 0 1-8 0z"
-                        />
-                        <path
-                          d="M5 11a1 1 0 0 1 1 1 6 6 0 0 0 12 0 1 1 0 1 1 2 0 8 8 0 0 1-7 7.938V21a1 1 0 1 1-2 0v-1.062A8 8 0 0 1 4 12a1 1 0 0 1 1-1"
-                        />
-                      </svg>
+                        <svg
+                          fill="currentColor"
+                          height="1em"
+                          viewBox="0 0 24 24"
+                          width="1em"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            d="M8 6a4 4 0 1 1 8 0v6a4 4 0 0 1-8 0z"
+                          />
+                          <path
+                            d="M5 11a1 1 0 0 1 1 1 6 6 0 0 0 12 0 1 1 0 1 1 2 0 8 8 0 0 1-7 7.938V21a1 1 0 1 1-2 0v-1.062A8 8 0 0 1 4 12a1 1 0 0 1 1-1"
+                          />
+                        </svg>
+                      </span>
+                      <span
+                        aria-hidden="true"
+                        class="mx_InsideRecordButton_icon mx_InsideRecordButton_camera"
+                      >
+                        <svg
+                          fill="currentColor"
+                          height="1em"
+                          viewBox="0 0 24 24"
+                          width="1em"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            d="M6 4h10a2 2 0 0 1 2 2v4.286l3.35-2.871a1 1 0 0 1 1.65.76v7.65a1 1 0 0 1-1.65.76L18 13.715V18a2 2 0 0 1-2 2H6a4 4 0 0 1-4-4V8a4 4 0 0 1 4-4"
+                          />
+                        </svg>
+                      </span>
                     </div>
                   </div>
                 </div>

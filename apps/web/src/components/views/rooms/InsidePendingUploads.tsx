@@ -288,8 +288,73 @@ function PendingFile({ upload }: PendingUploadProps): JSX.Element {
     );
 }
 
+const ROUND_RING_R = 48.6;
+const ROUND_RING_C = 2 * Math.PI * ROUND_RING_R;
+
+/**
+ * Inside: a round video being sent is the same 260 px circle as in the timeline: the first frame
+ * dimmed, the progress ring on its edge, cancel in the middle.
+ */
+function PendingRoundVideo({ upload }: PendingUploadProps): JSX.Element {
+    const url = useObjectUrl(upload.file);
+    const percent = upload.total > 0 ? Math.round((Math.min(upload.loaded, upload.total) / upload.total) * 100) : 0;
+    const shownPercent = Math.max(percent, MIN_RING_PERCENT);
+    const onCancel = useCallback((): void => {
+        ContentMessages.sharedInstance().cancelUpload(upload);
+    }, [upload]);
+
+    return (
+        <div className="mx_InsidePendingUpload_round">
+            <div className="mx_InsidePendingUpload_roundCircle">
+                {url && <video src={`${url}#t=0.001`} muted playsInline preload="metadata" />}
+            </div>
+            {!upload.failed && (
+                <>
+                    <svg
+                        className="mx_InsidePendingUpload_roundRing"
+                        viewBox="0 0 100 100"
+                        role="progressbar"
+                        aria-label={upload.fileName}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-valuenow={percent}
+                    >
+                        <circle
+                            cx="50"
+                            cy="50"
+                            r={ROUND_RING_R}
+                            strokeDasharray={ROUND_RING_C}
+                            strokeDashoffset={ROUND_RING_C * (1 - shownPercent / 100)}
+                        />
+                    </svg>
+                    <AccessibleButton
+                        className="mx_InsidePendingUpload_roundCancel"
+                        onClick={onCancel}
+                        aria-label={_t("upload_file|cancel_upload")}
+                    >
+                        <CloseIcon />
+                    </AccessibleButton>
+                </>
+            )}
+        </div>
+    );
+}
+
 function PendingUpload({ upload, onResize }: PendingUploadProps): JSX.Element {
     const kind = uploadKind(upload);
+    if (upload.roundVideo && kind === "video") {
+        return (
+            <li
+                className={classNames("mx_InsidePendingUpload", "mx_InsidePendingUpload_roundVideo", {
+                    mx_InsidePendingUpload_failed: upload.failed,
+                })}
+                title={upload.failed ? upload.failureReason : undefined}
+            >
+                <PendingRoundVideo upload={upload} />
+                {upload.failed && <FailedActions upload={upload} />}
+            </li>
+        );
+    }
     return (
         <li
             className={classNames("mx_InsidePendingUpload", {

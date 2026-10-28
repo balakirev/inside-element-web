@@ -56,6 +56,7 @@ import {
     type ThreadListActionBarViewModelProps,
 } from "../../ThreadListActionBarViewModel";
 import { EventTileActionBarViewModel, type EventTileActionBarViewModelProps } from "../../EventTileActionBarViewModel";
+import { isRoundVideoContent } from "../../../../utils/roundVideo";
 import { ReactionsRowViewModel, type ReactionsRowViewModelProps } from "./reactions/ReactionsRowViewModel";
 
 /** Event-level inputs for deriving the EventTile snapshot. */
@@ -76,6 +77,8 @@ export interface EventTileDerivedEventInput extends EventTileEventInput {
     eventType: string;
     /** The Matrix message type rendered by the tile. */
     msgtype?: string;
+    /** Inside: whether the event is a round video message (a circle without a bubble). */
+    isRoundVideo?: boolean;
     /** The event origin timestamp. */
     eventTs: number;
     /** The stable event identifier, when available. */
@@ -281,6 +284,11 @@ const INSIDE_LAST_IN_SERIES_CLASS_NAMES: EventTileViewClassNames = {
     ...EVENT_TILE_VIEW_CLASS_NAMES,
     root: "mx_EventTile mx_EventTile_inside_lastInSeries",
 };
+
+/** Inside: a round video message: the tile drops the bubble (`mx_EventTile_inside_roundVideo`). */
+function withRoundVideoClass(classNames: EventTileViewClassNames): EventTileViewClassNames {
+    return { ...classNames, root: `${classNames.root} mx_EventTile_inside_roundVideo` };
+}
 
 /** Sender state derived for the EventTile snapshot. */
 export interface EventTileSenderSnapshot {
@@ -517,18 +525,19 @@ export class EventTileViewModel extends BaseViewModel<EventTileViewModelRenderSt
         const snapshot = EventTileViewModel.createSnapshot(props);
         const useIRCLayout = snapshot.timestamp.displayState.useIRCLayout;
         const showPadlock = !props.display.isBubbleMessage;
+        const classNames =
+            isInsideBubbleSeriesTimeline(props.display.layout, props.display.timelineRenderingType) &&
+            props.display.isLastInSection &&
+            !props.display.isInfoMessage &&
+            snapshot.sender.profileState.avatarSize !== null
+                ? INSIDE_LAST_IN_SERIES_CLASS_NAMES
+                : EVENT_TILE_VIEW_CLASS_NAMES;
 
         return {
             snapshot,
             root: snapshot.root,
             line: snapshot.line,
-            classNames:
-                isInsideBubbleSeriesTimeline(props.display.layout, props.display.timelineRenderingType) &&
-                props.display.isLastInSection &&
-                !props.display.isInfoMessage &&
-                snapshot.sender.profileState.avatarSize !== null
-                    ? INSIDE_LAST_IN_SERIES_CLASS_NAMES
-                    : EVENT_TILE_VIEW_CLASS_NAMES,
+            classNames: props.event.isRoundVideo ? withRoundVideoClass(classNames) : classNames,
             timestamp: snapshot.timestamp,
             e2ePadlock: {
                 showInGroupLine: !useIRCLayout && showPadlock,
@@ -569,6 +578,7 @@ export class EventTileViewModel extends BaseViewModel<EventTileViewModelRenderSt
                 ...props.event,
                 eventType,
                 msgtype: mxEvent.getContent().msgtype,
+                isRoundVideo: !mxEvent.isRedacted() && isRoundVideoContent(mxEvent.getContent()),
                 eventTs: mxEvent.getTs(),
                 eventId: mxEvent.getId() ?? undefined,
                 replacingEventId: mxEvent.replacingEventId() ?? undefined,
@@ -673,7 +683,9 @@ export class EventTileViewModel extends BaseViewModel<EventTileViewModelRenderSt
             media: display.isProbablyMedia,
             sticker: event.eventType === "m.sticker",
             emote: sender.isEmote,
-            image: event.eventType === EventType.RoomMessage && event.msgtype === MsgType.Image,
+            // Inside: a round video is laid out as a photo (time on a pill over it, no bubble).
+            image:
+                event.eventType === EventType.RoomMessage && (event.msgtype === MsgType.Image || !!event.isRoundVideo),
         };
         return {
             event: eventSnapshot,

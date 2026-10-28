@@ -310,13 +310,38 @@ describe("MessageComposer", () => {
         });
 
         describe("when clicking the voice message button", () => {
-            beforeEach(async () => {
+            beforeEach(() => {
+                localStorage.removeItem("mx_inside_record_mode");
                 wrapAndRender({ room });
-                await userEvent.click(screen.getByTestId("voicemessagebtn"));
-                await flushPromises();
             });
 
-            it("should try to start a voice message", () => {
+            it("should switch to round video messages on a tap, and back", async () => {
+                const button = screen.getByTestId("voicemessagebtn");
+                expect(button).toHaveAttribute("data-mode", "voice");
+                await userEvent.click(button);
+                expect(button).toHaveAttribute("data-mode", "round");
+                expect(screen.queryByText("No microphone found")).not.toBeInTheDocument();
+                await userEvent.click(button);
+                expect(button).toHaveAttribute("data-mode", "voice");
+            });
+
+            it("should try to start a voice message when held", async () => {
+                vi.useFakeTimers();
+                try {
+                    const button = screen.getByTestId("voicemessagebtn");
+                    fireEvent.pointerDown(button, { button: 0, clientX: 10, clientY: 10 });
+                    await act(() => vi.advanceTimersByTimeAsync(300));
+                } finally {
+                    vi.useRealTimers();
+                }
+                await flushPromises();
+                expectVoiceMessageRecordingTriggered();
+            });
+
+            it("should try to start a voice message with Enter", async () => {
+                screen.getByTestId("voicemessagebtn").focus();
+                await userEvent.keyboard("{Enter}");
+                await flushPromises();
                 expectVoiceMessageRecordingTriggered();
             });
         });

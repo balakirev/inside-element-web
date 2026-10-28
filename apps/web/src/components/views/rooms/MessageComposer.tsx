@@ -18,12 +18,7 @@ import {
 } from "matrix-js-sdk/src/matrix";
 import { Tooltip } from "@vector-im/compound-web";
 import { logger } from "matrix-js-sdk/src/logger";
-import {
-    CheckIcon,
-    LockOffIcon,
-    MicOnSolidIcon,
-    SendSolidIcon,
-} from "@vector-im/compound-design-tokens/assets/web/icons";
+import { CheckIcon, LockOffIcon, SendSolidIcon } from "@vector-im/compound-design-tokens/assets/web/icons";
 import { useCreateAutoDisposedViewModel } from "@element-hq/web-shared-components";
 
 import { _t } from "../../../languageHandler";
@@ -43,6 +38,9 @@ import type EditorStateTransfer from "../../../utils/EditorStateTransfer";
 import { UserIdentityWarning } from "./UserIdentityWarning";
 import { UPDATE_EVENT } from "../../../stores/AsyncStore";
 import VoiceRecordComposerTile from "./VoiceRecordComposerTile";
+import InsideRecordButton, { type VoiceRecordingControls } from "./InsideRecordButton";
+import { sendRoundVideo } from "../../../utils/sendRoundVideo";
+import { type RoundVideoResult } from "../../../utils/RoundVideoRecorder";
 import { VoiceRecordingStore } from "../../../stores/VoiceRecordingStore";
 import { RecordingState } from "../../../audio/VoiceRecording";
 import type ResizeNotifier from "../../../utils/ResizeNotifier";
@@ -113,23 +111,6 @@ function SaveEditButton(props: { onClick: (ev: ButtonEvent) => void }): JSX.Elem
     );
 }
 
-/**
- * Inside: the round button in place of "send" while the composer is empty starts a voice message,
- * as in other messengers. Recording itself is Element's {@link VoiceRecordComposerTile}.
- */
-function VoiceMessageButton(props: { onClick: (ev: ButtonEvent) => void }): JSX.Element {
-    return (
-        <AccessibleButton
-            className="mx_MessageComposer_sendMessage mx_MessageComposer_voiceMessage"
-            onClick={props.onClick}
-            title={_t("composer|voice_message_button")}
-            data-testid="voicemessagebtn"
-        >
-            <MicOnSolidIcon />
-        </AccessibleButton>
-    );
-}
-
 interface IProps extends MatrixClientProps {
     room: Room;
     resizeNotifier: ResizeNotifier;
@@ -150,6 +131,8 @@ interface IState {
     composerContent: string;
     isComposerEmpty: boolean;
     haveRecording: boolean;
+    /** Inside: a recording is held (or a round video locked) on the record button. */
+    recordButtonActive?: boolean;
     recordingTimeLeftSeconds?: number;
     me?: RoomMember;
     isMenuOpen: boolean;
@@ -597,6 +580,45 @@ export class MessageComposer extends React.Component<IProps, IState> {
         }
     }
 
+    /** Inside: Element's voice recording, driven by the hold gesture of the record button. */
+    private voiceControls: VoiceRecordingControls = {
+        start: async (): Promise<boolean> => {
+            const tile = this.voiceRecordingButton.current;
+            if (!tile) return false;
+            await tile.onRecordStartEndClick();
+            return tile.isRecording;
+        },
+        send: async (): Promise<void> => {
+            const tile = this.voiceRecordingButton.current;
+            if (!tile) return;
+            // A press that only just became a hold records nothing worth sending.
+            if (tile.recordedSeconds < 1) {
+                await tile.cancel();
+                return;
+            }
+            await tile.send();
+        },
+        cancel: async (): Promise<void> => {
+            await this.voiceRecordingButton.current?.cancel();
+        },
+    };
+
+    private onRecordButtonActive = (recordButtonActive: boolean): void => {
+        this.setState({ recordButtonActive });
+    };
+
+    private onRoundVideo = (result: RoundVideoResult): void => {
+        const { replyToEvent, relation, room, mxClient } = this.props;
+        void sendRoundVideo(result, room.roomId, relation, mxClient, replyToEvent);
+        if (replyToEvent) {
+            dis.dispatch({
+                action: "reply_to_event",
+                event: null,
+                context: this.context.timelineRenderingType,
+            });
+        }
+    };
+
     private onRecordStartEndClick = (): void => {
         void this.voiceRecordingButton.current?.onRecordStartEndClick();
 
@@ -757,14 +779,18 @@ export class MessageComposer extends React.Component<IProps, IState> {
         );
 
         const showSendButton =
-            canSendMessages && !editState && (!this.state.isComposerEmpty || this.state.haveRecording);
+            canSendMessages &&
+            !editState &&
+            !this.state.recordButtonActive &&
+            (!this.state.isComposerEmpty || this.state.haveRecording);
         // Recording does not work well in narrow mode (see MessageComposerButtons), so no mic there,
         // except in the thread panel, which is always narrow; the Inside skin makes room for the recording.
         const showVoiceMessageButton =
-            canSendMessages &&
-            !editState &&
-            !showSendButton &&
-            (!this.context.narrow || this.context.timelineRenderingType === TimelineRenderingType.Thread);
+            (canSendMessages && !!this.state.recordButtonActive) ||
+            (canSendMessages &&
+                !editState &&
+                !showSendButton &&
+                (!this.context.narrow || this.context.timelineRenderingType === TimelineRenderingType.Thread));
 
         const classes = classNames({
             "mx_MessageComposer": true,
@@ -814,7 +840,12 @@ export class MessageComposer extends React.Component<IProps, IState> {
                                 />
                             )}
                             {showVoiceMessageButton && (
-                                <VoiceMessageButton key="controls_voice_message" onClick={this.onRecordStartEndClick} />
+                                <InsideRecordButton
+                                    key="controls_voice_message"
+                                    voice={this.voiceControls}
+                                    onRoundVideo={this.onRoundVideo}
+                                    onActiveChange={this.onRecordButtonActive}
+                                />
                             )}
                             {editState && <SaveEditButton key="controls_save_edit" onClick={this.saveEdit} />}
                             {showSendButton && (

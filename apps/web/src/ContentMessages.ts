@@ -63,6 +63,7 @@ import { PosthogAnalytics } from "./PosthogAnalytics.ts";
 import { cacheUploadedMedia, forgetUploadedMedia } from "./utils/UploadedMediaCache";
 import { isPdfFile, pdfThumbnailForFile } from "./utils/pdfThumbnail";
 import { isCompressiblePhoto } from "./utils/photoCompression";
+import { ROUND_VIDEO_FLAG } from "./utils/roundVideo";
 import { compressPhotoForUpload } from "./utils/compressPhoto";
 import { compressVideoForUpload, isCompressibleVideo } from "./utils/compressVideo";
 import {
@@ -97,6 +98,13 @@ export interface SendContentOptions {
      * follow. With asynchronous uploads that is before the file itself is up.
      */
     onEventSent?: () => void;
+    /**
+     * Inside: extra fields for the content of the event, e.g. the round video flag. Merged in last,
+     * so they win over what is derived from the file.
+     */
+    extraContent?: Record<string, unknown>;
+    /** Inside: info fields that override what is read from the file (e.g. a duration the file lacks). */
+    info?: Partial<MediaEventInfo>;
 }
 
 type MediaContent = Omit<MediaEventContent, "info"> & { info: Partial<MediaEventInfo> };
@@ -710,6 +718,7 @@ export default class ContentMessages {
         const upload = new RoomUpload(roomId, file.name || _t("common|attachment"), relation, file.size);
         upload.file = file;
         upload.caption = caption?.trim() || undefined;
+        upload.roundVideo = options.extraContent?.[ROUND_VIDEO_FLAG] === true;
         this.inprogress.push(upload);
         dis.dispatch<UploadStartedPayload>({ action: Action.UploadStarted, upload });
 
@@ -730,11 +739,14 @@ export default class ContentMessages {
                 promBefore,
                 caption,
                 options.onEventSent,
+                options,
             );
         } catch (error) {
             this.onUploadError(error, upload, () =>
                 this.sendContentToRoom(sending, roomId, relation, matrixClient, replyToEvent, undefined, caption, {
                     compress: false,
+                    extraContent: options.extraContent,
+                    info: options.info,
                 }),
             );
         } finally {
@@ -786,6 +798,7 @@ export default class ContentMessages {
         promBefore: Promise<any> | undefined,
         caption: string | undefined,
         onEventSent: (() => void) | undefined,
+        { extraContent, info }: Pick<SendContentOptions, "extraContent" | "info"> = {},
     ): Promise<void> {
         const fileName = file.name || _t("common|attachment");
         const content: MediaContent = {
@@ -832,7 +845,13 @@ export default class ContentMessages {
         // Inside: the file goes up at once, and its thumbnail next to it as soon as it is made, rather
         // than the thumbnail first and the file after it.
         const threadId = (relation?.rel_type === THREAD_RELATION_TYPE.name ? relation.event_id : null) ?? null;
-        const describePromise = this.describeMedia(file, content);
+        const describePromise = this.describeMedia(file, content).then((thumbnail) => {
+            // Inside: what the caller knows better than the file (a recorded round video has no
+            // duration in its header), and its own fields such as the round video flag.
+            if (info) Object.assign(content.info, info);
+            if (extraContent) Object.assign(content, extraContent);
+            return thumbnail;
+        });
         // Handled below; this only keeps a failure from being reported as unhandled meanwhile.
         describePromise.catch(() => {});
 
