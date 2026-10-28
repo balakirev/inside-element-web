@@ -21,6 +21,7 @@ import { type RoomUpload } from "../../../models/RoomUpload";
 import SettingsStore from "../../../settings/SettingsStore";
 import { suggestedSize } from "../../../settings/enums/ImageSize";
 import AccessibleButton from "../elements/AccessibleButton";
+import { usePdfFileThumbnailUrl } from "../../../hooks/usePdfThumbnail";
 
 const UPLOAD_ACTIONS: string[] = [
     Action.UploadStarted,
@@ -219,20 +220,51 @@ function PendingMedia({ upload, kind, onResize }: PendingUploadProps & { kind: "
     );
 }
 
+/** "12 %" in the user's language. */
+function formatUploadPercent(loaded: number, total: number): string {
+    const fraction = total > 0 ? Math.min(loaded, total) / total : 0;
+    return new Intl.NumberFormat(getCurrentLanguage(), { style: "percent", maximumFractionDigits: 0 }).format(
+        Math.floor(fraction * 100) / 100,
+    );
+}
+
 function PendingFile({ upload }: PendingUploadProps): JSX.Element {
+    // Inside: a PDF shows its first page under the ring, as Telegram does for documents.
+    const pageUrl = usePdfFileThumbnailUrl(upload.file);
+
+    let picture: JSX.Element;
+    if (pageUrl) {
+        picture = (
+            <div className="mx_InsidePendingUpload_filePage">
+                <img src={pageUrl} alt="" />
+                {!upload.failed && (
+                    <div className="mx_InsidePendingUpload_overlay">
+                        <ProgressRing upload={upload} />
+                    </div>
+                )}
+            </div>
+        );
+    } else if (upload.failed) {
+        picture = (
+            <div className="mx_InsidePendingUpload_fileIcon">
+                <AttachmentIcon />
+            </div>
+        );
+    } else {
+        picture = <ProgressRing upload={upload} />;
+    }
+
     return (
         <div className="mx_InsidePendingUpload_file">
-            {upload.failed ? (
-                <div className="mx_InsidePendingUpload_fileIcon">
-                    <AttachmentIcon />
-                </div>
-            ) : (
-                <ProgressRing upload={upload} />
-            )}
+            {picture}
             <div className="mx_InsidePendingUpload_fileInfo">
                 <span className="mx_InsidePendingUpload_fileName">{upload.fileName}</span>
                 {!upload.failed && (
                     <span className="mx_InsidePendingUpload_progressText">
+                        <span className="mx_InsidePendingUpload_percent">
+                            {formatUploadPercent(upload.loaded, upload.total)}
+                        </span>
+                        {" · "}
                         {formatUploadProgress(upload.loaded, upload.total)}
                     </span>
                 )}
