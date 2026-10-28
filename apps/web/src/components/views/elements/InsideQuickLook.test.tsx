@@ -21,6 +21,7 @@ import { type DocumentMedia } from "../../../@types/document-viewer";
 import { type PdfHostMessage, type PdfUsercontentMessage } from "../../../usercontent/pdf/protocol";
 import { PDF_IFRAME_PERMISSIONS, PDF_USERCONTENT_URL } from "../right_panel/PdfViewer";
 import { flushPdfViewerState } from "../../../utils/pdfViewerState";
+import { stubClient } from "../../../test/test-utils";
 
 const blob = new Blob(["%PDF-1.7\n"], { type: "application/pdf" });
 
@@ -163,6 +164,99 @@ describe("InsideQuickLook", () => {
         await waitFor(() => expect(download).toHaveBeenCalledWith({ blob, name: "spec.pdf" }));
     });
 
+    describe.each([
+        ["Markdown", "markdown", "README.md", "# Hello\n\nSome text.\n", "markdown-content"],
+        ["plain text", "text", "notes.txt", "Hello\nSome text.\n", "plain-text-content"],
+    ] as const)("with a %s file", (_, kind, name, body, contentTestId) => {
+        const textBlob = new Blob([body], { type: kind === "markdown" ? "text/markdown" : "text/plain" });
+
+        function mkTextMedia(): DocumentMedia {
+            return { uri: `mxc://example.org/${name}`, name, size: 2048, blob: vi.fn(async () => textBlob) };
+        }
+
+        async function renderText(
+            onFinished = vi.fn(),
+        ): Promise<{ container: HTMLElement; content: HTMLElement; onFinished: ReturnType<typeof vi.fn> }> {
+            const { container } = render(
+                <InsideQuickLook media={mkTextMedia()} name={name} kind={kind} onFinished={onFinished} />,
+            );
+            const content = await screen.findByTestId(contentTestId);
+            await waitFor(() => expect(document.activeElement).toHaveClass("mx_InsideQuickLook_body"));
+            return { container, content, onFinished };
+        }
+
+        beforeEach(() => {
+            stubClient();
+        });
+
+        it("shows the document in the window, with the same header and no PDF frame or zoom", async () => {
+            const { container, content } = await renderText();
+
+            expect(content).toHaveTextContent("Some text.");
+            expect(content.closest(".mx_InsideQuickLook_body")).toBeInTheDocument();
+            expect(screen.queryByTestId("pdf-iframe")).toBeNull();
+            expect(screen.getByRole("dialog", { name })).toHaveClass("mx_InsideQuickLook_window");
+            expect(container.querySelector(".mx_InsideQuickLook_title")).toHaveTextContent(name);
+            expect(container.querySelector(".mx_InsideQuickLook_meta")).toHaveTextContent("2 kB");
+            expect(screen.getByRole("button", { name: "Download" })).toBeInTheDocument();
+            expect(screen.getByRole("button", { name: "Close" })).toBeInTheDocument();
+            expect(screen.queryByRole("button", { name: "Zoom in" })).toBeNull();
+        });
+
+        it.each([
+            ["Escape", () => fireEvent.keyDown(document.activeElement!, { key: "Escape" })],
+            ["the close button", () => fireEvent.click(screen.getByRole("button", { name: "Close" }))],
+            ["the backdrop", () => fireEvent.click(screen.getByTestId("quick-look-backdrop"))],
+        ])("closes on %s", async (_, trigger) => {
+            const { onFinished } = await renderText();
+
+            trigger();
+
+            expect(document.querySelector(".mx_InsideQuickLook")).toHaveClass("mx_InsideQuickLook_closing");
+            await waitFor(() => expect(onFinished).toHaveBeenCalledTimes(1));
+        });
+
+        it("keeps the focus inside the window", async () => {
+            await renderText();
+            const outside = document.createElement("button");
+            document.body.appendChild(outside);
+
+            act(() => outside.focus());
+
+            await waitFor(() =>
+                expect(document.querySelector(".mx_InsideQuickLook")).toContainElement(
+                    document.activeElement as HTMLElement,
+                ),
+            );
+            outside.remove();
+        });
+
+        it("scrolls the document from the keyboard", async () => {
+            const { content } = await renderText();
+            Object.defineProperty(content, "clientHeight", { configurable: true, value: 400 });
+            Object.defineProperty(content, "scrollHeight", { configurable: true, value: 5000 });
+            const body = document.activeElement!;
+
+            fireEvent.keyDown(body, { key: "ArrowDown" });
+            expect(content.scrollTop).toBe(40);
+            fireEvent.keyDown(body, { key: " " });
+            expect(content.scrollTop).toBe(400);
+            fireEvent.keyDown(body, { key: "ArrowUp" });
+            expect(content.scrollTop).toBe(360);
+            fireEvent.keyDown(body, { key: "Home" });
+            expect(content.scrollTop).toBe(0);
+        });
+
+        it("downloads the file under its name", async () => {
+            const download = vi.spyOn(FileDownloader.prototype, "download").mockResolvedValue(undefined);
+            await renderText();
+
+            await userEvent.click(screen.getByRole("button", { name: "Download" }));
+
+            await waitFor(() => expect(download).toHaveBeenCalledWith({ blob: textBlob, name }));
+        });
+    });
+
     describe("as a modal", () => {
         function mkEvent(): MatrixEvent {
             return new MatrixEvent({
@@ -208,6 +302,33 @@ describe("InsideQuickLook", () => {
             expect(Modal.hasDialogs()).toBe(false);
             await waitFor(() => expect(document.activeElement).toBe(tile));
             document.removeEventListener("keydown", roomEscape);
+        });
+
+        it("opens a Markdown file as Markdown", async () => {
+            stubClient();
+            const mxEvent = new MatrixEvent({
+                room_id: "!room:example.org",
+                sender: "@user:example.org",
+                type: EventType.RoomMessage,
+                content: {
+                    body: "README.md",
+                    msgtype: MsgType.File,
+                    url: "mxc://example.org/readme",
+                    info: { mimetype: "text/markdown", size: 12 },
+                },
+            });
+            const helper = {
+                media: { srcMxc: "mxc://example.org/readme" },
+                fileName: "README.md",
+                sourceBlob: { value: Promise.resolve(new Blob(["# Read me\n"], { type: "text/markdown" })) },
+            } as unknown as MediaEventHelper;
+
+            act(() => openInsideQuickLook(mxEvent, helper));
+
+            await waitFor(() =>
+                expect(document.querySelector("[data-testid='markdown-content'] h1")).toHaveTextContent("Read me"),
+            );
+            expect(document.querySelector("[data-testid='pdf-iframe']")).toBeNull();
         });
     });
 });

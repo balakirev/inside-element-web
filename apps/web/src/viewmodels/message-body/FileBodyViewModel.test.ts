@@ -368,7 +368,8 @@ describe("FileBodyViewModel", () => {
         });
 
         it.each([
-            ["a non-PDF mimetype", { info: { mimetype: "text/plain" } }],
+            // Inside: text/plain has a viewer (the Quick Look window shows plain text).
+            ["a mimetype no viewer handles", { info: { mimetype: "application/zip" } }],
             ["no mimetype at all", {}],
         ])("does not offer the viewer for %s", (_label, content) => {
             const vm = createPdfVm({

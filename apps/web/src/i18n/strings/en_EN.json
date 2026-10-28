@@ -1766,6 +1766,9 @@
         "permalink_other_room": "Message in %(room)s",
         "permalink_this_room": "Message from %(user)s"
     },
+    "plain_text_viewer": {
+        "open": "Open text"
+    },
     "poll": {
         "create_poll_action": "Create Poll",
         "create_poll_title": "Create poll",

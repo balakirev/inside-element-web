@@ -10,7 +10,12 @@ Please see LICENSE in the repository root for full details.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { EventType, MatrixEvent, MsgType } from "matrix-js-sdk/src/matrix";
 
-import { documentMediaForEvent, documentViewerForEvent, openDocumentViewer } from "./documentViewer";
+import {
+    documentMediaForEvent,
+    documentViewerForEvent,
+    openDocumentViewer,
+    quickLookKindForEvent,
+} from "./documentViewer";
 import { type MediaEventHelper } from "./MediaEventHelper";
 import defaultDispatcher from "../dispatcher/dispatcher";
 import { Action } from "../dispatcher/actions";
@@ -26,7 +31,14 @@ function mkFileEvent(body: string, info?: Record<string, unknown>): MatrixEvent 
 
 describe("documentViewerForEvent", () => {
     it("offers nothing for a file no viewer can open", () => {
-        expect(documentViewerForEvent(mkFileEvent("notes.txt", { mimetype: "text/plain" }))).toBeUndefined();
+        expect(documentViewerForEvent(mkFileEvent("photos.zip", { mimetype: "application/zip" }))).toBeUndefined();
+    });
+
+    it("picks the plain text viewer for a text file (Inside)", () => {
+        const viewer = documentViewerForEvent(mkFileEvent("notes.txt", { mimetype: "text/plain" }));
+
+        expect(viewer?.openLabel()).toBe("Open text");
+        expect(viewer?.Component).toBeDefined();
     });
 
     it("picks the PDF viewer for a PDF", () => {
@@ -59,7 +71,7 @@ function mkHelper(blob = new Blob(["%PDF-1.7\n"], { type: "application/pdf" })):
 
 describe("documentMediaForEvent", () => {
     it("returns nothing for a file no viewer can open", () => {
-        expect(documentMediaForEvent(mkFileEvent("notes.txt", { mimetype: "text/plain" }))).toBeUndefined();
+        expect(documentMediaForEvent(mkFileEvent("photos.zip", { mimetype: "application/zip" }))).toBeUndefined();
     });
 
     it("keys on the MXC URI and defers to the helper for the bytes", async () => {
@@ -98,12 +110,26 @@ describe("openDocumentViewer", () => {
         vi.restoreAllMocks();
     });
 
-    it("dispatches the open action for the event", () => {
+    it.each([
+        ["spec.pdf", "application/pdf", "pdf"],
+        ["README.md", "text/markdown", "markdown"],
+        ["notes.md", "text/plain", "markdown"],
+        ["notes.txt", "text/plain", "text"],
+        ["server.log", undefined, "text"],
+        ["photos.zip", "application/zip", undefined],
+    ])("opens %s (%s) in the Quick Look window as %s (Inside)", (body, mimetype, kind) => {
+        expect(quickLookKindForEvent(mkFileEvent(body, mimetype ? { mimetype } : undefined))).toBe(kind);
+    });
+
+    it("opens a Markdown file in the Quick Look window rather than the right panel (Inside)", async () => {
         const dispatch = vi.spyOn(defaultDispatcher, "dispatch").mockImplementation(() => {});
+        const quickLook = await import("../components/views/elements/InsideQuickLook");
+        const open = vi.spyOn(quickLook, "openInsideQuickLook").mockImplementation(() => {});
         const mxEvent = mkFileEvent("README.md", { mimetype: "text/markdown" });
 
         openDocumentViewer(mxEvent);
 
-        expect(dispatch).toHaveBeenCalledWith({ action: Action.OpenDocumentViewer, event: mxEvent });
+        await vi.waitFor(() => expect(open).toHaveBeenCalledWith(mxEvent, undefined));
+        expect(dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ action: Action.OpenDocumentViewer }));
     });
 });

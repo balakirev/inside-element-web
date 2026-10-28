@@ -5,7 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR GPL-3.0-only OR LicenseRef-Element-Com
 Please see LICENSE files in the repository root for full details.
 */
 
-/* Inside: a PDF in a window over the app, as macOS Quick Look (InsideQuickLook.tsx). */
+/* Inside: a PDF, Markdown or text file in a window over the app, as macOS Quick Look (InsideQuickLook.tsx). */
 
 /* The Modal draws the dialog as a lightbox; the window brings its own scrim. */
 .mx_Dialog_insideQuickLook .mx_Dialog_background {
@@ -171,6 +171,32 @@ Please see LICENSE files in the repository root for full details.
     width: 100%;
     height: 100%;
     border: 0;
+}
+
+/* A Markdown or text document: Element's document viewer frame fills the body and scrolls inside. */
+.mx_InsideQuickLook_document {
+    position: absolute;
+    inset: 0;
+
+    [data-testid="markdown-content"] {
+        padding: var(--cpd-space-6x) var(--cpd-space-8x);
+    }
+}
+
+/* Plain text as it is: lines kept, long ones wrapped, in the monospace font. */
+.mx_InsidePlainTextViewer {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    overflow: auto;
+    padding: var(--cpd-space-6x) var(--cpd-space-8x);
+    background: var(--cpd-color-bg-canvas-default);
+    color: var(--cpd-color-text-primary);
+    font: var(--cpd-font-body-md-regular);
+    font-family: $monospace-font-family;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    tab-size: 4;
 }
 
 .mx_InsideQuickLook_status {

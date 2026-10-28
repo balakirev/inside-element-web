@@ -43,8 +43,7 @@ import { formatFullDateNoTime } from "../../../DateUtils";
 import { type RoomPermalinkCreator } from "../../../utils/permalinks/Permalinks";
 import { findUrls, type InsideMediaTab, useInsideRoomMedia } from "./useInsideRoomMedia";
 import { useSettingValue } from "../../../hooks/useSettings";
-import { isPdfEvent } from "../../../utils/pdfViewer";
-import { openDocumentViewer } from "../../../utils/documentViewer";
+import { openDocumentViewer, quickLookKindForEvent } from "../../../utils/documentViewer";
 
 interface TileProps {
     className: string;
@@ -232,10 +231,13 @@ function MediaItem({
     );
 }
 
-/** A file in the Files tab: a PDF opens in the Quick Look window, any other file is shown in the timeline. */
+/**
+ * A file in the Files tab: a PDF, Markdown or text file opens in the Quick Look window, any other file
+ * is shown in the timeline.
+ */
 function FileItem({ ev }: { ev: MatrixEvent }): JSX.Element {
     const documentPreviewsEnabled = useSettingValue("feature_pdf_viewer");
-    const opensQuickLook = documentPreviewsEnabled && isPdfEvent(ev);
+    const opensQuickLook = documentPreviewsEnabled && !!quickLookKindForEvent(ev);
     const content = ev.getContent();
     const name = content.filename || content.body || _t("common|attachment");
     const meta = [

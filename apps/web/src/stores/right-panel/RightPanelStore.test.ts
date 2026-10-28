@@ -180,19 +180,23 @@ describe("RightPanelStore", () => {
                 expect(store.isOpenForRoom("!1:example.org")).toEqual(true);
             });
 
-            it("opens a PDF in the Quick Look window instead of the card (Inside)", async () => {
+            it.each([
+                ["a PDF", "spec.pdf", "application/pdf"],
+                ["a Markdown file", "README.md", "text/markdown"],
+                ["a text file", "notes.txt", "text/plain"],
+            ])("opens %s in the Quick Look window instead of the card (Inside)", async (_, body, mimetype) => {
                 await setDocumentPreviewsLab(true);
                 await viewRoom("!1:example.org");
                 const openDocumentViewer = vi.spyOn(documentViewer, "openDocumentViewer").mockImplementation(() => {});
                 const event = new MatrixEvent({
                     type: EventType.RoomMessage,
                     room_id: "!1:example.org",
-                    event_id: "$pdf",
+                    event_id: "$doc",
                     content: {
                         msgtype: MsgType.File,
-                        body: "spec.pdf",
+                        body,
                         url: "mxc://example.org/spec",
-                        info: { mimetype: "application/pdf" },
+                        info: { mimetype },
                     },
                 });
 
@@ -202,7 +206,7 @@ describe("RightPanelStore", () => {
                 expect(store.currentCardForRoom("!1:example.org").phase).not.toEqual(RightPanelPhases.DocumentViewer);
                 expect(store.isOpenForRoom("!1:example.org")).toEqual(false);
 
-                // Nor is a PDF card kept when set directly.
+                // Nor is such a card kept when set directly.
                 store.setCard(
                     { phase: RightPanelPhases.DocumentViewer, state: { documentViewerEvent: event } },
                     true,
