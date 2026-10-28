@@ -38,7 +38,7 @@ import { getByTestId } from "@testing-library/dom";
 import { filterConsole, flushPromises, getRoomContext, mkEvent, mkMessage, stubClient } from "test-utils";
 import { mkThread } from "test-utils/threads";
 
-import EventTile, { type EventTileProps } from "./EventTile";
+import EventTile, { type EventTileProps, isOnMediaBody } from "./EventTile";
 import * as EventTileFactory from "../../../events/EventTileFactory";
 import MatrixClientContext from "../../../contexts/MatrixClientContext";
 import { type RoomContextType, TimelineRenderingType } from "../../../contexts/RoomContext";
@@ -53,6 +53,11 @@ import SettingsStore from "../../../settings/SettingsStore";
 import { RoomPermalinkCreator } from "../../../utils/permalinks/Permalinks";
 import PlatformPeg from "../../../PlatformPeg";
 import { EventPresentationContextProvider } from "../../../utils/EventPresentationContextProvider.tsx";
+
+// Inside: show media in the timeline, so a real image body renders its <img> (text messages don't use it).
+vi.mock("../../../hooks/useMediaVisible", () => ({
+    useMediaVisible: (): [boolean, () => void] => [true, (): void => {}],
+}));
 
 function getTile(container: HTMLElement): HTMLElement {
     const tile = container.querySelector(".mx_EventTile");
@@ -744,6 +749,175 @@ describe("EventTile", () => {
 
             expect(event.defaultPrevented).toBe(false);
             expect(screen.queryByTestId("mx_MessageContextMenu")).toBeNull();
+        });
+
+        describe("on media (Inside)", () => {
+            function makeMediaEvent(type: string, content: Record<string, unknown>): MatrixEvent {
+                return mkEvent({
+                    type,
+                    room: room.roomId,
+                    user: "@alice:example.org",
+                    content: { body: "photo.jpg", url: "mxc://example.org/abc", ...content },
+                    event: true,
+                });
+            }
+
+            /** Right-clicks `target`; returns whether the browser's own menu was suppressed. */
+            function rightClick(target: Element): boolean {
+                const event = new MouseEvent("contextmenu", {
+                    bubbles: true,
+                    cancelable: true,
+                    clientX: 1,
+                    clientY: 2,
+                });
+                act(() => {
+                    target.dispatchEvent(event);
+                });
+                return event.defaultPrevented;
+            }
+
+            /** What media bodies render: a link to the media (lightbox / download) around an image. */
+            function appendMediaLink(container: HTMLElement): { link: HTMLAnchorElement; image: HTMLImageElement } {
+                const link = document.createElement("a");
+                link.href = "https://example.org/_matrix/media/v3/download/example.org/abc";
+                const image = document.createElement("img");
+                link.appendChild(image);
+                getLine(container).appendChild(link);
+                return { link, image };
+            }
+
+            beforeEach(() => {
+                // A web browser, where Element leaves links and images to the native menu.
+                vi.spyOn(PlatformPeg, "get").mockReturnValue({
+                    allowOverridingNativeContextMenus: () => false,
+                    needsUrlTooltips: () => false,
+                } as unknown as ReturnType<typeof PlatformPeg.get>);
+            });
+
+            it.each([
+                ["an image", EventType.RoomMessage, { msgtype: "m.image" }],
+                ["a video", EventType.RoomMessage, { msgtype: "m.video" }],
+                ["a file", EventType.RoomMessage, { msgtype: "m.file" }],
+                ["an audio file", EventType.RoomMessage, { msgtype: "m.audio" }],
+                ["a voice message", EventType.RoomMessage, { "msgtype": "m.audio", "org.matrix.msc3245.voice": {} }],
+                ["a sticker", EventType.Sticker, {}],
+            ])("opens the message menu on the picture of %s", async (_name, type, content) => {
+                mxEvent = makeMediaEvent(type, content);
+                const { container } = getComponent();
+                const { image } = appendMediaLink(container);
+
+                expect(rightClick(image)).toBe(true);
+                expect(await screen.findByTestId("mx_MessageContextMenu")).toBeInTheDocument();
+            });
+
+            it("opens the message menu on the <img> of a rendered image body", async () => {
+                mxEvent = makeMediaEvent(EventType.RoomMessage, {
+                    msgtype: "m.image",
+                    info: { mimetype: "image/jpeg", w: 320, h: 240, size: 48_000 },
+                });
+                const { container } = getComponent();
+                const image = await waitFor(() => {
+                    const img = container.querySelector(".mx_ImageBody img");
+                    expect(img).not.toBeNull();
+                    return img!;
+                });
+                fireEvent.load(image);
+
+                expect(rightClick(image)).toBe(true);
+                expect(await screen.findByTestId("mx_MessageContextMenu")).toBeInTheDocument();
+            });
+
+            it.each(["mx_MFileBody_inside_thumb", "mx_MFileBody_inside_name", "mx_MFileBody_inside_download"])(
+                "opens the message menu on the %s part of a rendered document tile",
+                async (className) => {
+                    mxEvent = makeMediaEvent(EventType.RoomMessage, {
+                        msgtype: "m.file",
+                        body: "report.pdf",
+                        info: { mimetype: "application/pdf", size: 48_000 },
+                    });
+                    const { container } = getComponent();
+                    const part = await waitFor(() => {
+                        const element = container.querySelector(`.mx_MFileBody_inside_doc .${className}`);
+                        expect(element).not.toBeNull();
+                        return element!;
+                    });
+
+                    expect(rightClick(part)).toBe(true);
+                    expect(await screen.findByTestId("mx_MessageContextMenu")).toBeInTheDocument();
+                },
+            );
+
+            it("opens the message menu on the link around the media, without offering its URL as a link", async () => {
+                mxEvent = makeMediaEvent(EventType.RoomMessage, { msgtype: "m.file", body: "report.pdf" });
+                const { container } = getComponent();
+                const { link } = appendMediaLink(container);
+
+                expect(rightClick(link)).toBe(true);
+                expect(await screen.findByTestId("mx_MessageContextMenu")).toBeInTheDocument();
+                expect(screen.queryByRole("menuitem", { name: "Copy link" })).toBeNull();
+            });
+
+            it("opens the message menu in a thread", async () => {
+                mxEvent = makeMediaEvent(EventType.RoomMessage, { msgtype: "m.image" });
+                const { container } = getComponent({}, TimelineRenderingType.Thread);
+                const { image } = appendMediaLink(container);
+
+                expect(rightClick(image)).toBe(true);
+                expect(await screen.findByTestId("mx_MessageContextMenu")).toBeInTheDocument();
+            });
+
+            it("keeps the native menu for a link in the caption", () => {
+                mxEvent = makeMediaEvent(EventType.RoomMessage, {
+                    msgtype: "m.image",
+                    filename: "photo.jpg",
+                    body: "see https://example.org/",
+                });
+                const { container } = getComponent();
+                const caption = document.createElement("div");
+                caption.className = "mx_MTextBody mx_EventTile_caption";
+                const link = document.createElement("a");
+                link.href = "https://example.org/";
+                caption.appendChild(link);
+                getLine(container).appendChild(caption);
+
+                expect(rightClick(link)).toBe(false);
+                expect(screen.queryByTestId("mx_MessageContextMenu")).toBeNull();
+            });
+
+            it("keeps the native menu for an image in a text message", () => {
+                const { container } = getComponent();
+                const { image } = appendMediaLink(container);
+
+                expect(rightClick(image)).toBe(false);
+                expect(screen.queryByTestId("mx_MessageContextMenu")).toBeNull();
+            });
+
+            it("does not open the menu while the media message is being edited", () => {
+                mxEvent = makeMediaEvent(EventType.RoomMessage, { msgtype: "m.image" });
+                const { container } = getComponent({ editState: {} as EventTileProps["editState"] });
+                const { image } = appendMediaLink(container);
+
+                rightClick(image);
+                expect(screen.queryByTestId("mx_MessageContextMenu")).toBeNull();
+            });
+
+            it("isOnMediaBody leaves out redacted media, quoted replies and the timestamp", () => {
+                const image = makeMediaEvent(EventType.RoomMessage, { msgtype: "m.image" });
+                const body = document.createElement("div");
+                expect(isOnMediaBody(image, body)).toBe(true);
+
+                for (const className of ["mx_ReplyChain", "mx_MessageTimestamp", "mx_MTextBody"]) {
+                    const wrapper = document.createElement("div");
+                    wrapper.className = className;
+                    const inner = document.createElement("span");
+                    wrapper.appendChild(inner);
+                    expect(isOnMediaBody(image, inner)).toBe(false);
+                }
+
+                vi.spyOn(image, "isRedacted").mockReturnValue(true);
+                expect(isOnMediaBody(image, body)).toBe(false);
+                expect(isOnMediaBody(mxEvent, body)).toBe(false); // a text message
+            });
         });
     });
 
