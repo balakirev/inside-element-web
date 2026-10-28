@@ -10,6 +10,7 @@ import { type MatrixEvent } from "matrix-js-sdk/src/matrix";
 
 import { MatrixClientPeg } from "../../../MatrixClientPeg";
 import { DefaultTagID, type TagID } from "../../room-list-v3/skip-list/tag";
+import { getMemberNameWithoutMxid } from "../../../utils/event/getSenderName";
 
 export function isSelf(event: MatrixEvent): boolean {
     const selfUserId = MatrixClientPeg.safeGet().getSafeUserId();
@@ -28,6 +29,7 @@ export function shouldPrefixMessagesIn(roomId: string, tagId?: TagID): boolean {
     return room.currentState.getJoinedMemberCount() !== 2;
 }
 
+/** The sender's name for previews; Inside: without the Matrix ID added for same-named members. */
 export function getSenderName(event: MatrixEvent): string {
-    return event.sender?.name ?? event.getSender() ?? "";
+    return (event.sender ? getMemberNameWithoutMxid(event.sender) : undefined) ?? event.getSender() ?? "";
 }

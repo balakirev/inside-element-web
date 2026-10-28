@@ -9,7 +9,7 @@ Please see LICENSE files in the repository root for full details.
 // @vitest-environment happy-dom
 
 import { describe, it, expect, beforeAll } from "vitest";
-import { RelationType } from "matrix-js-sdk/src/matrix";
+import { RelationType, RoomMember } from "matrix-js-sdk/src/matrix";
 import { mkEvent, stubClient } from "test-utils";
 
 // Import directly from the file to avoid circular dependencies with MessagePreviewStore
@@ -56,6 +56,21 @@ describe("MessageEventPreview", () => {
                 type: "m.room.message",
             });
             expect(preview.getTextFor(event)).toBe(`${userId}: test body`);
+        });
+
+        it("names a same-named sender without their Matrix ID", () => {
+            const event = mkEvent({
+                event: true,
+                content: { body: "test body" },
+                user: userId,
+                type: "m.room.message",
+            });
+            const sender = new RoomMember("!room:example.com", userId);
+            sender.rawDisplayName = "Дмитрий";
+            sender.disambiguate = true;
+            sender.name = `Дмитрий (${userId})`;
+            event.sender = sender;
+            expect(preview.getTextFor(event)).toBe("Дмитрий: test body");
         });
 
         it("when called for a replaced event with new content should return the new content body", () => {

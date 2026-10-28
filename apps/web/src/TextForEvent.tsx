@@ -10,6 +10,7 @@ import React from "react";
 import {
     type MatrixEvent,
     type MatrixClient,
+    type RoomMember,
     GuestAccess,
     HistoryVisibility,
     JoinRule,
@@ -37,15 +38,20 @@ import { RoomSettingsTab } from "./components/views/dialogs/RoomSettingsDialog-t
 import AccessibleButton from "./components/views/elements/AccessibleButton";
 import RightPanelStore from "./stores/right-panel/RightPanelStore";
 import { highlightEvent, isLocationEvent } from "./utils/EventUtils";
-import { getSenderName } from "./utils/event/getSenderName";
+import { getMemberNameWithoutMxid, getSenderName } from "./utils/event/getSenderName";
 import PosthogTrackers from "./PosthogTrackers.ts";
 import { ElementCallEventType } from "./call-types.ts";
 import Spoiler from "./components/views/elements/Spoiler.tsx";
 
+/** Inside: a member's name for event texts, without the Matrix ID added for same-named members. */
+function memberName(member: RoomMember | null | undefined): string | undefined {
+    return member ? getMemberNameWithoutMxid(member) : undefined;
+}
+
 function getRoomMemberDisplayname(client: MatrixClient, event: MatrixEvent, userId = event.getSender()): string {
     const roomId = event.getRoomId();
     const member = client.getRoom(roomId)?.getMember(userId!);
-    return member?.name || member?.rawDisplayName || userId || _t("common|someone");
+    return memberName(member) || member?.rawDisplayName || userId || _t("common|someone");
 }
 
 function textForCallEvent(event: MatrixEvent, client: MatrixClient): () => string {
@@ -132,8 +138,8 @@ function textForMemberEvent(
     showHiddenEvents?: boolean,
 ): (() => Renderable) | null {
     // XXX: SYJS-16 "sender is sometimes null for join messages"
-    const senderName = ev.sender?.name || getRoomMemberDisplayname(client, ev);
-    const targetName = ev.target?.name || getRoomMemberDisplayname(client, ev, ev.getStateKey());
+    const senderName = memberName(ev.sender) || getRoomMemberDisplayname(client, ev);
+    const targetName = memberName(ev.target) || getRoomMemberDisplayname(client, ev, ev.getStateKey());
     const prevContent = ev.getPrevContent();
     const content = ev.getContent();
     const reason = content.reason;
@@ -289,7 +295,7 @@ function textForMemberEvent(
 }
 
 function textForTopicEvent(ev: MatrixEvent): (() => string) | null {
-    const senderDisplayName = ev.sender && ev.sender.name ? ev.sender.name : ev.getSender();
+    const senderDisplayName = memberName(ev.sender) || ev.getSender();
     const topic = ContentHelpers.parseTopicContent(ev.getContent()).text;
     return () =>
         topic
@@ -303,12 +309,12 @@ function textForTopicEvent(ev: MatrixEvent): (() => string) | null {
 }
 
 function textForRoomAvatarEvent(ev: MatrixEvent): (() => string) | null {
-    const senderDisplayName = ev?.sender?.name || ev.getSender();
+    const senderDisplayName = memberName(ev?.sender) || ev.getSender();
     return () => _t("timeline|m.room.avatar|changed", { senderDisplayName });
 }
 
 function textForRoomNameEvent(ev: MatrixEvent): (() => string) | null {
-    const senderDisplayName = ev.sender && ev.sender.name ? ev.sender.name : ev.getSender();
+    const senderDisplayName = memberName(ev.sender) || ev.getSender();
 
     if (!ev.getContent().name || ev.getContent().name.trim().length === 0) {
         return () => _t("timeline|m.room.name|remove", { senderDisplayName });
@@ -329,7 +335,7 @@ function textForRoomNameEvent(ev: MatrixEvent): (() => string) | null {
 }
 
 function textForTombstoneEvent(ev: MatrixEvent): (() => string) | null {
-    const senderDisplayName = ev.sender && ev.sender.name ? ev.sender.name : ev.getSender();
+    const senderDisplayName = memberName(ev.sender) || ev.getSender();
     return () => _t("timeline|m.room.tombstone", { senderDisplayName });
 }
 
@@ -341,7 +347,7 @@ const onViewJoinRuleSettingsClick = (): void => {
 };
 
 function textForJoinRulesEvent(ev: MatrixEvent, client: MatrixClient, allowJSX: boolean): () => Renderable {
-    const senderDisplayName = ev.sender && ev.sender.name ? ev.sender.name : ev.getSender();
+    const senderDisplayName = memberName(ev.sender) || ev.getSender();
     switch (ev.getContent().join_rule) {
         case JoinRule.Public:
             return () =>
@@ -388,7 +394,7 @@ function textForJoinRulesEvent(ev: MatrixEvent, client: MatrixClient, allowJSX: 
 }
 
 function textForGuestAccessEvent(ev: MatrixEvent): (() => string) | null {
-    const senderDisplayName = ev.sender && ev.sender.name ? ev.sender.name : ev.getSender();
+    const senderDisplayName = memberName(ev.sender) || ev.getSender();
     switch (ev.getContent().guest_access) {
         case GuestAccess.CanJoin:
             return () => _t("timeline|m.room.guest_access|can_join", { senderDisplayName });
@@ -410,7 +416,7 @@ function textForMessageEvent(ev: MatrixEvent, client: MatrixClient): (() => stri
     }
 
     return () => {
-        const senderDisplayName = ev.sender && ev.sender.name ? ev.sender.name : ev.getSender();
+        const senderDisplayName = memberName(ev.sender) || ev.getSender();
         let message = ev.getContent().body;
         if (ev.isRedacted()) {
             message = textForRedactedPollAndMessageEvent(ev, client);
@@ -875,7 +881,7 @@ function textForRedactedPollAndMessageEvent(ev: MatrixEvent, client: MatrixClien
         const room = client.getRoom(ev.getRoomId());
         const sender = room?.getMember(redactedBecauseUserId);
         message = _t("timeline|redaction", {
-            name: sender?.name || redactedBecauseUserId,
+            name: memberName(sender) || redactedBecauseUserId,
         });
     }
 
@@ -888,7 +894,7 @@ function textForPollStartEvent(event: MatrixEvent, client: MatrixClient): (() =>
 
         if (event.isRedacted()) {
             message = textForRedactedPollAndMessageEvent(event, client);
-            const senderDisplayName = event.sender?.name ?? event.getSender();
+            const senderDisplayName = memberName(event.sender) ?? event.getSender();
             message = senderDisplayName + ": " + message;
         } else {
             message = _t("timeline|m.poll.start", {

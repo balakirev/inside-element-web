@@ -15,6 +15,7 @@ import { type MouseEvent } from "react";
 
 import { _t } from "../../../../languageHandler";
 import { getUserNameColorClass } from "../../../../utils/FormattingUtils";
+import { needsMxidForSafety } from "../../../../utils/event/getSenderName";
 
 /**
  * Information about a member for disambiguation purposes.
@@ -101,8 +102,10 @@ export class DisambiguatedProfileViewModel
         let title: string | undefined;
 
         if (mxid) {
-            // Only show identifier if disambiguation is needed
-            if (member?.disambiguate) {
+            // Only show identifier if disambiguation is needed. Inside: not for members who merely share
+            // a display name (the tooltip still shows the Matrix ID), only for names that look like a
+            // Matrix ID or contain direction marks.
+            if (member?.disambiguate && needsMxidForSafety(member.rawDisplayName)) {
                 displayIdentifier = mxid;
             }
 
