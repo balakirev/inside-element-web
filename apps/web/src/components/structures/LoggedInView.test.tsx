@@ -38,6 +38,7 @@ import {
 } from "test-utils";
 
 import LoggedInView from "./LoggedInView";
+import { RoomView } from "./RoomView";
 import { SDKContext } from "../../contexts/SDKContext";
 import { StandardActions } from "../../notifications/StandardActions";
 import ResizeNotifier from "../../utils/ResizeNotifier";
@@ -566,5 +567,27 @@ describe("<LoggedInView />", () => {
         vi.spyOn(mockSdkContext.rightPanelStore, "togglePanel");
         fireEvent.keyDown(document.body, { key: ".", code: "Period", ctrlKey: true, keyCode: 190 });
         expect(mockSdkContext.rightPanelStore.togglePanel).toHaveBeenCalledWith(null);
+    });
+
+    describe("Escape with nothing focused (Inside)", () => {
+        it("asks the room view to close the right panel", () => {
+            getComponent({ page_type: "room_view" });
+            const dialogSpy = vi.spyOn(Modal, "hasDialogs").mockReturnValue(false);
+            const spy = vi.spyOn(RoomView.prototype, "closeRightPanelOnEscape").mockReturnValue(true);
+            fireEvent.keyDown(document.body, { key: "Escape" });
+            expect(spy).toHaveBeenCalled();
+            spy.mockRestore();
+            dialogSpy.mockRestore();
+        });
+
+        it("does nothing while a dialog is open", () => {
+            getComponent({ page_type: "room_view" });
+            const dialogSpy = vi.spyOn(Modal, "hasDialogs").mockReturnValue(true);
+            const spy = vi.spyOn(RoomView.prototype, "closeRightPanelOnEscape").mockReturnValue(true);
+            fireEvent.keyDown(document.body, { key: "Escape" });
+            expect(spy).not.toHaveBeenCalled();
+            spy.mockRestore();
+            dialogSpy.mockRestore();
+        });
     });
 });

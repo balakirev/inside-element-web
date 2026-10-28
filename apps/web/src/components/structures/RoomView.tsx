@@ -1151,12 +1151,41 @@ export class RoomView extends React.Component<IRoomProps, IRoomState> {
         }
     };
 
+    /**
+     * Inside: Escape closes the right panel (thread, room or user info, ...), as in Telegram.
+     * Whatever handles Escape on its own (dialogs, context menus, autocomplete, cancelling a reply
+     * or an edit in a composer) stops the event before it gets here. Escape in a text field that
+     * still has text, or while the room search is on, is left to the field and to the search.
+     * @returns whether the panel was closed.
+     */
+    public closeRightPanelOnEscape(ev: React.KeyboardEvent | KeyboardEvent): boolean {
+        const roomId = this.state.roomId;
+        if (!roomId || ev.defaultPrevented || this.state.search) return false;
+        if (!this.context.rightPanelStore.isOpenForRoom(roomId)) return false;
+        const target = ev.target;
+        if ((target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) && target.value) return false;
+
+        const focusWasInPanel = target instanceof Element && !!target.closest(".mx_RightPanel");
+        this.context.rightPanelStore.hide(roomId);
+        if (focusWasInPanel) {
+            defaultDispatcher.dispatch<FocusComposerPayload>({
+                action: Action.FocusAComposer,
+                context: TimelineRenderingType.Room,
+            });
+        }
+        return true;
+    }
+
     private onReactKeyDown = (ev: React.KeyboardEvent): void => {
         let handled = false;
 
         const action = getKeyBindingsManager().getRoomAction(ev);
         switch (action) {
             case KeyBindingAction.DismissReadMarker:
+                if (this.closeRightPanelOnEscape(ev)) {
+                    handled = true;
+                    break;
+                }
                 void this.messagePanel?.forgetReadMarker();
                 this.jumpToLiveTimeline();
                 handled = true;

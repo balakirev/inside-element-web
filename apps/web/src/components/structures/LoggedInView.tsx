@@ -444,6 +444,18 @@ class LoggedInView extends React.Component<IProps, IState> {
                 dis.fire(Action.FocusMessageSearch);
                 handled = true;
                 break;
+            case KeyBindingAction.DismissReadMarker:
+                // Inside: Escape with nothing focused closes the right panel too; with focus
+                // in the room view, the room view handles it.
+                if (
+                    ev.target === document.body &&
+                    this.props.page_type === PageTypes.RoomView &&
+                    !Modal.hasDialogs() &&
+                    this._roomView.current?.closeRightPanelOnEscape(ev)
+                ) {
+                    handled = true;
+                }
+                break;
         }
         if (handled) {
             ev.stopPropagation();

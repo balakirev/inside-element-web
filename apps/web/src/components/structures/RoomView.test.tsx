@@ -1296,6 +1296,119 @@ describe("RoomView", () => {
         expect(stores.rightPanelStore.showOrHidePhase).toHaveBeenCalledWith("MemberList");
     });
 
+    describe("Escape closes the right panel (Inside)", () => {
+        const openRightPanel = (): void => {
+            act(() => {
+                stores.rightPanelStore.setCard({ phase: RightPanelPhases.RoomSummary }, true, room.roomId);
+                stores.rightPanelStore.show(room.roomId);
+            });
+            expect(stores.rightPanelStore.isOpenForRoom(room.roomId)).toBe(true);
+        };
+
+        beforeEach(() => {
+            vi.spyOn(room, "getMyMembership").mockReturnValue(KnownMembership.Join);
+        });
+
+        it("closes the open right panel and does not jump to the live timeline", async () => {
+            const ref = createRef<RoomView>();
+            const { container } = await mountRoomView(ref);
+            openRightPanel();
+            const jumpSpy = vi.spyOn(ref.current!["messagePanel"]!, "jumpToLiveTimeline");
+
+            fireEvent.keyDown(container.querySelector(".mx_RoomView")!, { key: "Escape" });
+
+            expect(stores.rightPanelStore.isOpenForRoom(room.roomId)).toBe(false);
+            expect(jumpSpy).not.toHaveBeenCalled();
+        });
+
+        it("moves focus back to the composer when it was in the panel", async () => {
+            const { container } = await mountRoomView();
+            openRightPanel();
+            const dispatchSpy = vi.spyOn(defaultDispatcher, "dispatch");
+
+            fireEvent.keyDown(container.querySelector(".mx_RightPanel")!, { key: "Escape" });
+
+            expect(stores.rightPanelStore.isOpenForRoom(room.roomId)).toBe(false);
+            expect(dispatchSpy).toHaveBeenCalledWith({
+                action: Action.FocusAComposer,
+                context: TimelineRenderingType.Room,
+            });
+        });
+
+        it("keeps the existing Escape behaviour when the panel is closed", async () => {
+            const ref = createRef<RoomView>();
+            const { container } = await mountRoomView(ref);
+            const jumpSpy = vi.spyOn(ref.current!["messagePanel"]!, "jumpToLiveTimeline");
+
+            fireEvent.keyDown(container.querySelector(".mx_RoomView")!, { key: "Escape" });
+
+            expect(jumpSpy).toHaveBeenCalled();
+            expect(stores.rightPanelStore.isOpenForRoom(room.roomId)).toBe(false);
+        });
+
+        it("cancels an active reply first and keeps the panel open", async () => {
+            const { container } = await mountRoomView();
+            const replyEvent = new MatrixEvent({
+                type: "m.room.message",
+                event_id: "$reply",
+                room_id: room.roomId,
+                sender: "@bob:example.org",
+                content: { msgtype: "m.text", body: "hello" },
+            });
+            act(() =>
+                defaultDispatcher.dispatch(
+                    { action: "reply_to_event", event: replyEvent, context: TimelineRenderingType.Room },
+                    true,
+                ),
+            );
+            await flushPromises();
+            expect(stores.roomViewStore.getQuotingEvent()).toBe(replyEvent);
+            openRightPanel();
+
+            const composer = container.querySelector(".mx_SendMessageComposer .mx_BasicMessageComposer_input")!;
+            fireEvent.keyDown(composer, { key: "Escape" });
+            await flushPromises();
+
+            expect(stores.roomViewStore.getQuotingEvent()).toBeFalsy();
+            expect(stores.rightPanelStore.isOpenForRoom(room.roomId)).toBe(true);
+
+            // The next Escape closes the panel
+            fireEvent.keyDown(composer, { key: "Escape" });
+            expect(stores.rightPanelStore.isOpenForRoom(room.roomId)).toBe(false);
+        });
+
+        it("leaves the panel open when Escape goes to a dialog", async () => {
+            await mountRoomView();
+            openRightPanel();
+
+            // Other tests here replace createDialog with a spy
+            vi.spyOn(Modal, "createDialog").mockRestore();
+            act(() => {
+                Modal.createDialog(ErrorDialog, { title: "Dialog", description: "Text" });
+            });
+            await flushPromises();
+            const dialog = await screen.findByRole("dialog");
+            fireEvent.keyDown(dialog, { key: "Escape" });
+            await flushPromises();
+
+            expect(stores.rightPanelStore.isOpenForRoom(room.roomId)).toBe(true);
+            act(() => Modal.forceCloseAllModals());
+        });
+
+        it("leaves Escape to a text field that still has text", async () => {
+            const { container } = await mountRoomView();
+            openRightPanel();
+            const input = document.createElement("input");
+            input.value = "page 4";
+            container.querySelector(".mx_RightPanel")!.appendChild(input);
+
+            fireEvent.keyDown(input, { key: "Escape" });
+
+            expect(stores.rightPanelStore.isOpenForRoom(room.roomId)).toBe(true);
+            input.remove();
+        });
+    });
+
     describe("when there is a RoomView", () => {
         const widget1Id = "widget1";
         const widget2Id = "widget2";
