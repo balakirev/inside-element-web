@@ -1757,6 +1757,8 @@
         "welcome_user": "Welcome %(name)s"
     },
     "pdf_viewer": {
+        "inside_error": "Unable to show this PDF",
+        "inside_page_of": "Page %(page)s of %(total)s",
         "open": "Open PDF",
         "title": "PDF"
     },

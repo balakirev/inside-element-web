@@ -153,7 +153,8 @@ describe("RightPanel", () => {
         expect(screen.getByRole("heading", { name: "r2" })).toBeInTheDocument();
     });
 
-    it("renders the document viewer card, named after the file, for a PDF", async () => {
+    // Inside: a PDF opens in the Quick Look window, so the right panel never shows a card for one.
+    it("does not show the document viewer card for a PDF", async () => {
         const room = mkRoom(cli, "r1");
         cli.getRoom.mockImplementation((roomId) => (roomId === "r1" ? room : null));
 
@@ -193,9 +194,8 @@ describe("RightPanel", () => {
             "r1",
         );
 
-        // The viewer itself is code split, so the card header is what proves the phase was wired up
-        // to DocumentViewerCard with the right event.
-        await waitFor(() => expect(screen.getByRole("heading", { name: "spec.pdf" })).toBeInTheDocument());
+        expect(RightPanelStore.instance.currentCardForRoom("r1").phase).not.toEqual(RightPanelPhases.DocumentViewer);
+        expect(screen.queryByRole("heading", { name: "spec.pdf" })).not.toBeInTheDocument();
     });
 
     it("renders the document viewer card, named after the file, for a Markdown file", async () => {

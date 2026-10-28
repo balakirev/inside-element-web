@@ -32,10 +32,10 @@ const PDF_HEADER = [0x25, 0x50, 0x44, 0x46, 0x2d];
 const PDF_HEADER_SEARCH_LIMIT = 1024;
 
 /** The whole file is held in memory while open. */
-const MAX_PDF_BYTES = 256 * 1024 * 1024;
+export const MAX_PDF_BYTES = 256 * 1024 * 1024;
 
 /** Whether the bytes carry a PDF signature. Not a security control; it just fails non-PDFs cleanly. */
-function hasPdfHeader(data: Uint8Array): boolean {
+export function hasPdfHeader(data: Uint8Array): boolean {
     const lastStart = Math.min(data.length - PDF_HEADER.length, PDF_HEADER_SEARCH_LIMIT);
 
     for (let start = 0; start <= lastStart; start++) {

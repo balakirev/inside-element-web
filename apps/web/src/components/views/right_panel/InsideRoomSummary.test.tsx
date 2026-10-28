@@ -23,6 +23,7 @@ import { PlatformCallType, useRoomCall } from "../../../hooks/room/useRoomCall";
 import { useNotificationState } from "../../../hooks/useRoomNotificationState";
 import { RoomNotifState } from "../../../RoomNotifs";
 import Modal from "../../../Modal";
+import * as documentViewer from "../../../utils/documentViewer";
 import ImageView from "../elements/ImageView";
 import DMRoomMap from "../../../utils/DMRoomMap";
 import { ScopedRoomContextProvider } from "../../../contexts/ScopedRoomContext";
@@ -271,6 +272,28 @@ describe("Inside room summary", () => {
             expect(dispatch).toHaveBeenCalledWith(
                 expect.objectContaining({ action: Action.ViewRoom, event_id: linkEv.getId() }),
             );
+        });
+
+        it("opens a PDF from the Files tab in the Quick Look window, not in the timeline or the panel", async () => {
+            const pdfEv = mkMsg(
+                {
+                    msgtype: MsgType.File,
+                    body: "spec.pdf",
+                    url: "mxc://example.org/spec",
+                    info: { mimetype: "application/pdf", size: 2048 },
+                },
+                40,
+            );
+            await room.addLiveEvents([pdfEv], { addToState: false });
+            const open = vi.spyOn(documentViewer, "openDocumentViewer").mockImplementation(() => {});
+            const dispatch = vi.spyOn(defaultDispatcher, "dispatch");
+            renderWithClient(<InsideRoomMedia room={room} />);
+
+            await userEvent.click(screen.getByRole("tab", { name: "Files" }));
+            await userEvent.click(await screen.findByText("spec.pdf"));
+
+            expect(open).toHaveBeenCalledWith(pdfEv);
+            expect(dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ action: Action.ViewRoom }));
         });
 
         it("loads older events when the end of the list scrolls into view", async () => {

@@ -87,12 +87,19 @@ export function documentMediaForEvent(mxEvent: MatrixEvent, helper?: MediaEventH
 
 /**
  * Open the given event's attachment in the right panel of the room it belongs to. The card picks the
- * viewer with {@link documentViewerForEvent}.
+ * viewer with {@link documentViewerForEvent}. Inside: a PDF opens in the Quick Look window instead.
  *
  * Dispatched rather than calling RightPanelStore directly: this module is reached from the message
  * body view models, and the store leads back round to the message bodies via SDKContextClass.
  */
-export function openDocumentViewer(mxEvent: MatrixEvent): void {
+export function openDocumentViewer(mxEvent: MatrixEvent, helper?: MediaEventHelper): void {
+    // Inside: a PDF opens in the Quick Look window over the app, never in the right panel.
+    if (isPdfEvent(mxEvent)) {
+        void import("../components/views/elements/InsideQuickLook").then(({ openInsideQuickLook }) =>
+            openInsideQuickLook(mxEvent, helper),
+        );
+        return;
+    }
     defaultDispatcher.dispatch<OpenDocumentViewerPayload>({
         action: Action.OpenDocumentViewer,
         event: mxEvent,

@@ -35,6 +35,11 @@ export const PDF_NAMED_SCALES: ReadonlySet<string> = new Set([
 /** Which way a zoom step goes. */
 export type PdfZoomDirection = "in" | "out";
 
+/** Inside: a keyboard scroll step through the pages: a line, a screen, or to either end. */
+export type PdfScrollStep = "line_up" | "line_down" | "page_up" | "page_down" | "start" | "end";
+
+const PDF_SCROLL_STEPS: ReadonlySet<string> = new Set(["line_up", "line_down", "page_up", "page_down", "start", "end"]);
+
 /**
  * Messages the app sends to the iframe: the document (transferred) and where to open it, a page to go
  * to, or a zoom step.
@@ -43,6 +48,8 @@ export type PdfHostMessage =
     | { type: "load"; data: ArrayBuffer; position?: PdfPosition }
     | { type: "go_to_page"; page: number }
     | { type: "zoom"; direction: PdfZoomDirection }
+    /** Inside: scroll the pages, for the keys the app gets while the frame does not have the focus. */
+    | { type: "scroll"; step: PdfScrollStep }
     /** Inside: render the first page of the document (transferred) to an image at most `maxSide` px long. */
     | { type: "thumbnail"; data: ArrayBuffer; maxSide: number };
 
@@ -57,6 +64,8 @@ export type PdfUsercontentMessage =
     /** The zoom level changed. `scale` is a percentage. */
     | { type: "scale"; scale: number }
     | { type: "position"; position: PdfPosition }
+    /** Inside: Escape was pressed inside the frame; the app closes the viewer if it is a modal one. */
+    | { type: "dismiss" }
     /** Inside: the first page as an image, in answer to `thumbnail`. */
     | { type: "thumbnail"; image: ArrayBuffer; mimetype: string; width: number; height: number }
     /** For the log, not the reader. */
@@ -109,6 +118,9 @@ export function parsePdfHostMessage(data: unknown): PdfHostMessage | undefined {
         case "zoom":
             if (data.direction !== "in" && data.direction !== "out") return;
             return { type: "zoom", direction: data.direction };
+        case "scroll":
+            if (typeof data.step !== "string" || !PDF_SCROLL_STEPS.has(data.step)) return;
+            return { type: "scroll", step: data.step as PdfScrollStep };
         case "thumbnail":
             if (!(data.data instanceof ArrayBuffer)) return;
             if (!isPositiveInteger(data.maxSide) || data.maxSide > MAX_THUMBNAIL_SIDE) return;
@@ -150,8 +162,46 @@ export function parsePdfUsercontentMessage(data: unknown): PdfUsercontentMessage
                 width: data.width,
                 height: data.height,
             };
+        case "dismiss":
+            return { type: "dismiss" };
         case "error":
             if (typeof data.message !== "string") return;
             return { type: "error", message: data.message.slice(0, MAX_ERROR_MESSAGE_LENGTH) };
+    }
+}
+
+/** Inside: what a key press does in the PDF viewer, on either side of the frame. */
+export type PdfKeyAction =
+    | { type: "scroll"; step: PdfScrollStep }
+    | { type: "zoom"; direction: PdfZoomDirection }
+    | { type: "dismiss" };
+
+/** Inside: the keys of the pages as in macOS Quick Look: arrows, Page Up/Down, Space, Home/End, ⌘/Ctrl +/−, Escape. */
+export function pdfKeyAction(
+    event: Pick<KeyboardEvent, "key" | "ctrlKey" | "metaKey" | "shiftKey" | "altKey">,
+): PdfKeyAction | undefined {
+    if (event.altKey) return;
+    if (event.ctrlKey || event.metaKey) {
+        if (event.key === "+" || event.key === "=") return { type: "zoom", direction: "in" };
+        if (event.key === "-" || event.key === "_") return { type: "zoom", direction: "out" };
+        return;
+    }
+    switch (event.key) {
+        case "Escape":
+            return { type: "dismiss" };
+        case "ArrowUp":
+            return { type: "scroll", step: "line_up" };
+        case "ArrowDown":
+            return { type: "scroll", step: "line_down" };
+        case "PageUp":
+            return { type: "scroll", step: "page_up" };
+        case "PageDown":
+            return { type: "scroll", step: "page_down" };
+        case " ":
+            return { type: "scroll", step: event.shiftKey ? "page_up" : "page_down" };
+        case "Home":
+            return { type: "scroll", step: "start" };
+        case "End":
+            return { type: "scroll", step: "end" };
     }
 }

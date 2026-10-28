@@ -171,6 +171,8 @@ interface FakeIframe {
     posted(): PdfUsercontentMessage[];
     /** Unload the page, as closing the iframe does. */
     hide(): void;
+    /** Inside: press a key with the focus in the frame. */
+    keydown(init: KeyboardEventInit): KeyboardEvent;
 }
 
 function fakeIframe({ embedded = true }: { embedded?: boolean } = {}): FakeIframe {
@@ -178,12 +180,12 @@ function fakeIframe({ embedded = true }: { embedded?: boolean } = {}): FakeIfram
     document.body.innerHTML = `<div id="container"><div id="viewer" class="pdfViewer"></div></div>`;
 
     const parent = { postMessage: vi.fn() };
-    const windowListeners = new Map<string, () => void>();
+    const windowListeners = new Map<string, (event?: Event) => void>();
     const win = {
         document,
         location: { origin: ORIGIN },
         parent: undefined as unknown,
-        addEventListener: (type: string, listener: () => void) => windowListeners.set(type, listener),
+        addEventListener: (type: string, listener: (event?: Event) => void) => windowListeners.set(type, listener),
     };
     win.parent = embedded ? parent : win;
 
@@ -200,6 +202,11 @@ function fakeIframe({ embedded = true }: { embedded?: boolean } = {}): FakeIfram
         receive: (data) => channel().port1.onmessage?.({ data } as MessageEvent),
         posted: () => channel().port1.postMessage.mock.calls.map(([message]) => message as PdfUsercontentMessage),
         hide: () => windowListeners.get("pagehide")?.(),
+        keydown: (init) => {
+            const event = new KeyboardEvent("keydown", { cancelable: true, ...init });
+            windowListeners.get("keydown")?.(event);
+            return event;
+        },
     };
 }
 
@@ -636,6 +643,37 @@ describe("PDF usercontent", () => {
 
             iframe.receive({ type: "go_to_page", page: 500 });
             expect(activeViewer().currentPageNumber).toBe(42);
+        });
+    });
+
+    describe("Inside: keys in the frame", () => {
+        it("scrolls and zooms the pages, and hands Escape to the app", async () => {
+            const iframe = fakeIframe();
+            await openDocument(iframe);
+            const container = document.getElementById("container")!;
+            const scrollBy = vi.fn();
+            container.scrollBy = scrollBy as unknown as typeof container.scrollBy;
+
+            expect(iframe.keydown({ key: "ArrowDown" }).defaultPrevented).toBe(true);
+            expect(scrollBy).toHaveBeenCalledWith({ top: 48 });
+            iframe.keydown({ key: "=", metaKey: true });
+            expect(activeViewer().increaseScale).toHaveBeenCalled();
+            expect(iframe.keydown({ key: "a" }).defaultPrevented).toBe(false);
+
+            iframe.keydown({ key: "Escape" });
+            expect(iframe.posted()).toContainEqual({ type: "dismiss" });
+        });
+
+        it("scrolls when the app asks", async () => {
+            const iframe = fakeIframe();
+            await openDocument(iframe);
+            const container = document.getElementById("container")!;
+            const scrollTo = vi.fn();
+            container.scrollTo = scrollTo as unknown as typeof container.scrollTo;
+
+            iframe.receive({ type: "scroll", step: "start" });
+
+            expect(scrollTo).toHaveBeenCalledWith({ top: 0 });
         });
     });
 

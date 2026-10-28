@@ -7,7 +7,13 @@ Please see LICENSE files in the repository root for full details.
 
 import { describe, expect, it } from "vitest";
 
-import { isPdfPosition, MAX_ERROR_MESSAGE_LENGTH, parsePdfHostMessage, parsePdfUsercontentMessage } from "./protocol";
+import {
+    isPdfPosition,
+    MAX_ERROR_MESSAGE_LENGTH,
+    parsePdfHostMessage,
+    parsePdfUsercontentMessage,
+    pdfKeyAction,
+} from "./protocol";
 
 const position = { page: 3, scale: 150, left: 10, top: 20 };
 
@@ -159,4 +165,39 @@ describe("parsePdfUsercontentMessage", () => {
             expect(parsePdfUsercontentMessage(value)).toBeUndefined();
         },
     );
+});
+
+describe("Inside: Quick Look keys and messages", () => {
+    const key = (key: string, mods: Partial<Record<"ctrlKey" | "metaKey" | "shiftKey" | "altKey", boolean>> = {}) => ({
+        key,
+        ctrlKey: false,
+        metaKey: false,
+        shiftKey: false,
+        altKey: false,
+        ...mods,
+    });
+
+    it("maps the Quick Look keys", () => {
+        expect(pdfKeyAction(key("Escape"))).toEqual({ type: "dismiss" });
+        expect(pdfKeyAction(key("ArrowDown"))).toEqual({ type: "scroll", step: "line_down" });
+        expect(pdfKeyAction(key("ArrowUp"))).toEqual({ type: "scroll", step: "line_up" });
+        expect(pdfKeyAction(key("PageDown"))).toEqual({ type: "scroll", step: "page_down" });
+        expect(pdfKeyAction(key("PageUp"))).toEqual({ type: "scroll", step: "page_up" });
+        expect(pdfKeyAction(key(" "))).toEqual({ type: "scroll", step: "page_down" });
+        expect(pdfKeyAction(key(" ", { shiftKey: true }))).toEqual({ type: "scroll", step: "page_up" });
+        expect(pdfKeyAction(key("=", { metaKey: true }))).toEqual({ type: "zoom", direction: "in" });
+        expect(pdfKeyAction(key("-", { ctrlKey: true }))).toEqual({ type: "zoom", direction: "out" });
+        expect(pdfKeyAction(key("a"))).toBeUndefined();
+        expect(pdfKeyAction(key("c", { metaKey: true }))).toBeUndefined();
+        expect(pdfKeyAction(key("ArrowDown", { altKey: true }))).toBeUndefined();
+    });
+
+    it("parses scroll and dismiss messages", () => {
+        expect(parsePdfHostMessage({ type: "scroll", step: "page_down" })).toEqual({
+            type: "scroll",
+            step: "page_down",
+        });
+        expect(parsePdfHostMessage({ type: "scroll", step: "sideways" })).toBeUndefined();
+        expect(parsePdfUsercontentMessage({ type: "dismiss" })).toEqual({ type: "dismiss" });
+    });
 });

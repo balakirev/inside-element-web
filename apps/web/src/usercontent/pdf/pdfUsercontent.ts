@@ -18,7 +18,14 @@ import {
 import { EventBus, PDFViewer } from "pdfjs-dist/web/pdf_viewer.mjs";
 
 import { ElementPdfLinkService } from "./linkService";
-import { type PdfPosition, type PdfUsercontentMessage, type PdfZoomDirection, parsePdfHostMessage } from "./protocol";
+import {
+    type PdfPosition,
+    type PdfScrollStep,
+    type PdfUsercontentMessage,
+    type PdfZoomDirection,
+    parsePdfHostMessage,
+    pdfKeyAction,
+} from "./protocol";
 
 /**
  * Runs pdf.js inside the usercontent iframe. The app sends the document over postMessage and gets page
@@ -40,6 +47,9 @@ const ZOOM_DRAWING_DELAY = 400;
 /** Pixels per wheel unit for each `WheelEvent.deltaMode`: pixel, line, page. */
 const WHEEL_DELTA_SCALES = [1, 32, 400];
 const WHEEL_ZOOM_SENSITIVITY = 0.0022;
+/** Inside: pixels an arrow key scrolls, and the part of the view a page step keeps in sight. */
+const SCROLL_LINE_PX = 48;
+const SCROLL_PAGE_OVERLAP = 0.1;
 const MAX_WHEEL_ZOOM_FACTOR = 1.5;
 
 /** Posted by the worker bootstrap once pdf.js's worker module has loaded. */
@@ -156,6 +166,8 @@ interface PdfSession {
     goToPage(page: number): void;
     /** Step the zoom one notch in or out. */
     zoom(direction: PdfZoomDirection): void;
+    /** Inside: scroll the pages by a keyboard step. */
+    scroll(step: PdfScrollStep): void;
     /** Stop the worker and remove the listeners. */
     dispose(): void;
 }
@@ -337,6 +349,9 @@ function openDocument({ container, viewer, workerSource, post, data, position }:
                 pdfViewer.decreaseScale({ drawingDelay: ZOOM_DRAWING_DELAY });
             }
         },
+        scroll(step: PdfScrollStep): void {
+            scrollContainer(container, step);
+        },
         dispose(): void {
             listeners.abort();
             resizeObserver?.disconnect();
@@ -348,6 +363,31 @@ function openDocument({ container, viewer, workerSource, post, data, position }:
             worker.terminate();
         },
     };
+}
+
+/** Inside: scroll the pages by a keyboard step, as the browser would if the container had the focus. */
+export function scrollContainer(container: HTMLElement, step: PdfScrollStep): void {
+    const page = Math.max(SCROLL_LINE_PX, container.clientHeight * (1 - SCROLL_PAGE_OVERLAP));
+    switch (step) {
+        case "line_up":
+            container.scrollBy({ top: -SCROLL_LINE_PX });
+            break;
+        case "line_down":
+            container.scrollBy({ top: SCROLL_LINE_PX });
+            break;
+        case "page_up":
+            container.scrollBy({ top: -page });
+            break;
+        case "page_down":
+            container.scrollBy({ top: page });
+            break;
+        case "start":
+            container.scrollTo({ top: 0 });
+            break;
+        case "end":
+            container.scrollTo({ top: container.scrollHeight });
+            break;
+    }
 }
 
 interface RenderThumbnailOptions {
@@ -468,6 +508,9 @@ export function startPdfUsercontent({ workerSource, win = window }: PdfUserconte
             case "zoom":
                 session?.zoom(message.direction);
                 break;
+            case "scroll":
+                session?.scroll(message.step);
+                break;
             case "thumbnail":
                 // Inside: one thumbnail per iframe, and not in a viewer.
                 if (session || thumbnailStarted) return;
@@ -488,6 +531,23 @@ export function startPdfUsercontent({ workerSource, win = window }: PdfUserconte
                 break;
         }
     };
+
+    // Inside: with the focus in the frame the app gets no keys. Scroll and zoom here (zoom keys would
+    // otherwise zoom the whole app), and hand Escape over so a modal viewer can close.
+    win.addEventListener("keydown", (event: KeyboardEvent) => {
+        if (event.defaultPrevented) return;
+        const action = pdfKeyAction(event);
+        if (!action) return;
+        if (action.type === "dismiss") {
+            event.preventDefault();
+            post({ type: "dismiss" });
+            return;
+        }
+        if (!session) return;
+        event.preventDefault();
+        if (action.type === "zoom") session.zoom(action.direction);
+        else session.scroll(action.step);
+    });
 
     // The app tears the iframe down when it is done; release everything as the page goes.
     win.addEventListener("pagehide", () => {

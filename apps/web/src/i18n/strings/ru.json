@@ -1731,6 +1731,8 @@
         "welcome_user": "Добро пожаловать, %(name)s"
     },
     "pdf_viewer": {
+        "inside_error": "Не удалось показать PDF",
+        "inside_page_of": "стр. %(page)s из %(total)s",
         "open": "Открыть PDF-файл",
         "title": "Формат PDF"
     },

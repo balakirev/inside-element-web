@@ -105,8 +105,8 @@ interface IProps {
 /**
  * Inside: a file in the chat as Telegram shows documents: a rounded picture on the left (the first page
  * of a PDF, or a document icon with the type), the name and "8.6 MB · PDF" on the right. The whole tile
- * opens the file in the document viewer if there is one for it, or downloads it; the button on the
- * right always downloads.
+ * opens the file in the document viewer if there is one for it (a PDF in the Quick Look window), or
+ * downloads it; the button on the right always downloads. Click, Enter and Space open it.
  */
 export default function InsideDocumentTile({ mxEvent, mediaEventHelper }: IProps): JSX.Element {
     const content = mxEvent.getContent<MediaEventContent>();
@@ -133,11 +133,11 @@ export default function InsideDocumentTile({ mxEvent, mediaEventHelper }: IProps
 
     const onOpen = useCallback((): void => {
         if (viewer) {
-            openDocumentViewer(mxEvent);
+            openDocumentViewer(mxEvent, mediaEventHelper);
         } else {
             void download();
         }
-    }, [viewer, mxEvent, download]);
+    }, [viewer, mxEvent, mediaEventHelper, download]);
 
     const onDownload = useCallback((): void => {
         void download();

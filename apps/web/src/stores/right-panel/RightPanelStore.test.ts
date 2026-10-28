@@ -9,7 +9,7 @@ Please see LICENSE files in the repository root for full details.
 // @vitest-environment happy-dom
 
 import { vi, describe, it, expect, afterEach, beforeEach, type MockedObject } from "vitest";
-import { type MatrixClient, type MatrixEvent, RoomMember } from "matrix-js-sdk/src/matrix";
+import { EventType, type MatrixClient, MatrixEvent, MsgType, RoomMember } from "matrix-js-sdk/src/matrix";
 import { stubClient } from "test-utils";
 
 import { MatrixClientPeg } from "../../MatrixClientPeg";
@@ -22,6 +22,7 @@ import { RightPanelPhases } from "./RightPanelStorePhases";
 import SettingsStore from "../../settings/SettingsStore";
 import { SettingLevel } from "../../settings/SettingLevel";
 import { pendingVerificationRequestForUser } from "../../verification.ts";
+import * as documentViewer from "../../utils/documentViewer";
 
 vi.mock("../../verification");
 
@@ -177,6 +178,37 @@ describe("RightPanelStore", () => {
                 expect(store.currentCardForRoom("!1:example.org").phase).toEqual(RightPanelPhases.DocumentViewer);
                 expect(store.currentCardForRoom("!1:example.org").state?.documentViewerEvent).toBe(event);
                 expect(store.isOpenForRoom("!1:example.org")).toEqual(true);
+            });
+
+            it("opens a PDF in the Quick Look window instead of the card (Inside)", async () => {
+                await setDocumentPreviewsLab(true);
+                await viewRoom("!1:example.org");
+                const openDocumentViewer = vi.spyOn(documentViewer, "openDocumentViewer").mockImplementation(() => {});
+                const event = new MatrixEvent({
+                    type: EventType.RoomMessage,
+                    room_id: "!1:example.org",
+                    event_id: "$pdf",
+                    content: {
+                        msgtype: MsgType.File,
+                        body: "spec.pdf",
+                        url: "mxc://example.org/spec",
+                        info: { mimetype: "application/pdf" },
+                    },
+                });
+
+                defaultDispatcher.dispatch({ action: Action.OpenDocumentViewer, event }, true);
+
+                expect(openDocumentViewer).toHaveBeenCalledWith(event);
+                expect(store.currentCardForRoom("!1:example.org").phase).not.toEqual(RightPanelPhases.DocumentViewer);
+                expect(store.isOpenForRoom("!1:example.org")).toEqual(false);
+
+                // Nor is a PDF card kept when set directly.
+                store.setCard(
+                    { phase: RightPanelPhases.DocumentViewer, state: { documentViewerEvent: event } },
+                    true,
+                    "!1:example.org",
+                );
+                expect(store.currentCardForRoom("!1:example.org").phase).not.toEqual(RightPanelPhases.DocumentViewer);
             });
 
             it("keeps a card with an event to display", async () => {

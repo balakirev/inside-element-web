@@ -1,0 +1,218 @@
+/*
+Copyright 2026 Inside Estate.
+
+SPDX-License-Identifier: AGPL-3.0-only OR GPL-3.0-only OR LicenseRef-Element-Commercial
+Please see LICENSE files in the repository root for full details.
+*/
+
+/* Inside: a PDF in a window over the app, as macOS Quick Look (InsideQuickLook.tsx). */
+
+/* The Modal draws the dialog as a lightbox; the window brings its own scrim. */
+.mx_Dialog_insideQuickLook .mx_Dialog_background {
+    display: none;
+}
+
+.mx_InsideQuickLook {
+    --InsideQuickLook-duration: 160ms;
+
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: auto;
+}
+
+.mx_InsideQuickLook_backdrop {
+    position: absolute;
+    inset: 0;
+    background-color: rgb(0 0 0 / 0.45);
+    backdrop-filter: blur(4px);
+    animation: mx_InsideQuickLook_fade var(--InsideQuickLook-duration) ease-out both;
+}
+
+.mx_InsideQuickLook_window {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: min(1000px, 92vw);
+    height: min(92vh, 1400px);
+    overflow: hidden;
+    border-radius: 18px;
+    background-color: var(--cpd-color-bg-canvas-default);
+    color: var(--cpd-color-text-primary);
+    box-shadow: 0 24px 80px rgb(0 0 0 / 0.35);
+    animation: mx_InsideQuickLook_zoom var(--InsideQuickLook-duration) cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.mx_InsideQuickLook_closing {
+    pointer-events: none;
+
+    .mx_InsideQuickLook_backdrop {
+        animation-name: mx_InsideQuickLook_fadeOut;
+        animation-timing-function: ease-in;
+    }
+
+    .mx_InsideQuickLook_window {
+        animation-name: mx_InsideQuickLook_zoomOut;
+        animation-timing-function: ease-in;
+    }
+}
+
+.mx_InsideQuickLook_header {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: var(--cpd-space-2x);
+    height: 52px;
+    padding: 0 var(--cpd-space-2x) 0 var(--cpd-space-5x);
+    box-sizing: border-box;
+    border-bottom: 1px solid var(--cpd-color-border-interactive-secondary);
+}
+
+.mx_InsideQuickLook_heading {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.mx_InsideQuickLook_title {
+    overflow: hidden;
+    font: var(--cpd-font-body-md-semibold);
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.mx_InsideQuickLook_meta {
+    overflow: hidden;
+    color: var(--cpd-color-text-secondary);
+    font: var(--cpd-font-body-xs-regular);
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.mx_InsideQuickLook_zoom {
+    display: flex;
+    flex: none;
+    gap: var(--cpd-space-1x);
+}
+
+.mx_InsideQuickLook_iconButton,
+.mx_InsideQuickLook_close {
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    color: var(--cpd-color-icon-secondary);
+
+    svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    &:hover {
+        background-color: var(--cpd-color-bg-subtle-secondary);
+        color: var(--cpd-color-icon-primary);
+    }
+
+    &.mx_AccessibleButton_disabled {
+        opacity: 0.4;
+        background-color: transparent;
+    }
+}
+
+.mx_InsideQuickLook_download {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: var(--cpd-space-1-5x);
+    height: 36px;
+    padding: 0 var(--cpd-space-4x) 0 var(--cpd-space-3x);
+    border-radius: 18px;
+    background-color: var(--cpd-color-bg-subtle-secondary);
+    color: var(--cpd-color-text-primary);
+    font: var(--cpd-font-body-sm-semibold);
+
+    svg {
+        width: 18px;
+        height: 18px;
+    }
+
+    &:hover {
+        background-color: var(--cpd-color-bg-subtle-primary);
+    }
+}
+
+.mx_InsideQuickLook_iconButton,
+.mx_InsideQuickLook_close,
+.mx_InsideQuickLook_download {
+    &:focus-visible {
+        outline: 2px solid var(--cpd-color-border-focused);
+        outline-offset: 1px;
+    }
+}
+
+.mx_InsideQuickLook_body {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    background-color: var(--cpd-color-bg-subtle-secondary);
+    outline: none;
+}
+
+/* The frame is transparent: the pages sit on the window's secondary background. */
+.mx_InsideQuickLook_frame {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+}
+
+.mx_InsideQuickLook_status {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    color: var(--cpd-color-text-secondary);
+    font: var(--cpd-font-body-md-regular);
+}
+
+@keyframes mx_InsideQuickLook_fade {
+    from {
+        opacity: 0;
+    }
+}
+
+@keyframes mx_InsideQuickLook_fadeOut {
+    to {
+        opacity: 0;
+    }
+}
+
+@keyframes mx_InsideQuickLook_zoom {
+    from {
+        opacity: 0;
+        transform: scale(0.96);
+    }
+}
+
+@keyframes mx_InsideQuickLook_zoomOut {
+    to {
+        opacity: 0;
+        transform: scale(0.96);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .mx_InsideQuickLook_backdrop,
+    .mx_InsideQuickLook_window {
+        animation: none;
+    }
+}

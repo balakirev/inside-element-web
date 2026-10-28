@@ -42,6 +42,9 @@ import { formatBytes } from "../../../utils/FormattingUtils";
 import { formatFullDateNoTime } from "../../../DateUtils";
 import { type RoomPermalinkCreator } from "../../../utils/permalinks/Permalinks";
 import { findUrls, type InsideMediaTab, useInsideRoomMedia } from "./useInsideRoomMedia";
+import { useSettingValue } from "../../../hooks/useSettings";
+import { isPdfEvent } from "../../../utils/pdfViewer";
+import { openDocumentViewer } from "../../../utils/documentViewer";
 
 interface TileProps {
     className: string;
@@ -229,7 +232,10 @@ function MediaItem({
     );
 }
 
+/** A file in the Files tab: a PDF opens in the Quick Look window, any other file is shown in the timeline. */
 function FileItem({ ev }: { ev: MatrixEvent }): JSX.Element {
+    const documentPreviewsEnabled = useSettingValue("feature_pdf_viewer");
+    const opensQuickLook = documentPreviewsEnabled && isPdfEvent(ev);
     const content = ev.getContent();
     const name = content.filename || content.body || _t("common|attachment");
     const meta = [
@@ -243,7 +249,7 @@ function FileItem({ ev }: { ev: MatrixEvent }): JSX.Element {
             <button
                 type="button"
                 className="mx_RoomSummaryCard_inside_item mx_RoomSummaryCard_inside_file"
-                onClick={() => viewEvent(ev)}
+                onClick={() => (opensQuickLook ? openDocumentViewer(ev) : viewEvent(ev))}
             >
                 <span className="mx_RoomSummaryCard_inside_itemIcon">
                     <DocumentIcon />

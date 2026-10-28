@@ -20,6 +20,9 @@ import SettingsStore from "../../../settings/SettingsStore";
 import { SettingLevel } from "../../../settings/SettingLevel";
 import * as documentViewer from "../../../utils/documentViewer";
 import * as pdfThumbnail from "../../../utils/pdfThumbnail";
+import defaultDispatcher from "../../../dispatcher/dispatcher";
+import { Action } from "../../../dispatcher/actions";
+import Modal from "../../../Modal";
 
 function mkEvent(content: Record<string, unknown> = {}): MatrixEvent {
     return new MatrixEvent({
@@ -113,11 +116,39 @@ describe("InsideDocumentTile", () => {
         render(<InsideDocumentTile mxEvent={mxEvent} mediaEventHelper={mkHelper("report.pdf", { blob })} />);
 
         await userEvent.click(screen.getByRole("button", { name: "Open PDF" }));
-        expect(open).toHaveBeenCalledWith(mxEvent);
+        expect(open).toHaveBeenCalledWith(mxEvent, expect.objectContaining({ fileName: "report.pdf" }));
         expect(download).not.toHaveBeenCalled();
 
         await userEvent.click(screen.getByRole("button", { name: "Download" }));
         await waitFor(() => expect(download).toHaveBeenCalledWith({ blob, name: "report.pdf" }));
+    });
+
+    it.each([
+        ["Enter", "{Enter}"],
+        ["Space", " "],
+    ])("opens a PDF from the focused tile with %s", async (_, keys) => {
+        const open = vi.spyOn(documentViewer, "openDocumentViewer").mockImplementation(() => {});
+        const mxEvent = mkEvent({ info: pdfInfo });
+        render(<InsideDocumentTile mxEvent={mxEvent} mediaEventHelper={mkHelper("report.pdf")} />);
+
+        screen.getByRole("button", { name: "Open PDF" }).focus();
+        await userEvent.keyboard(keys);
+
+        expect(open).toHaveBeenCalledTimes(1);
+        expect(open).toHaveBeenCalledWith(mxEvent, expect.anything());
+        expect(download).not.toHaveBeenCalled();
+    });
+
+    it("opens a PDF in the Quick Look window, not in the right panel", async () => {
+        const dispatch = vi.spyOn(defaultDispatcher, "dispatch");
+        render(<InsideDocumentTile mxEvent={mkEvent({ info: pdfInfo })} mediaEventHelper={mkHelper("report.pdf")} />);
+
+        await userEvent.click(screen.getByRole("button", { name: "Open PDF" }));
+
+        await waitFor(() => expect(document.querySelector(".mx_InsideQuickLook_window")).toBeInTheDocument());
+        expect(document.querySelector(".mx_InsideQuickLook_title")).toHaveTextContent("report.pdf");
+        expect(dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ action: Action.OpenDocumentViewer }));
+        Modal.forceCloseAllModals();
     });
 
     it("downloads other files from anywhere on the tile", async () => {
