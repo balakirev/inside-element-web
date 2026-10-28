@@ -52,6 +52,17 @@ Please see LICENSE files in the repository root for full details.
     }
 }
 
+/* The first page of a PDF: a sheet of paper with a hairline, not a photo. */
+.mx_UploadConfirmDialog_inside_document .mx_UploadConfirmDialog_inside_mediaFrame {
+    border-radius: var(--cpd-space-2x);
+    box-shadow: 0 0 0 1px var(--cpd-color-border-interactive-secondary);
+
+    img {
+        max-height: 240px;
+        background-color: #fff;
+    }
+}
+
 .mx_UploadConfirmDialog_inside_fileMeta {
     display: flex;
     gap: var(--cpd-space-2x);

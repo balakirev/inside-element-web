@@ -13,6 +13,7 @@ import { secureRandomString } from "matrix-js-sdk/src/randomstring";
 import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 
 import UploadConfirmDialog from "./UploadConfirmDialog.tsx";
+import * as pdfThumbnail from "../../../utils/pdfThumbnail";
 
 /**
  * The shared media preview tile hides the image until it has loaded it once out of band, which jsdom
@@ -201,6 +202,34 @@ describe("<UploadConfirmDialog />", () => {
     });
 
     describe("Inside: media preview", () => {
+        it("shows the first page of a PDF once drawn, with name and size under it", async () => {
+            const thumbnail = { blob: new Blob(["jpeg"], { type: "image/jpeg" }), width: 226, height: 320 };
+            vi.spyOn(pdfThumbnail, "pdfThumbnailForFile").mockResolvedValue(thumbnail);
+            vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:null/page");
+            const file = new File(["%PDF-1.7"], "spec.pdf", { type: "application/pdf" });
+
+            const { container } = render(<UploadConfirmDialog file={file} onFinished={vi.fn()} />);
+
+            await waitFor(() =>
+                expect(
+                    container.querySelector(
+                        ".mx_UploadConfirmDialog_inside_document .mx_UploadConfirmDialog_inside_mediaFrame img",
+                    ),
+                ).toHaveAttribute("src", "blob:null/page"),
+            );
+            expect(container.querySelector(".mx_UploadConfirmDialog_inside_fileMeta")).toHaveTextContent("spec.pdf");
+        });
+
+        it("keeps the file tile for a PDF whose page cannot be drawn", async () => {
+            vi.spyOn(pdfThumbnail, "pdfThumbnailForFile").mockResolvedValue(undefined);
+            const file = new File(["%PDF-1.7"], "spec.pdf", { type: "application/pdf" });
+
+            const { container } = render(<UploadConfirmDialog file={file} onFinished={vi.fn()} />);
+
+            await Promise.resolve();
+            expect(container.querySelector(".mx_UploadConfirmDialog_inside_media")).toBeNull();
+        });
+
         it.each([
             ["image", "image/png", "photo.png", "img"],
             ["video", "video/mp4", "clip.mp4", "video"],

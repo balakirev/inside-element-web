@@ -7,11 +7,13 @@ SPDX-License-Identifier: AGPL-3.0-only OR GPL-3.0-only OR LicenseRef-Element-Com
 Please see LICENSE files in the repository root for full details.
 */
 
+import classNames from "classnames";
 import React, { useCallback, useEffect, useRef, useState, type ChangeEvent, type JSX, type KeyboardEvent } from "react";
 
 import { _t } from "../../../languageHandler";
 import BaseDialog from "./BaseDialog";
 import DialogButtons from "../elements/DialogButtons";
+import { usePdfFileThumbnailUrl } from "../../../hooks/usePdfThumbnail";
 import { fileSize } from "../../../utils/FileUtils";
 import {
     attachmentIcon,
@@ -111,14 +113,18 @@ interface MediaPreviewProps {
     file: File;
     url: string;
     onError: () => void;
+    /** Inside: the picture is the first page of a document rather than the file itself. */
+    isDocumentPage?: boolean;
 }
 
 /**
  * Inside: an image or a video is shown on its own, with the name and the size as one quiet line
  * under it, as other messengers do; the file-type tile is only for files without a picture.
  */
-function InsideMediaPreview({ file, url, onError }: MediaPreviewProps): JSX.Element {
-    const media = file.type.startsWith("image/") ? (
+function InsideMediaPreview({ file, url, onError, isDocumentPage }: MediaPreviewProps): JSX.Element {
+    const media = isDocumentPage ? (
+        <img src={url} alt={file.name} onError={onError} />
+    ) : file.type.startsWith("image/") ? (
         <img src={url} alt={file.name} onError={onError} />
     ) : (
         // Uploaded media carries no caption track, but the empty element is still required for a11y.
@@ -128,7 +134,11 @@ function InsideMediaPreview({ file, url, onError }: MediaPreviewProps): JSX.Elem
     );
 
     return (
-        <div className="mx_UploadConfirmDialog_inside_media">
+        <div
+            className={classNames("mx_UploadConfirmDialog_inside_media", {
+                mx_UploadConfirmDialog_inside_document: isDocumentPage,
+            })}
+        >
             <div className="mx_UploadConfirmDialog_inside_mediaFrame">{media}</div>
             <div className="mx_UploadConfirmDialog_inside_fileMeta">
                 <span className="mx_UploadConfirmDialog_inside_fileName">{file.name}</span>
@@ -164,6 +174,8 @@ export default function UploadConfirmDialog({
     const [mediaFailed, setMediaFailed] = useState(false);
     const onMediaError = useCallback((): void => setMediaFailed(true), []);
     const showMedia = hasPicture(file) && vm.objectUrl !== undefined && !mediaFailed;
+    // Inside: a PDF shows its first page once drawn, the file tile until then or if it cannot be drawn.
+    const pdfPageUrl = usePdfFileThumbnailUrl(file);
 
     const [caption, setCaption] = useState("");
     const trimmedCaption = caption.trim();
@@ -263,6 +275,8 @@ export default function UploadConfirmDialog({
                     <div className="mx_UploadConfirmDialog_previewInner">
                         {showMedia ? (
                             <InsideMediaPreview file={file} url={vm.objectUrl} onError={onMediaError} />
+                        ) : pdfPageUrl && !mediaFailed ? (
+                            <InsideMediaPreview file={file} url={pdfPageUrl} onError={onMediaError} isDocumentPage />
                         ) : (
                             <MediaPreviewGroupPreview vm={vm} />
                         )}
