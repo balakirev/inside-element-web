@@ -25,6 +25,7 @@ import {
     showToast as showSetupEncryptionToast,
 } from "../toasts/SetupEncryptionToast";
 import { isSecretStorageBeingAccessed } from "../SecurityManager";
+import SdkConfig from "../SdkConfig";
 
 const KEY_BACKUP_POLL_INTERVAL = 5 * 60 * 1000;
 
@@ -386,6 +387,12 @@ export class DeviceListenerCurrentDevice {
 
         if (newState === "ok" || this.dismissedThisDeviceToast) {
             hideSetupEncryptionToast();
+        } else if (SdkConfig.get("inside_hide_device_verification")) {
+            // Inside: encryption is off on our server, so "verify this device" /
+            // "set up encryption" toasts only nag. The state is still tracked for
+            // the Encryption settings tab; the toast is just never shown.
+            hideSetupEncryptionToast();
+            logSpan.info("Device is not yet ready, but inside_hide_device_verification is set, so not showing toast.");
         } else if (!isSecretStorageBeingAccessed()) {
             showSetupEncryptionToast(newState);
         } else {

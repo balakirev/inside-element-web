@@ -1341,6 +1341,16 @@ describe("<MatrixChat />", () => {
                 localStorage.removeItem("must_verify_device");
             });
 
+            it("should not force verification with inside_hide_device_verification", async () => {
+                defaultProps.config.inside_hide_device_verification = true;
+
+                // The logged-in view appears instead of the Complete Security screen
+                await getComponentAndWaitForReady();
+                expect(
+                    screen.queryByRole("heading", { name: "Confirm your digital identity" }),
+                ).not.toBeInTheDocument();
+            });
+
             it("should show the Complete Security screen if unskippable verification is enabled", async () => {
                 // Given we have force verification on, and an existing logged-in session
                 // that is not verified (see beforeEach())
@@ -1635,6 +1645,29 @@ describe("<MatrixChat />", () => {
                 await screen.findByText("Confirm your digital identity");
 
                 expect(loginClient.getCrypto()!.userHasCrossSigningKeys).toHaveBeenCalled();
+            });
+
+            describe("with inside_hide_device_verification", () => {
+                beforeEach(() => {
+                    defaultProps.config.inside_hide_device_verification = true;
+                });
+
+                it("should go straight to logged in view when user has cross signing set up", async () => {
+                    vi.spyOn(loginClient.getCrypto()!, "userHasCrossSigningKeys").mockResolvedValue(true);
+
+                    await getComponentAndLogin();
+
+                    await expect(screen.findByRole("toolbar", { name: "Sections" })).resolves.toBeVisible();
+                    expect(screen.queryByText("Confirm your digital identity")).not.toBeInTheDocument();
+                });
+
+                it("should go straight to logged in view without setting up e2e", async () => {
+                    await getComponentAndLogin();
+
+                    await expect(screen.findByRole("toolbar", { name: "Sections" })).resolves.toBeVisible();
+                    expect(screen.queryByText("Setting up keys")).not.toBeInTheDocument();
+                    expect(loginClient.getCrypto()!.bootstrapCrossSigning).not.toHaveBeenCalled();
+                });
             });
 
             it("should set up e2e", async () => {
