@@ -10,6 +10,10 @@ Please see LICENSE files in the repository root for full details.
 // @vitest-environment happy-dom
 
 import { vi, describe, it, expect, beforeAll, beforeEach, afterEach } from "vitest";
+import RoomListStoreV3 from "../../../stores/room-list-v3/RoomListStoreV3";
+import { StaticNotificationState } from "../../../stores/notifications/StaticNotificationState";
+import { NotificationLevel } from "../../../stores/notifications/NotificationLevel";
+import { type RoomNotificationState } from "../../../stores/notifications/RoomNotificationState";
 import { InsideFolderStore } from "../../../stores/room-list-v3/InsideFolderStore";
 import { FilterEnum } from "../../../stores/room-list-v3/skip-list/filters";
 import React from "react";
@@ -88,6 +92,13 @@ const drop = async (element: HTMLElement) => {
     await screen.findByText(/You have dropped the item/i);
 };
 
+// Inside: the folders ask the room list store which rooms they hold; the real store would start syncing.
+vi.mock("../../../stores/room-list-v3/RoomListStoreV3", async () => {
+    const { EventEmitter } = await vi.importActual<typeof import("events")>("events");
+    const instance = Object.assign(new EventEmitter(), { roomMatchesFilter: vi.fn().mockReturnValue(false) });
+    return { default: { instance }, RoomListStoreV3Event: { ListsUpdate: "lists_update" } };
+});
+
 vi.mock("../../../stores/spaces/SpaceStore", async () => {
     const { EventEmitter } = await vi.importActual<typeof import("events")>("events");
     class MockSpaceStore extends EventEmitter {
@@ -115,6 +126,8 @@ describe("<SpacePanel />", () => {
         getClientWellKnown: vi.fn(),
         mxcUrlToHttp: vi.fn(),
         getRoom: vi.fn(),
+        // Inside: the folders count their unread chats
+        getRooms: vi.fn().mockReturnValue([]),
         isGuest: vi.fn(),
         getAccountData: vi.fn(),
         on: vi.fn(),
@@ -198,6 +211,25 @@ describe("<SpacePanel />", () => {
             expect(InsideFolderStore.instance.activeFilter).toBe(FilterEnum.ColleaguesFilter);
             expect(spaceButton("Colleagues")).toHaveClass("mx_SpaceButton_active");
             expect(spaceButton("Home")).not.toHaveClass("mx_SpaceButton_active");
+        });
+
+        it("shows the number of unread chats on a folder", async () => {
+            const room = { isSpaceRoom: () => false, getMyMembership: () => "join" } as unknown as Room;
+            vi.mocked(mockClient.getRooms).mockReturnValue([room]);
+            vi.mocked(RoomListStoreV3.instance.roomMatchesFilter).mockImplementation(
+                (_, filter) => filter === FilterEnum.ColleaguesFilter,
+            );
+            vi.spyOn(sdkContext.roomNotificationStateStore, "getRoomState").mockReturnValue(
+                StaticNotificationState.forCount(5, NotificationLevel.Notification) as unknown as RoomNotificationState,
+            );
+
+            render(<SpacePanel />);
+
+            // One unread chat, whatever the number of its messages.
+            expect(spaceButton("Colleagues")).toHaveTextContent("1");
+            expect(spaceButton("Clients")).not.toHaveTextContent(/\d/);
+            vi.mocked(mockClient.getRooms).mockReturnValue([]);
+            vi.mocked(RoomListStoreV3.instance.roomMatchesFilter).mockReturnValue(false);
         });
 
         it("leaves the folder from Home", async () => {

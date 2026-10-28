@@ -205,6 +205,13 @@ export class RoomListStoreV3Class extends AsyncStoreWithClient<EmptyObject> {
     }
 
     /**
+     * Inside: whether the room passes the given filter, for the unread counts of the space panel folders.
+     */
+    public roomMatchesFilter(room: Room, filterKey: FilterKey): boolean {
+        return this.filterByFilterKey.get(filterKey)?.matches(room) ?? false;
+    }
+
+    /**
      * Get the rooms in the currently active space that are tagged with the given tag.
      * @param tag The tag to filter the rooms by.
      */
