@@ -633,10 +633,20 @@
         "poll_button": "Poll",
         "poll_button_no_perms_description": "You do not have permission to start polls in this room.",
         "poll_button_no_perms_title": "Permission Required",
+        "record_button_round": "Hold to record a video message, tap to switch to voice",
+        "record_button_voice": "Hold to record a voice message, tap to switch to video",
+        "record_slide_cancel": "Slide left to cancel",
         "replying_title": "Replying",
         "room_unencrypted": "Messages in this room are not end-to-end encrypted",
         "room_upgraded_link": "The conversation continues here.",
         "room_upgraded_notice": "This room has been replaced and is no longer active.",
+        "round_video_error_failed": "Something went wrong while recording. Try again.",
+        "round_video_error_no_camera": "No camera was found, or another app is using it.",
+        "round_video_error_permission": "Allow this site to use the camera and the microphone in the browser settings, then try again.",
+        "round_video_error_title": "Unable to record a video message",
+        "round_video_error_unsupported": "This browser cannot record video messages.",
+        "round_video_recording": "Recording a video message",
+        "round_video_send": "Send video message",
         "send_button_title": "Send message",
         "send_button_voice_message": "Send voice message",
         "send_voice_message": "Send voice message",
@@ -3576,6 +3586,7 @@
         "m.sticker": "%(senderDisplayName)s sent a sticker.",
         "m.video": {
             "error_decrypting": "Error decrypting video",
+            "round_label": "Video message, %(duration)s",
             "show_video": "Show video"
         },
         "m.widget": {

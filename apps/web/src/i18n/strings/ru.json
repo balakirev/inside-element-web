@@ -633,10 +633,20 @@
         "poll_button": "Опрос",
         "poll_button_no_perms_description": "У вас нет разрешения начинать опросы в этом чате",
         "poll_button_no_perms_title": "Требуется разрешение",
+        "record_button_round": "Удерживайте — видеосообщение, нажмите — голосовое",
+        "record_button_voice": "Удерживайте — голосовое, нажмите — видеосообщение",
+        "record_slide_cancel": "Влево — отмена",
         "replying_title": "Отвечает",
         "room_unencrypted": "Сообщения в этом чате не защищены сквозным шифрованием.",
         "room_upgraded_link": "Разговор продолжается здесь.",
         "room_upgraded_notice": "Этот чат заменён и более неактивен.",
+        "round_video_error_failed": "Во время записи что-то пошло не так. Попробуйте ещё раз.",
+        "round_video_error_no_camera": "Камера не найдена или занята другим приложением.",
+        "round_video_error_permission": "Разрешите сайту доступ к камере и микрофону в настройках браузера и попробуйте снова.",
+        "round_video_error_title": "Не удалось записать видеосообщение",
+        "round_video_error_unsupported": "Этот браузер не умеет записывать видеосообщения.",
+        "round_video_recording": "Запись видеосообщения",
+        "round_video_send": "Отправить видеосообщение",
         "send_button_title": "Отправить сообщение",
         "send_button_voice_message": "Отправить голосовое сообщение",
         "send_voice_message": "Отправить голосовое сообщение",
@@ -3539,6 +3549,7 @@
         "m.sticker": "%(senderDisplayName)s отправил(а) стикер.",
         "m.video": {
             "error_decrypting": "Ошибка расшифровки видео",
+            "round_label": "Видеосообщение, %(duration)s",
             "show_video": "Показать видео"
         },
         "m.widget": {
