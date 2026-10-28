@@ -430,7 +430,7 @@ describe("<MatrixChat />", () => {
             await populateStorageForSession();
             getComponent();
             // wait for logged in view to load
-            await screen.findByLabelText("User menu");
+            await screen.findByRole("toolbar", { name: "Sections" });
 
             defaultDispatcher.fire(Action.ViewQrLogin);
             expect(screen.queryByRole("dialog", { name: "Sign in with QR code" })).not.toBeInTheDocument();
@@ -509,7 +509,7 @@ describe("<MatrixChat />", () => {
             // initial sync
             mockClient.emit(ClientEvent.Sync, SyncState.Prepared, null);
             // wait for logged in view to load
-            await screen.findByLabelText("User menu");
+            await screen.findByRole("toolbar", { name: "Sections" });
         });
     });
 
@@ -792,7 +792,7 @@ describe("<MatrixChat />", () => {
             // initial sync
             mockClient.emit(ClientEvent.Sync, SyncState.Prepared, null);
             // wait for logged in view to load
-            await screen.findByLabelText("User menu");
+            await screen.findByRole("toolbar", { name: "Sections" });
             // let things settle
             await flushPromises();
             // and some more for good measure
@@ -806,7 +806,7 @@ describe("<MatrixChat />", () => {
             getComponent();
 
             // wait for logged in view to load
-            await expect(screen.findByLabelText("User menu")).resolves.toBeVisible();
+            await expect(screen.findByRole("toolbar", { name: "Sections" })).resolves.toBeVisible();
 
             await expect(screen.findByRole("heading", { level: 1, name: "Welcome Ernie" })).resolves.toBeVisible();
         });
@@ -1569,7 +1569,7 @@ describe("<MatrixChat />", () => {
                 await getComponentAndLogin();
 
                 // wait for logged in view to load
-                await screen.findByLabelText("User menu");
+                await screen.findByRole("toolbar", { name: "Sections" });
 
                 expect(screen.getByRole("heading", { name: "Welcome Ernie" })).toBeInTheDocument();
             });
@@ -1605,7 +1605,7 @@ describe("<MatrixChat />", () => {
                         await getComponentAndLogin();
 
                         // logged in, did not set up keys
-                        await expect(screen.findByLabelText("User menu")).resolves.toBeVisible();
+                        await expect(screen.findByRole("toolbar", { name: "Sections" })).resolves.toBeVisible();
                     });
 
                     it("should go to set up e2e screen when user is in encrypted rooms", async () => {
