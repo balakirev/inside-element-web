@@ -23,6 +23,13 @@ export interface ConfigOptions extends WebConfigJson {
      * This is not a real config field, we're just abusing the config structure to pass around a validated server config
      */
     validated_server_config?: ValidatedServerConfig;
+
+    /**
+     * Inside: never show the "Verify this device" / "Set up encryption" toasts
+     * (DeviceListenerCurrentDevice). Our server has encryption switched off, so
+     * device verification protects nothing. Absent or false = upstream behaviour.
+     */
+    inside_hide_device_verification?: boolean;
 }
 
 /**

@@ -44,6 +44,7 @@ import SettingsStore from "./settings/SettingsStore";
 import { SettingLevel } from "./settings/SettingLevel";
 import { isBulkUnverifiedDeviceReminderSnoozed } from "./utils/device/snoozeBulkUnverifiedDeviceReminder";
 import { PosthogAnalytics } from "./PosthogAnalytics";
+import SdkConfig from "./SdkConfig";
 
 vi.mock("./dispatcher/dispatcher", () => ({
     default: {
@@ -458,6 +459,47 @@ describe("DeviceListener", () => {
 
                 expect(mockCrypto!.getUserDeviceInfo).toHaveBeenCalled();
                 expect(SetupEncryptionToast.showToast).toHaveBeenCalledWith("verify_this_session");
+            });
+
+            // Inside: config switch that hides the verify-this-device toast.
+            describe("inside_hide_device_verification", () => {
+                afterEach(() => {
+                    SdkConfig.reset();
+                });
+
+                it("shows the verify session toast when the key is absent", async () => {
+                    mockCrypto!.isCrossSigningReady.mockResolvedValue(true);
+                    await createAndStart();
+
+                    expect(SetupEncryptionToast.showToast).toHaveBeenCalledWith("verify_this_session");
+                });
+
+                it("does not show the verify session toast when the key is true", async () => {
+                    SdkConfig.add({ inside_hide_device_verification: true });
+                    mockCrypto!.isCrossSigningReady.mockResolvedValue(true);
+                    const instance = await createAndStart();
+
+                    expect(SetupEncryptionToast.showToast).not.toHaveBeenCalled();
+                    expect(SetupEncryptionToast.hideToast).toHaveBeenCalled();
+                    // The state is still tracked for the Encryption settings tab.
+                    expect(instance.getDeviceState()).toBe("verify_this_session");
+                });
+
+                it("does not show the set up encryption toast when the key is true", async () => {
+                    SdkConfig.add({ inside_hide_device_verification: true });
+                    await createAndStart();
+
+                    expect(SetupEncryptionToast.showToast).not.toHaveBeenCalled();
+                });
+
+                it("does not re-show the toast after two days when the key is true", async () => {
+                    SdkConfig.add({ inside_hide_device_verification: true });
+                    vi.useFakeTimers();
+                    await createAndStart();
+                    vi.advanceTimersByTime(3 * 24 * 60 * 60 * 1000);
+                    expect(SetupEncryptionToast.showToast).not.toHaveBeenCalled();
+                    vi.useRealTimers();
+                });
             });
 
             describe("when current device is verified", () => {
