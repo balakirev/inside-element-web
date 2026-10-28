@@ -199,4 +199,104 @@ describe("<UploadConfirmDialog />", () => {
             expect(onFinished).toHaveBeenCalledWith(false);
         });
     });
+
+    describe("Inside: media preview", () => {
+        it.each([
+            ["image", "image/png", "photo.png", "img"],
+            ["video", "video/mp4", "clip.mp4", "video"],
+        ])("shows a %s without the file-type tile, with name and size under it", (_kind, type, name, tag) => {
+            const url = "blob:null/media";
+            vi.spyOn(URL, "createObjectURL").mockReturnValue(url);
+            const file = new File([secureRandomString(2048)], name, { type });
+
+            const { container } = render(<UploadConfirmDialog file={file} onFinished={vi.fn()} />);
+
+            expect(container.querySelector(`.mx_UploadConfirmDialog_inside_mediaFrame ${tag}`)).toHaveAttribute(
+                "src",
+                url,
+            );
+            const meta = container.querySelector(".mx_UploadConfirmDialog_inside_fileMeta");
+            expect(meta).toHaveTextContent(name);
+            expect(meta).toHaveTextContent("2 KB");
+            // No icon tile next to the name.
+            expect(container.querySelector(".mx_UploadConfirmDialog_previewInner svg")).toBeNull();
+        });
+
+        it("falls back to the file tile when the picture cannot be drawn", () => {
+            vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:null/broken");
+            const file = new File(["not an image"], "photo.heic", { type: "image/heic" });
+
+            const { container } = render(<UploadConfirmDialog file={file} onFinished={vi.fn()} />);
+            fireEvent.error(container.querySelector(".mx_UploadConfirmDialog_inside_mediaFrame img")!);
+
+            expect(container.querySelector(".mx_UploadConfirmDialog_inside_media")).toBeNull();
+        });
+
+        it("keeps the file-type tile for a file without a picture", () => {
+            const file = new File(["hello"], "notes.txt", { type: "text/plain" });
+
+            const { container } = render(<UploadConfirmDialog file={file} onFinished={vi.fn()} />);
+
+            expect(container.querySelector(".mx_UploadConfirmDialog_inside_media")).toBeNull();
+            expect(container.querySelector(".mx_UploadConfirmDialog_previewInner svg")).not.toBeNull();
+        });
+    });
+
+    describe("Inside: caption focus and keys", () => {
+        const file = new File(["hello"], "notes.txt", { type: "text/plain" });
+
+        it("focuses the caption field, which has a stable class", () => {
+            const { getByRole } = render(<UploadConfirmDialog file={file} onFinished={vi.fn()} />);
+            const caption = getByRole("textbox", { name: "Caption" });
+
+            expect(caption).toHaveFocus();
+            expect(caption).toHaveClass("mx_UploadConfirmDialog_inside_caption");
+        });
+
+        it("takes the focus back when something else grabs it right after opening", async () => {
+            const outside = document.createElement("button");
+            document.body.appendChild(outside);
+            const { getByRole } = render(<UploadConfirmDialog file={file} onFinished={vi.fn()} />);
+            const caption = getByRole("textbox", { name: "Caption" });
+
+            // E.g. the spinner dialog closing just before hands the focus back to the composer.
+            outside.focus();
+
+            await waitFor(() => expect(caption).toHaveFocus());
+            outside.remove();
+        });
+
+        it("confirms only the current file on Enter when several files are sent", () => {
+            const onFinished = vi.fn();
+            const { getByRole } = render(
+                <UploadConfirmDialog file={file} currentIndex={0} totalFiles={3} onFinished={onFinished} />,
+            );
+            const caption = getByRole("textbox", { name: "Caption" });
+
+            fireEvent.change(caption, { target: { value: "first" } });
+            fireEvent.keyDown(caption, { key: "Enter" });
+
+            expect(onFinished).toHaveBeenCalledWith(true, false, "first");
+        });
+
+        it("sends the rest with Upload all", () => {
+            const onFinished = vi.fn();
+            const { getByRole } = render(
+                <UploadConfirmDialog file={file} currentIndex={0} totalFiles={3} onFinished={onFinished} />,
+            );
+
+            fireEvent.click(getByRole("button", { name: "Upload all" }));
+
+            expect(onFinished).toHaveBeenCalledWith(true, true, undefined);
+        });
+
+        it("cancels on Escape", () => {
+            const onFinished = vi.fn();
+            const { getByRole } = render(<UploadConfirmDialog file={file} onFinished={onFinished} />);
+
+            fireEvent.keyDown(getByRole("textbox", { name: "Caption" }), { key: "Escape" });
+
+            expect(onFinished).toHaveBeenCalledWith(false);
+        });
+    });
 });

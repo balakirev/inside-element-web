@@ -410,6 +410,9 @@ export async function uploadFile(
 
 export default class ContentMessages {
     private inprogress: RoomUpload[] = [];
+    // Inside: failed uploads of the main timeline, shown there as bubbles with "retry" and "delete",
+    // each with what sends it again.
+    private failed = new Map<RoomUpload, () => Promise<void>>();
     private mediaConfig: IMediaConfig | null = null;
 
     public sendStickerContentToRoom(
@@ -586,6 +589,31 @@ export default class ContentMessages {
         });
     }
 
+    /**
+     * Inside: the uploads into the main timeline of a room that failed and were not dismissed yet.
+     */
+    public getFailedUploads(roomId: string): RoomUpload[] {
+        return [...this.failed.keys()].filter((upload) => upload.roomId === roomId);
+    }
+
+    /**
+     * Inside: send a failed upload again, with the same file, caption and reply.
+     */
+    public retryUpload(upload: RoomUpload): Promise<void> {
+        const retry = this.failed.get(upload);
+        if (!retry) return Promise.resolve();
+        this.failed.delete(upload);
+        return retry();
+    }
+
+    /**
+     * Inside: forget a failed upload without sending it again.
+     */
+    public dismissFailedUpload(upload: RoomUpload): void {
+        if (!this.failed.delete(upload)) return;
+        dis.dispatch<UploadCanceledPayload>({ action: Action.UploadCanceled, upload });
+    }
+
     public cancelUpload(upload: RoomUpload): void {
         upload.abort();
         dis.dispatch<UploadCanceledPayload>({ action: Action.UploadCanceled, upload });
@@ -632,6 +660,8 @@ export default class ContentMessages {
         }
 
         const upload = new RoomUpload(roomId, fileName, relation, file.size);
+        upload.file = file;
+        upload.caption = caption?.trim() || undefined;
         this.inprogress.push(upload);
         dis.dispatch<UploadStartedPayload>({ action: Action.UploadStarted, upload });
 
@@ -683,6 +713,7 @@ export default class ContentMessages {
             const result = await uploadFile(matrixClient, roomId, file, onProgress, upload.abortController);
             content.file = result.file;
             content.url = result.url;
+            upload.contentUri = result.url ?? result.file?.url;
 
             if (upload.cancelled) throw new UploadCanceledError();
             // Await previous message being sent into the room
@@ -716,10 +747,20 @@ export default class ContentMessages {
                         fileName: upload.fileName,
                     });
                 }
-                Modal.createDialog(ErrorDialog, {
-                    title: _t("upload_failed_title"),
-                    description: desc,
-                });
+                if (relation) {
+                    Modal.createDialog(ErrorDialog, {
+                        title: _t("upload_failed_title"),
+                        description: desc,
+                    });
+                } else {
+                    // Inside: the main timeline shows the failed upload in place, with "retry" and
+                    // "delete" (InsidePendingUploads), so no dialog over it.
+                    upload.failed = true;
+                    upload.failureReason = desc;
+                    this.failed.set(upload, () =>
+                        this.sendContentToRoom(file, roomId, relation, matrixClient, replyToEvent, undefined, caption),
+                    );
+                }
                 dis.dispatch<UploadErrorPayload>({ action: Action.UploadFailed, upload, error });
             }
         } finally {

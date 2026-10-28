@@ -31,6 +31,8 @@ import {
 
 import MessagePanel, { shouldFormContinuation } from "./MessagePanel";
 import SettingsStore from "../../settings/SettingsStore";
+import ContentMessages from "../../ContentMessages";
+import { RoomUpload } from "../../models/RoomUpload";
 import RoomContext, { type RoomContextType, TimelineRenderingType } from "../../contexts/RoomContext";
 import DMRoomMap from "../../utils/DMRoomMap";
 import type ResizeNotifier from "../../utils/ResizeNotifier";
@@ -115,6 +117,22 @@ describe("MessagePanel", function () {
         sdkContext._client = client;
 
         DMRoomMap.makeShared(client);
+    });
+
+    it("Inside: shows files being sent at the end of a room timeline, not of a thread", () => {
+        const upload = new RoomUpload(room.roomId, "report.pdf", undefined, 100);
+        upload.file = new File(["x"], "report.pdf", { type: "application/pdf" });
+        const spy = vi.spyOn(ContentMessages.sharedInstance(), "getCurrentUploads").mockReturnValue([upload]);
+        const options = clientAndSDKContextRenderOptions(client, sdkContext);
+
+        const { container, unmount } = render(getComponent({ events: mkEvents() }), options);
+        const tiles = container.querySelectorAll(".mx_RoomView_MessageList > li");
+        expect(tiles[tiles.length - 1]).toHaveClass("mx_InsidePendingUpload");
+        unmount();
+
+        const thread = render(getComponent({}, { timelineRenderingType: TimelineRenderingType.Thread }), options);
+        expect(thread.container.querySelector(".mx_InsidePendingUpload")).toBeNull();
+        spy.mockRestore();
     });
 
     function mkEvents() {

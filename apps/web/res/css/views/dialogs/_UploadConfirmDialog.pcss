@@ -28,6 +28,48 @@ Please see LICENSE files in the repository root for full details.
     border: 1px solid $dialog-close-fg-color;
 }
 
+/* Inside: an image or a video without the file-type tile; name and size as one quiet line under it. */
+.mx_UploadConfirmDialog_inside_media {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--cpd-space-2x);
+}
+
+.mx_UploadConfirmDialog_inside_mediaFrame {
+    display: flex;
+    justify-content: center;
+    max-width: 100%;
+    overflow: hidden;
+    border-radius: var(--cpd-space-3x);
+
+    img,
+    video {
+        display: block;
+        max-width: 100%;
+        max-height: 300px;
+        object-fit: contain;
+    }
+}
+
+.mx_UploadConfirmDialog_inside_fileMeta {
+    display: flex;
+    gap: var(--cpd-space-2x);
+    max-width: 100%;
+    font: var(--cpd-font-body-sm-regular);
+    color: var(--cpd-color-text-secondary);
+}
+
+.mx_UploadConfirmDialog_inside_fileName {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.mx_UploadConfirmDialog_inside_fileSize {
+    flex: none;
+}
+
 .mx_UploadConfirmDialog_caption {
     display: block;
     box-sizing: border-box;
@@ -47,6 +89,10 @@ Please see LICENSE files in the repository root for full details.
 
     &:focus {
         border-color: var(--cpd-color-border-interactive-hovered);
+    }
+
+    &:focus-visible {
+        outline: none;
     }
 
     &::placeholder {

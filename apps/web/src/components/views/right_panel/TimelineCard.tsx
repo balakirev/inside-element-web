@@ -25,7 +25,7 @@ import { Layout } from "../../../settings/enums/Layout";
 import TimelinePanel from "../../structures/TimelinePanel";
 import { type E2EStatus } from "../../../utils/ShieldUtils";
 import EditorStateTransfer from "../../../utils/EditorStateTransfer";
-import RoomContext, { type TimelineRenderingType } from "../../../contexts/RoomContext";
+import RoomContext, { TimelineRenderingType } from "../../../contexts/RoomContext";
 import dis from "../../../dispatcher/dispatcher";
 import { _t } from "../../../languageHandler";
 import { type ActionPayload } from "../../../dispatcher/payloads";
@@ -196,7 +196,13 @@ export default class TimelineCard extends React.Component<IProps, IState> {
             );
         }
 
-        const isUploading = ContentMessages.sharedInstance().getCurrentUploads(this.props.composerRelation).length > 0;
+        // Inside: a room timeline shows files being sent as bubbles at its end, not in the upload bar.
+        const showsPendingUploads =
+            !this.props.composerRelation &&
+            (this.props.timelineRenderingType ?? this.context.timelineRenderingType) === TimelineRenderingType.Room;
+        const isUploading =
+            !showsPendingUploads &&
+            ContentMessages.sharedInstance().getCurrentUploads(this.props.composerRelation).length > 0;
 
         const myMembership = this.props.room.getMyMembership();
         const showComposer = myMembership === KnownMembership.Join;

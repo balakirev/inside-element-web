@@ -3845,6 +3845,7 @@
     "upload_failed_title": "Upload Failed",
     "upload_file": {
         "cancel_all_button": "Cancel All",
+        "cancel_upload": "Cancel upload",
         "caption_label": "Caption",
         "caption_placeholder": "Add a caption…",
         "discard_caption_button": "Discard",
@@ -3856,6 +3857,8 @@
         "error_title": "Upload Error",
         "keep_caption_button": "Keep editing",
         "not_image": "The file you have chosen is not a valid image file.",
+        "pending_failed": "Not sent",
+        "pending_progress": "%(loaded)s of %(total)s",
         "title": "Upload files",
         "title_progress": "Upload files (%(current)s of %(total)s)",
         "upload_all_button": "Upload all",

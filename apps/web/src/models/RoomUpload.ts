@@ -14,6 +14,28 @@ export class RoomUpload {
     public promise?: Promise<{ url?: string; file?: EncryptedFile }>;
     private uploaded = 0;
 
+    /**
+     * Inside: the file being sent, so the timeline can show a preview of it while it uploads.
+     */
+    public file?: File;
+    /**
+     * Inside: the caption sent together with the file, if any.
+     */
+    public caption?: string;
+    /**
+     * Inside: the content URI the server returned, set once the bytes are uploaded. Lets the timeline
+     * tell when the real event for this upload has arrived.
+     */
+    public contentUri?: string;
+    /**
+     * Inside: set when the upload or the send failed (not when it was cancelled).
+     */
+    public failed = false;
+    /**
+     * Inside: why the upload failed, for the user.
+     */
+    public failureReason?: string;
+
     public constructor(
         public readonly roomId: string,
         public readonly fileName: string,

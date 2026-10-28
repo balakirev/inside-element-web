@@ -97,7 +97,6 @@ import SpaceRoomView from "./SpaceRoomView";
 import { type IOpts } from "../../createRoom";
 import EditorStateTransfer from "../../utils/EditorStateTransfer";
 import ErrorDialog from "../views/dialogs/ErrorDialog";
-import UploadBar from "./UploadBar";
 import MessageComposer from "../views/rooms/MessageComposer";
 import JumpToBottomButton from "../views/rooms/JumpToBottomButton";
 import TopUnreadMessagesBar from "../views/rooms/TopUnreadMessagesBar";
@@ -2424,9 +2423,9 @@ export class RoomView extends React.Component<IRoomProps, IRoomState> {
         let statusBar: JSX.Element | undefined;
         let isStatusAreaExpanded = true;
 
-        if (ContentMessages.sharedInstance().getCurrentUploads().length > 0) {
-            statusBar = <UploadBar room={this.state.room} />;
-        } else if (!this.state.search) {
+        // Inside: files being sent show as bubbles at the end of the timeline (InsidePendingUploads)
+        // instead of in the upload bar.
+        if (!this.state.search) {
             isStatusAreaExpanded = this.state.statusBarVisible;
             statusBar = (
                 <RoomStatusBarWrappedView
