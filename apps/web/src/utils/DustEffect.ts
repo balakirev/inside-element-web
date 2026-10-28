@@ -173,6 +173,18 @@ interface Target {
     dir: 1 | -1;
 }
 
+/**
+ * Which way the wave goes over a tile: from the sender's side, so own bubbles (on the right) go right
+ * to left (-1) and others' go left to right (+1).
+ */
+export function dustDirection(tile: Element): 1 | -1 {
+    const own = /stateOwnEvent/.test(tile.className) || tile.getAttribute("data-self") === "true";
+    return own ? -1 : 1;
+}
+
+/** Tiles whose effect is running: deleting one again (or a second call) leaves them alone. */
+const busyTiles = new WeakSet<HTMLElement>();
+
 /** The tiles of the events currently on screen (a thread root may be in two places). */
 function findTargets(eventIds: ReadonlySet<string>): Target[] {
     // Compared as attributes rather than in a selector: event ids may hold any character.
@@ -181,12 +193,11 @@ function findTargets(eventIds: ReadonlySet<string>): Target[] {
     );
     const targets: Target[] = [];
     for (const tile of tiles) {
-        if (tile.closest(`.${DUST_OVERLAY_CLASS}`)) continue;
+        if (busyTiles.has(tile) || tile.closest(`.${DUST_OVERLAY_CLASS}`)) continue;
         const line = tile.querySelector<HTMLElement>(".mx_EventTile_line");
         const bubble = line && isVisible(line) ? line : tile;
         if (!isVisible(bubble)) continue;
-        const own = /stateOwnEvent/.test(tile.className) || tile.getAttribute("data-self") === "true";
-        targets.push({ bubble, tile, dir: own ? -1 : 1 });
+        targets.push({ bubble, tile, dir: dustDirection(tile) });
     }
     return targets.slice(0, MAX_TARGETS);
 }
@@ -994,8 +1005,10 @@ class Collapse {
     private readonly observer: MutationObserver | null = null;
     private readonly saved: Record<string, string>;
     private released = false;
+    private readonly list: Node | null;
 
     public constructor(private readonly tile: HTMLElement) {
+        this.list = tile.parentNode;
         this.from = tile.getBoundingClientRect().height;
         const s = tile.style;
         this.saved = { height: s.height, overflow: s.overflow, boxSizing: s.boxSizing, minHeight: s.minHeight };
@@ -1015,6 +1028,15 @@ class Collapse {
 
     private get current(): HTMLElement {
         return this.spacer ?? this.tile;
+    }
+
+    /**
+     * Whether the timeline the row was in is gone from the page (the room was switched, the thread
+     * closed): the list that held the tile is no longer in the document. The tile itself going is
+     * the redaction, which the spacer covers.
+     */
+    public get detached(): boolean {
+        return this.list ? !this.list.isConnected : !this.tile.isConnected;
     }
 
     private replaceWithSpacer(parent: Node, next: Node | null): void {
@@ -1120,6 +1142,7 @@ function dissolve(target: Target, loop: DustLoop, reduced: boolean, delay: numbe
         clone = null; // without a copy the bubble simply disappears
     }
 
+    busyTiles.add(tile);
     const previousVisibility = bubble.style.visibility;
     const previousOpacity = bubble.style.opacity;
     bubble.style.visibility = "hidden";
@@ -1147,6 +1170,9 @@ function dissolve(target: Target, loop: DustLoop, reduced: boolean, delay: numbe
         start,
         end: start + total,
         step(t) {
+            // The timeline went away under us (another room, a closed thread): end at once, so
+            // nothing of this room shows over the next one.
+            if (collapse.detached) return false;
             if (!painted) {
                 painted = true;
                 const renderer = loop.getRenderer();
@@ -1189,6 +1215,7 @@ function dissolve(target: Target, loop: DustLoop, reduced: boolean, delay: numbe
             collapse.release();
             bubble.style.visibility = previousVisibility;
             bubble.style.opacity = previousOpacity;
+            busyTiles.delete(tile);
         },
     };
 }
