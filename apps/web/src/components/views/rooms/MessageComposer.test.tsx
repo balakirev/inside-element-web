@@ -299,6 +299,16 @@ describe("MessageComposer", () => {
             });
         });
 
+        it("should not render the voice message button in a narrow room timeline", () => {
+            wrapAndRender({ room }, true, true);
+            expect(screen.queryByTestId("voicemessagebtn")).not.toBeInTheDocument();
+        });
+
+        it("should render the voice message button in the narrow thread panel", () => {
+            wrapAndRender({ room }, true, true, undefined, TimelineRenderingType.Thread);
+            expect(screen.getByTestId("voicemessagebtn")).toBeInTheDocument();
+        });
+
         describe("when clicking the voice message button", () => {
             beforeEach(async () => {
                 wrapAndRender({ room });
@@ -502,6 +512,7 @@ function wrapAndRender(
     canSendMessages = true,
     narrow = false,
     tombstone?: MatrixEvent,
+    timelineRenderingType = TimelineRenderingType.Room,
 ) {
     const mockClient = MatrixClientPeg.safeGet();
     const roomId = "myroomid";
@@ -519,7 +530,7 @@ function wrapAndRender(
         canSendMessages,
         tombstone,
         narrow,
-        timelineRenderingType: TimelineRenderingType.Room,
+        timelineRenderingType,
     } satisfies Partial<RoomContextType> as RoomContextType;
 
     const defaultProps = {

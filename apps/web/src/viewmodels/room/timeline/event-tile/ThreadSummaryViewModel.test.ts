@@ -224,7 +224,7 @@ describe("ThreadSummaryViewModel", () => {
         const { vm } = makeSummaryVm();
 
         expect(vm.getSnapshot().isVisible).toBe(true);
-        expect(vm.getSnapshot().replyCountLabel).toBe("2");
+        expect(vm.getSnapshot().replyCountLabel).toBe("2 replies");
         expect(vm.getSnapshot().narrow).toBe(true);
         expect(vm.getSnapshot().openThreadLabel).toBeTruthy();
     });
@@ -236,10 +236,10 @@ describe("ThreadSummaryViewModel", () => {
         thread.emit(ThreadEvent.Update, thread);
 
         expect(vm.getSnapshot().isVisible).toBe(false);
-        expect(vm.getSnapshot().replyCountLabel).toBe("0");
+        expect(vm.getSnapshot().replyCountLabel).toBe("0 replies");
     });
 
-    it("uses plural reply labels outside narrow mode and synchronizes the nested preview display name", () => {
+    it("uses plural reply labels in both layouts and synchronizes the nested preview display name", () => {
         const { vm } = makeSummaryVm({ narrow: false });
 
         expect(vm.getSnapshot().replyCountLabel).toBe("2 replies");
@@ -247,7 +247,7 @@ describe("ThreadSummaryViewModel", () => {
 
         vm.setNarrow(true);
 
-        expect(vm.getSnapshot().replyCountLabel).toBe("2");
+        expect(vm.getSnapshot().replyCountLabel).toBe("2 replies");
         expect(vm.getSnapshot().narrow).toBe(true);
         expect(vm.getSnapshot().previewVm.getSnapshot().showDisplayName).toBe(false);
     });
@@ -373,15 +373,15 @@ describe("ThreadSummaryViewModel", () => {
 
         expect(thread.listenerCount(ThreadEvent.Update)).toBe(0);
         expect(room.listenerCount(RoomEvent.Receipt)).toBe(0);
-        expect(vm.getSnapshot().replyCountLabel).toBe("4");
+        expect(vm.getSnapshot().replyCountLabel).toBe("4 replies");
 
         thread.length = 0;
         thread.emit(ThreadEvent.Update, thread);
-        expect(vm.getSnapshot().replyCountLabel).toBe("4");
+        expect(vm.getSnapshot().replyCountLabel).toBe("4 replies");
 
         nextThread.length = 5;
         nextThread.emit(ThreadEvent.Update, nextThread);
-        expect(vm.getSnapshot().replyCountLabel).toBe("5");
+        expect(vm.getSnapshot().replyCountLabel).toBe("5 replies");
 
         vm.dispose();
 
@@ -765,6 +765,41 @@ describe("ThreadMessagePreviewViewModel", () => {
         await waitFor(() => expect(loggerSpy).toHaveBeenCalled());
 
         expect(vm.getSnapshot().previewContent).toBe("Second reply");
+    });
+
+    it("shows up to three distinct reply participants with the latest replier last", async () => {
+        const room = new TestRoom() as TestRoom & Room;
+        const threadReply = (body: string, senderName: string, senderUserId: string): MatrixEvent => {
+            const mxEvent = makeEvent(body, { senderName, senderUserId });
+            vi.spyOn(mxEvent, "isRelation").mockImplementation((relType) => relType === "m.thread");
+            return mxEvent;
+        };
+        const root = makeEvent("Root", { senderName: "Root", senderUserId: "@root:example.org" });
+        const events = [
+            root,
+            threadReply("1", "Dave", "@dave:example.org"),
+            threadReply("2", "Bob", "@bob:example.org"),
+            threadReply("3", "Carol", "@carol:example.org"),
+            threadReply("4", "Bob", "@bob:example.org"),
+            threadReply("5", "Alice", userId),
+        ];
+        const thread = Object.assign(new TestThread(room), {
+            events,
+            replyToEvent: events[5],
+        }) as TestThread & Thread;
+        const { vm } = makePreviewVm({ room, thread });
+
+        await waitFor(() => expect(vm.getSnapshot().isVisible).toBe(true));
+
+        expect(vm.getSnapshot().participantAvatars?.map((avatar) => avatar.name)).toEqual(["Carol", "Bob", "Alice"]);
+    });
+
+    it("shows the latest replier as the only participant before the thread timeline is loaded", async () => {
+        const { vm } = makePreviewVm();
+
+        await waitFor(() => expect(vm.getSnapshot().isVisible).toBe(true));
+
+        expect(vm.getSnapshot().participantAvatars).toEqual([expect.objectContaining({ id: userId, name: "Alice" })]);
     });
 
     it("uses current room profiles and avatar thumbnails when requested", async () => {

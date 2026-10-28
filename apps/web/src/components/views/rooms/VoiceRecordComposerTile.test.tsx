@@ -11,7 +11,7 @@ Please see LICENSE files in the repository root for full details.
 import React, { createRef, type RefObject } from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render } from "test-utils-rtl";
-import { type MatrixClient, MsgType, type Room } from "matrix-js-sdk/src/matrix";
+import { type MatrixClient, MsgType, type Room, THREAD_RELATION_TYPE } from "matrix-js-sdk/src/matrix";
 import { mkEvent } from "test-utils";
 
 import VoiceRecordComposerTile from "./VoiceRecordComposerTile";
@@ -99,7 +99,7 @@ describe("<VoiceRecordComposerTile/>", () => {
     describe("send", () => {
         it("should send the voice recording", async () => {
             await voiceRecordComposerTile.current!.send();
-            expect(mockClient.sendMessage).toHaveBeenCalledWith(roomId, {
+            expect(mockClient.sendMessage).toHaveBeenCalledWith(roomId, null, {
                 "body": "Voice message",
                 "file": undefined,
                 "info": {
@@ -147,7 +147,7 @@ describe("<VoiceRecordComposerTile/>", () => {
             render(<VoiceRecordComposerTile {...props} />);
 
             await voiceRecordComposerTile.current!.send();
-            expect(mockClient.sendMessage).toHaveBeenCalledWith(roomId, {
+            expect(mockClient.sendMessage).toHaveBeenCalledWith(roomId, null, {
                 "body": "Voice message",
                 "file": undefined,
                 "info": {
@@ -177,6 +177,24 @@ describe("<VoiceRecordComposerTile/>", () => {
                 },
                 "m.mentions": { user_ids: ["@bob:test"] },
             });
+        });
+
+        it("sends the voice recording into the thread", async () => {
+            const room = { roomId } as unknown as Room;
+            const relation = {
+                "rel_type": THREAD_RELATION_TYPE.name,
+                "event_id": "$root",
+                "is_falling_back": true,
+                "m.in_reply_to": { event_id: "$last" },
+            };
+            render(<VoiceRecordComposerTile room={room} ref={voiceRecordComposerTile} relation={relation} />);
+
+            await voiceRecordComposerTile.current!.send();
+            expect(mockClient.sendMessage).toHaveBeenCalledWith(
+                roomId,
+                "$root",
+                expect.objectContaining({ "msgtype": MsgType.Audio, "m.relates_to": relation }),
+            );
         });
     });
 });

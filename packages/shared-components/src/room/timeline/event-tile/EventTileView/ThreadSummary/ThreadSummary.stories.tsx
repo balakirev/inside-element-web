@@ -104,3 +104,16 @@ export const Hidden: Story = {
         isVisible: false,
     },
 };
+
+export const WithParticipants: Story = {
+    args: {
+        preview: {
+            ...defaultPreview,
+            participantAvatars: [
+                { id: "@bob:example.org", name: "Bob", label: "User avatar" },
+                { id: "@carol:example.org", name: "Carol", label: "User avatar" },
+                { id: "@alice:example.org", name: "Alice", label: "User avatar" },
+            ],
+        },
+    },
+};

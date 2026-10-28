@@ -21,7 +21,7 @@ import {
 } from "./ThreadSummaryView";
 import * as stories from "./ThreadSummary.stories";
 
-const { Default, Narrow, WithNotification, DecryptionFailure, Hidden } = composeStories(stories);
+const { Default, Narrow, WithNotification, DecryptionFailure, Hidden, WithParticipants } = composeStories(stories);
 
 describe("ThreadSummaryView", () => {
     it("renders the default thread summary", () => {
@@ -41,6 +41,17 @@ describe("ThreadSummaryView", () => {
 
     it("renders a decryption failure preview", () => {
         const { container } = render(<DecryptionFailure />);
+        expect(container).toMatchSnapshot();
+    });
+
+    it("renders a stack of participant avatars in place of the sender avatar", () => {
+        const { container } = render(<WithParticipants />);
+        const stack = container.querySelector(".mx_ThreadSummary_inside_avatars");
+        expect(stack).not.toBeNull();
+        const avatars = stack!.querySelectorAll(".mx_ThreadSummary_inside_avatar");
+        expect(Array.from(avatars, (avatar) => avatar.getAttribute("data-type"))).toEqual(["round", "round", "round"]);
+        expect(avatars[2]).toHaveTextContent("A");
+        expect(container.querySelectorAll("[aria-label='User avatar']")).toHaveLength(3);
         expect(container).toMatchSnapshot();
     });
 

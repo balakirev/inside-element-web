@@ -87,6 +87,17 @@
     flex-shrink: 0;
 }
 
+/* Inside: stack of reply participants' avatars. */
+.avatars {
+    display: inline-flex;
+    margin-inline-end: var(--cpd-space-2x);
+    flex-shrink: 0;
+}
+
+.stackedAvatar + .stackedAvatar {
+    margin-inline-start: -6px;
+}
+
 .threadIcon {
     flex-shrink: 0;
 }

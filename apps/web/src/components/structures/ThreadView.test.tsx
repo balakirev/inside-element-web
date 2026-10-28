@@ -158,6 +158,14 @@ describe("ThreadView", () => {
         expect(tiles.length).toEqual(1);
     });
 
+    it("shows the room name and the reply count under the heading", async () => {
+        room.name = "Sales";
+        const { container } = await getComponent();
+
+        expect(rootEvent.getThread()!.length).toBe(1);
+        expect(container.querySelector(".mx_ThreadView_inside_subtitle")).toHaveTextContent("Sales · 1 reply");
+    });
+
     it("sends a message with the correct fallback", async () => {
         const { container } = await getComponent();
 

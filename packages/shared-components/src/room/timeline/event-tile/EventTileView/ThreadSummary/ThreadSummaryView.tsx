@@ -53,6 +53,11 @@ export interface ThreadMessagePreviewViewSnapshot {
      */
     avatar?: ThreadMessagePreviewAvatar;
     /**
+     * Inside: avatars of up to three distinct reply participants, the latest replier last.
+     * When set, they are shown as a stack in place of the single sender avatar.
+     */
+    participantAvatars?: ThreadMessagePreviewAvatar[];
+    /**
      * Whether to render the sender display name.
      */
     showDisplayName: boolean;
@@ -123,7 +128,8 @@ interface ThreadMessagePreviewViewProps {
 }
 
 export function ThreadMessagePreviewView({ vm }: Readonly<ThreadMessagePreviewViewProps>): JSX.Element {
-    const { isVisible, avatar, showDisplayName, senderName, previewContent, previewTooltip } = useViewModel(vm);
+    const { isVisible, avatar, participantAvatars, showDisplayName, senderName, previewContent, previewTooltip } =
+        useViewModel(vm);
 
     if (!isVisible || !previewContent) {
         return <></>;
@@ -134,17 +140,37 @@ export function ThreadMessagePreviewView({ vm }: Readonly<ThreadMessagePreviewVi
 
     return (
         <>
-            {avatar && (
-                <Avatar
-                    id={avatar.id}
-                    name={avatar.name}
-                    src={avatar.src}
-                    title={avatar.title}
-                    aria-label={avatar.label}
-                    type="round"
-                    size="24px"
-                    className={avatarClassName}
-                />
+            {participantAvatars?.length ? (
+                <span className={`${styles.avatars} mx_ThreadSummary_inside_avatars`}>
+                    {participantAvatars.map((participant) => (
+                        <Avatar
+                            key={participant.id}
+                            id={participant.id}
+                            name={participant.name}
+                            src={participant.src}
+                            title={participant.title}
+                            aria-label={participant.label}
+                            type="round"
+                            size="20px"
+                            className={[styles.stackedAvatar, participant.className, "mx_ThreadSummary_inside_avatar"]
+                                .filter(Boolean)
+                                .join(" ")}
+                        />
+                    ))}
+                </span>
+            ) : (
+                avatar && (
+                    <Avatar
+                        id={avatar.id}
+                        name={avatar.name}
+                        src={avatar.src}
+                        title={avatar.title}
+                        aria-label={avatar.label}
+                        type="round"
+                        size="24px"
+                        className={avatarClassName}
+                    />
+                )
             )}
             {showDisplayName && senderName && <div className={styles.sender}>{senderName}</div>}
             {previewTooltip ? <Tooltip description={previewTooltip}>{content}</Tooltip> : content}

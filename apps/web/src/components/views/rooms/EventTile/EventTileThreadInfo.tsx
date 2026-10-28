@@ -33,7 +33,10 @@ export function EventTileThreadPanelSummary({
     return (
         <div className="mx_ThreadPanel_replies">
             <ThreadsIcon />
-            <span className="mx_ThreadPanel_replies_amount">{threadState.thread.length}</span>
+            {/* Inside: the count with the word ("3 replies"), as in the thread summary of the timeline. */}
+            <span className="mx_ThreadPanel_replies_amount">
+                {_t("threads|count_of_reply", { count: threadState.thread.length })}
+            </span>
             <ThreadMessagePreviewAdapter eventTileViewModel={eventTileViewModel} thread={threadState.thread} />
         </div>
     );
