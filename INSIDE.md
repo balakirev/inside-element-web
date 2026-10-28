@@ -31,6 +31,9 @@ the next upstream release with `git rebase --onto <new-tag> <old-tag> inside/mai
 | Folders in the space panel             | Under "All chats": Groups, Colleagues, Clients, VIP, Favourites — room list filters, as folders of other messengers. Colleagues/clients: the other side of a DM is on our server, or on another server / a bridged network. |
 | VIP in the room context menu           | A private room tag (`u.inside.vip`) for the VIP folder, independent of the room list sections. |
 | Own avatar opens the settings          | The last tab of the bar under the room list is the user's avatar and opens the settings, which show the profile (avatar, name, ID) above their tabs — the Settings screen of other messengers. |
+| No verify-this-device prompts         | With `inside_hide_device_verification` in config.json, the "verify this device" toast is not shown, and a fresh login skips the full-screen verify/key-setup views (encryption is off server-wide; remove the key if E2EE comes back). |
+| Robust media auth in the service worker | The worker waits up to 5 s for the tab's token, and on a 401 asks the tab to refresh once (shared by all requests of a burst) and retries with auth — no broken avatars right after start. |
+| Dust when deleting a message          | After the delete confirmation the message tile crumbles into dust, as in Telegram (`utils/DustEffect.ts`). |
 | Version script without `jq`            | Branch builds failed: the Docker builder image has no `jq`.                                                                                                                                                                                                                                                                                                               |
 
 ## Build
