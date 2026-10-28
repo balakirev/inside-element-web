@@ -417,6 +417,15 @@ describe("MessageComposer", () => {
                 });
                 expect(screen.getByLabelText("Send a message…")).toBeInTheDocument();
             });
+
+            it("in a thread it should pass the thread placeholder to SendMessageComposer", () => {
+                wrapAndRender({
+                    room,
+                    relation: { rel_type: THREAD_RELATION_TYPE.name, event_id: "$root" },
+                    e2eStatus: E2EStatus.Normal,
+                });
+                expect(screen.getByLabelText("Reply to thread…")).toBeInTheDocument();
+            });
         });
 
         describe("when replying to an event", () => {

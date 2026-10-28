@@ -419,13 +419,15 @@ export class MessageComposer extends React.Component<IProps, IState> {
     };
 
     private renderPlaceholderText = (): string => {
+        // Inside: every message of a thread composer is a reply in the thread, so it says so whether or
+        // not a particular message is being replied to (Element only did while replying).
+        if (this.props.relation?.rel_type === THREAD_RELATION_TYPE.name) {
+            return this.props.e2eStatus
+                ? _t("composer|placeholder_thread_encrypted")
+                : _t("composer|placeholder_thread");
+        }
         if (this.props.replyToEvent) {
-            const replyingToThread = this.props.relation?.rel_type === THREAD_RELATION_TYPE.name;
-            if (replyingToThread && this.props.e2eStatus) {
-                return _t("composer|placeholder_thread_encrypted");
-            } else if (replyingToThread) {
-                return _t("composer|placeholder_thread");
-            } else if (this.props.e2eStatus) {
+            if (this.props.e2eStatus) {
                 return _t("composer|placeholder_reply_encrypted");
             } else {
                 return _t("composer|placeholder_reply");
