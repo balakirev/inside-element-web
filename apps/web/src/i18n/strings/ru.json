@@ -2000,6 +2000,11 @@
         "forget_room": "Забыть эту комнату",
         "forget_space": "Забыть это пространство",
         "header": {
+            "inside_online": {
+                "one": "%(count)s в сети",
+                "few": "%(count)s в сети",
+                "many": "%(count)s в сети"
+            },
             "join_video_call": "Присоединиться к видеозвонку",
             "join_voice_call": "Присоединиться к голосовому звонку",
             "more": "Ещё",
