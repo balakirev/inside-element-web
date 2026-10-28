@@ -1146,6 +1146,7 @@
         "update_power_level": "Failed to change power level"
     },
     "error_app_open_in_another_tab": "Switch to the other tab to connect to %(brand)s. This tab can now be closed.",
+    "error_app_open_in_another_tab_open_here": "Open here",
     "error_app_open_in_another_tab_title": "%(brand)s is connected in another tab",
     "error_app_opened_in_another_window": "%(brand)s is open in another window. Select \"%(label)s\" to use %(brand)s here and disconnect the other window.",
     "error_database_closed_description": {

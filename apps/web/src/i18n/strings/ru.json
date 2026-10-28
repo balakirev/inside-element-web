@@ -1131,6 +1131,7 @@
         "update_power_level": "Не удалось изменить уровень прав"
     },
     "error_app_open_in_another_tab": "Переключитесь на другую вкладку, чтобы подключиться к %(brand)s . Теперь эту вкладку можно закрыть.",
+    "error_app_open_in_another_tab_open_here": "Открыть здесь",
     "error_app_open_in_another_tab_title": "%(brand)s подключен в другой вкладке",
     "error_app_opened_in_another_window": "%(brand)s открыт в другой вкладке. Нажмите \"%(label)s\" чтобы использовать %(brand)s в данной вкладке и закройте другие вкладки.",
     "error_database_closed_description": {

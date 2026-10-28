@@ -487,7 +487,9 @@ export default class MatrixChat extends React.PureComponent<IProps, IState> {
         if (!this.sessionLoadStarted) {
             this.sessionLoadStarted = true;
             const platform = PlatformPeg.get();
-            if (platform && !platform.checkSessionLockFree()) {
+            // Inside: "Open here" on the "connected in another tab" screen already confirmed taking the session over.
+            const takeOver = SessionLockStolenView.consumeTakeOverRequest();
+            if (platform && !takeOver && !platform.checkSessionLockFree()) {
                 // another instance holds the lock; confirm its theft before proceeding
                 setTimeout(() => this.setState({ view: Views.CONFIRM_LOCK_THEFT }), 0);
             } else {

@@ -11,6 +11,13 @@ exports[`<MatrixChat /> > Multi-tab lockout > shows the lockout page when a seco
     <h2>
       Switch to the other tab to connect to Test. This tab can now be closed.
     </h2>
+    <div
+      class="mx_AccessibleButton mx_SessionLockStolenView_openHere mx_AccessibleButton_hasKind mx_AccessibleButton_kind_primary"
+      role="button"
+      tabindex="0"
+    >
+      Open here
+    </div>
   </main>
 </div>
 `;
@@ -29,6 +36,13 @@ exports[`<MatrixChat /> > Multi-tab lockout > shows the lockout page when a seco
       <h2>
         Switch to the other tab to connect to Test. This tab can now be closed.
       </h2>
+      <div
+        class="mx_AccessibleButton mx_SessionLockStolenView_openHere mx_AccessibleButton_hasKind mx_AccessibleButton_kind_primary"
+        role="button"
+        tabindex="0"
+      >
+        Open here
+      </div>
     </main>
   </div>
 </body>
@@ -45,6 +59,13 @@ exports[`<MatrixChat /> > Multi-tab lockout > shows the lockout page when a seco
     <h2>
       Switch to the other tab to connect to Test. This tab can now be closed.
     </h2>
+    <div
+      class="mx_AccessibleButton mx_SessionLockStolenView_openHere mx_AccessibleButton_hasKind mx_AccessibleButton_kind_primary"
+      role="button"
+      tabindex="0"
+    >
+      Open here
+    </div>
   </main>
 </div>
 `;
@@ -60,6 +81,13 @@ exports[`<MatrixChat /> > Multi-tab lockout > shows the lockout page when a seco
     <h2>
       Switch to the other tab to connect to Test. This tab can now be closed.
     </h2>
+    <div
+      class="mx_AccessibleButton mx_SessionLockStolenView_openHere mx_AccessibleButton_hasKind mx_AccessibleButton_kind_primary"
+      role="button"
+      tabindex="0"
+    >
+      Open here
+    </div>
   </main>
 </div>
 `;
