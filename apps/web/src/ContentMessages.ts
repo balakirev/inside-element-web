@@ -752,6 +752,10 @@ export default class ContentMessages {
                         title: _t("upload_failed_title"),
                         description: desc,
                     });
+                } else if (upload.contentUri) {
+                    // Inside: the file is on the server and the event failed to send. Its local echo is in
+                    // the timeline as an unsent message (red mark, "resend" in the room status bar), which
+                    // resends it without uploading again; a failed bubble next to it would be a duplicate.
                 } else {
                     // Inside: the main timeline shows the failed upload in place, with "retry" and
                     // "delete" (InsidePendingUploads), so no dialog over it.

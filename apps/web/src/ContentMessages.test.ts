@@ -409,6 +409,23 @@ describe("ContentMessages", () => {
                 dialogSpy.mockRestore();
             });
 
+            it("leaves a failed send after the upload to the unsent event", async () => {
+                vi.mocked(client.uploadContent).mockResolvedValue({ content_uri: "mxc://server/file" });
+                vi.mocked(client.sendMessage).mockRejectedValueOnce(new Error("network"));
+                const file = new File(["x"], "doc.pdf", { type: "application/pdf" });
+                const dialogSpy = vi.spyOn(Modal, "createDialog");
+                const dispatchSpy = vi.spyOn(dispatcher, "dispatch");
+
+                await contentMessages.sendContentToRoom(file, roomId, undefined, client, undefined);
+
+                expect(dialogSpy).not.toHaveBeenCalledWith(ErrorDialog, expect.anything());
+                expect(contentMessages.getFailedUploads(roomId)).toEqual([]);
+                expect(contentMessages.getCurrentUploads()).toEqual([]);
+                expect(dispatchSpy).toHaveBeenCalledWith(expect.objectContaining({ action: Action.UploadFailed }));
+                dialogSpy.mockRestore();
+                dispatchSpy.mockRestore();
+            });
+
             it("forgets a failed upload on delete", async () => {
                 vi.mocked(client.uploadContent).mockRejectedValueOnce(new Error("network"));
                 const file = new File(["x"], "doc.pdf", { type: "application/pdf" });
