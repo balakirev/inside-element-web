@@ -45,6 +45,8 @@ import {
     renderMBody,
 } from "./MBodyFactory";
 import { TextualBodyFactory } from "./TextualBodyFactory";
+import InsideRoundVideoBody from "./InsideRoundVideoBody";
+import { isRoundVideoContent } from "../../../utils/roundVideo";
 
 // onMessageAllowed is handled internally
 interface IProps extends Omit<IBodyProps, "onMessageAllowed" | "mediaEventHelper"> {
@@ -291,6 +293,11 @@ export default class MessageEvent extends React.Component<IProps> implements IMe
                 (BodyType === MStickerBody && !this.validateStickerMimetype(content))
             ) {
                 BodyType = this.bodyTypes.get(MsgType.File)!;
+            }
+
+            // Inside: a round video message is a circle (the video body unless overridden, e.g. in replies).
+            if (BodyType === VideoBodyFactory && isRoundVideoContent(content)) {
+                BodyType = InsideRoundVideoBody;
             }
 
             // TODO: move to eventTypes when location sharing spec stabilises

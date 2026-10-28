@@ -432,6 +432,30 @@ describe("EventTileViewModel", () => {
         expect(snapshot.sender.viewUserOnClick).toBe(true);
     });
 
+    describe("Inside: round video messages", () => {
+        it("marks a round video tile and lays its line out as a photo", () => {
+            const state = EventTileViewModel.createRenderState(
+                makeProps({
+                    event: { msgtype: "m.video", isRoundVideo: true },
+                    display: { layout: Layout.Bubble, isProbablyMedia: true, isLastInSection: true },
+                }),
+            );
+            expect((state.classNames.root ?? "").split(" ")).toEqual(
+                expect.arrayContaining(["mx_EventTile", "mx_EventTile_inside_roundVideo"]),
+            );
+            expect(state.line.image).toBe(true);
+            expect(state.line.media).toBe(true);
+        });
+
+        it("leaves other videos alone", () => {
+            const state = EventTileViewModel.createRenderState(
+                makeProps({ event: { msgtype: "m.video" }, display: { isProbablyMedia: true } }),
+            );
+            expect(state.classNames.root).toBe("mx_EventTile");
+            expect(state.line.image).toBe(false);
+        });
+    });
+
     describe("Inside: avatar at the last bubble of a series", () => {
         const bubble = (display: Partial<EventTileViewModelProps["display"]>) =>
             EventTileViewModel.createRenderState(makeProps({ display: { layout: Layout.Bubble, ...display } }));

@@ -166,6 +166,27 @@ describe("MessageEvent", () => {
         expect(result.queryByTestId("textual-body")).toBeNull();
     });
 
+    it("Inside: renders a round video message as the circle", () => {
+        event = mkEvent({
+            event: true,
+            type: EventType.RoomMessage,
+            user: "@alice:example.com",
+            room: room.roomId,
+            content: {
+                "msgtype": MsgType.Video,
+                "body": "round-video.mp4",
+                "url": "mxc://server/round",
+                "info": { mimetype: "video/mp4", w: 384, h: 384, duration: 5000 },
+                "estate.inside.lobby.round_video": true,
+            },
+        });
+
+        const result = renderMessageEvent();
+
+        expect(result.container.querySelector(".mx_InsideRoundVideoBody")).not.toBeNull();
+        expect(result.queryByTestId("video-body")).toBeNull();
+    });
+
     describe("when an image with a caption is sent", () => {
         let result: RenderResult;
 
