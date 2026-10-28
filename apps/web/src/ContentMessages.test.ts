@@ -16,6 +16,7 @@ import {
     type MatrixClient,
     MatrixError,
     RelationType,
+    THREAD_RELATION_TYPE,
     type UploadResponse,
 } from "matrix-js-sdk/src/matrix";
 import { type ImageInfo } from "matrix-js-sdk/src/types";
@@ -31,6 +32,9 @@ import ErrorDialog from "./components/views/dialogs/ErrorDialog";
 import UploadConfirmDialog from "./components/views/dialogs/UploadConfirmDialog";
 import { _t } from "./languageHandler";
 import { PosthogAnalytics } from "./PosthogAnalytics";
+import dispatcher from "./dispatcher/dispatcher";
+import { Action } from "./dispatcher/actions";
+import { type UploadFinishedPayload } from "./dispatcher/payloads/UploadPayload";
 
 vi.mock("matrix-encrypt-attachment", () => ({ default: { encryptAttachment: vi.fn().mockResolvedValue({}) } }));
 
@@ -352,7 +356,9 @@ describe("ContentMessages", () => {
             );
             const file = new File([], "fileName", { type: "image/jpeg" });
             const dialogSpy = vi.spyOn(Modal, "createDialog");
-            await contentMessages.sendContentToRoom(file, roomId, undefined, client, undefined);
+            // Inside: a failure in a thread is still reported in a dialog; the main timeline shows it in place.
+            const relation = { rel_type: THREAD_RELATION_TYPE.name, event_id: "$thread" };
+            await contentMessages.sendContentToRoom(file, roomId, relation, client, undefined);
             expect(dialogSpy).toHaveBeenCalledWith(
                 ErrorDialog,
                 expect.objectContaining({
@@ -360,6 +366,62 @@ describe("ContentMessages", () => {
                 }),
             );
             dialogSpy.mockRestore();
+        });
+
+        describe("Inside: pending uploads in the main timeline", () => {
+            it("keeps the file, the caption and the content URI on the upload", async () => {
+                vi.mocked(client.uploadContent).mockResolvedValue({ content_uri: "mxc://server/file" });
+                const file = new File(["x"], "doc.pdf", { type: "application/pdf" });
+                const dispatchSpy = vi.spyOn(dispatcher, "dispatch");
+
+                await contentMessages.sendContentToRoom(file, roomId, undefined, client, undefined, undefined, " Hi ");
+
+                const finished = dispatchSpy.mock.calls.find(([payload]) => payload.action === Action.UploadFinished);
+                const upload = (finished![0] as UploadFinishedPayload).upload;
+                expect(upload.file).toBe(file);
+                expect(upload.caption).toBe("Hi");
+                expect(upload.contentUri).toBe("mxc://server/file");
+                dispatchSpy.mockRestore();
+            });
+
+            it("shows a failure in place, without a dialog, and can retry it", async () => {
+                vi.mocked(client.uploadContent).mockRejectedValueOnce(new Error("network"));
+                const file = new File(["x"], "doc.pdf", { type: "application/pdf" });
+                const dialogSpy = vi.spyOn(Modal, "createDialog");
+
+                await contentMessages.sendContentToRoom(file, roomId, undefined, client, undefined, undefined, "Hi");
+
+                expect(dialogSpy).not.toHaveBeenCalledWith(ErrorDialog, expect.anything());
+                const [failed] = contentMessages.getFailedUploads(roomId);
+                expect(failed.failed).toBe(true);
+                expect(failed.failureReason).toBe(_t("upload_failed_generic", { fileName: "doc.pdf" }));
+                expect(contentMessages.getFailedUploads("!other:server")).toEqual([]);
+
+                vi.mocked(client.uploadContent).mockResolvedValue({ content_uri: "mxc://server/file" });
+                await contentMessages.retryUpload(failed);
+
+                expect(contentMessages.getFailedUploads(roomId)).toEqual([]);
+                expect(client.sendMessage).toHaveBeenCalledWith(
+                    roomId,
+                    null,
+                    expect.objectContaining({ body: "Hi", filename: "doc.pdf", url: "mxc://server/file" }),
+                );
+                dialogSpy.mockRestore();
+            });
+
+            it("forgets a failed upload on delete", async () => {
+                vi.mocked(client.uploadContent).mockRejectedValueOnce(new Error("network"));
+                const file = new File(["x"], "doc.pdf", { type: "application/pdf" });
+                await contentMessages.sendContentToRoom(file, roomId, undefined, client, undefined);
+                const [failed] = contentMessages.getFailedUploads(roomId);
+                const dispatchSpy = vi.spyOn(dispatcher, "dispatch");
+
+                contentMessages.dismissFailedUpload(failed);
+
+                expect(contentMessages.getFailedUploads(roomId)).toEqual([]);
+                expect(dispatchSpy).toHaveBeenCalledWith({ action: Action.UploadCanceled, upload: failed });
+                dispatchSpy.mockRestore();
+            });
         });
     });
 

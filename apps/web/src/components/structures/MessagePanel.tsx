@@ -35,6 +35,7 @@ import IRCTimelineProfileResizer from "../views/elements/IRCTimelineProfileResiz
 import defaultDispatcher from "../../dispatcher/dispatcher";
 import type LegacyCallEventGrouper from "./LegacyCallEventGrouper";
 import WhoIsTypingTile from "../views/rooms/WhoIsTypingTile";
+import InsidePendingUploads from "../views/rooms/InsidePendingUploads";
 import ScrollPanel, { type IScrollState } from "./ScrollPanel";
 import ErrorBoundary from "../views/elements/ErrorBoundary";
 import Spinner from "../views/elements/Spinner";
@@ -994,6 +995,11 @@ export default class MessagePanel extends React.Component<IProps, IState> {
         }
     };
 
+    // Inside: the bubbles of files being sent grow and shrink at the end of the timeline.
+    private onPendingUploadsResize = (): void => {
+        this.scrollPanel.current?.checkScroll();
+    };
+
     public updateTimelineMinHeight(): void {
         const scrollPanel = this.scrollPanel.current;
 
@@ -1054,6 +1060,11 @@ export default class MessagePanel extends React.Component<IProps, IState> {
             );
         }
 
+        let pendingUploads: JSX.Element | undefined;
+        if (this.props.room && this.context.timelineRenderingType === TimelineRenderingType.Room) {
+            pendingUploads = <InsidePendingUploads room={this.props.room} onResize={this.onPendingUploadsResize} />;
+        }
+
         let ircResizer: JSX.Element | undefined;
         if (this.props.layout == Layout.IRC) {
             ircResizer = (
@@ -1079,6 +1090,7 @@ export default class MessagePanel extends React.Component<IProps, IState> {
                 >
                     {topSpinner}
                     {this.getEventTiles()}
+                    {pendingUploads}
                     {whoIsTyping}
                     {bottomSpinner}
                 </ScrollPanel>

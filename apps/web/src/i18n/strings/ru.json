@@ -3803,6 +3803,7 @@
     "upload_failed_title": "Сбой отправки файла",
     "upload_file": {
         "cancel_all_button": "Отменить все",
+        "cancel_upload": "Отменить загрузку",
         "caption_label": "Подпись",
         "caption_placeholder": "Добавить подпись…",
         "discard_caption_button": "Сбросить",
@@ -3814,6 +3815,8 @@
         "error_title": "Ошибка загрузки",
         "keep_caption_button": "Продолжить",
         "not_image": "Выбранный вами файл не является изображением.",
+        "pending_failed": "Не отправлено",
+        "pending_progress": "%(loaded)s из %(total)s",
         "title": "Загрузка файлов",
         "title_progress": "Загрузка файлов (%(current)s из %(total)s)",
         "upload_all_button": "Загрузить всё",
