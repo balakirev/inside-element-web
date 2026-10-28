@@ -121,6 +121,17 @@ describe("<RoomListItemView />", () => {
         expect(container).toMatchSnapshot();
     });
 
+    it("marks the unread counter of a muted room for the grey style", () => {
+        render(<Muted />);
+        expect(screen.getByTestId("notification-decoration")).toHaveClass("mx_RoomListItemView_inside_muted");
+        expect(screen.getByText("111")).toHaveAttribute("data-muted", "true");
+    });
+
+    it("does not mark the unread counter of a room that is not muted", () => {
+        render(<WithNotification />);
+        expect(screen.getByTestId("notification-decoration")).not.toHaveClass("mx_RoomListItemView_inside_muted");
+    });
+
     it("shows a pin for favourite rooms without unread messages", () => {
         render(<Favourite />);
         expect(screen.getByTestId("room-list-item-pin")).toHaveClass("mx_RoomListItemView_inside_pin");

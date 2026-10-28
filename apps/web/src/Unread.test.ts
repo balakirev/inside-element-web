@@ -20,6 +20,7 @@ import {
     doesRoomHaveUnreadThreads,
     doesRoomOrThreadHaveUnreadMessages,
     eventTriggersUnreadCount,
+    countUnreadMessages,
 } from "./Unread";
 import { MatrixClientPeg } from "./MatrixClientPeg";
 
@@ -634,6 +635,50 @@ describe("Unread", () => {
 
             // The first thread doesn't have a receipt, it should be unread
             expect(doesRoomHaveUnreadThreads(room)).toBe(true);
+        });
+    });
+    describe("countUnreadMessages()", () => {
+        const roomId = "!count:server.org";
+        const myId = client.getSafeUserId();
+        let room: Room;
+
+        const mkMessage = (user: string) =>
+            mkEvent({ event: true, type: "m.room.message", user, room: roomId, content: { body: "hi" } });
+        const readUpTo = (event: MatrixEvent) =>
+            room.addReceipt(
+                new MatrixEvent({
+                    type: "m.receipt",
+                    room_id: roomId,
+                    content: { [event.getId()!]: { [ReceiptType.Read]: { [myId]: { ts: 1 } } } },
+                }),
+            );
+
+        beforeEach(() => {
+            room = new Room(roomId, client, myId);
+            vi.mocked(haveRendererForEvent).mockClear().mockReturnValue(true);
+        });
+
+        it("counts the messages after the user's read receipt", () => {
+            const events = [mkMessage(aliceId), mkMessage(aliceId), mkMessage(aliceId), mkMessage(aliceId)];
+            room.addLiveEvents(events, { addToState: true });
+            readUpTo(events[0]);
+
+            expect(countUnreadMessages(room)).toBe(3);
+        });
+
+        it("stops at the user's own message", () => {
+            const events = [mkMessage(aliceId), mkMessage(myId), mkMessage(aliceId)];
+            room.addLiveEvents(events, { addToState: true });
+
+            expect(countUnreadMessages(room)).toBe(1);
+        });
+
+        it("is 0 for a read room", () => {
+            const events = [mkMessage(aliceId), mkMessage(aliceId)];
+            room.addLiveEvents(events, { addToState: true });
+            readUpTo(events[1]);
+
+            expect(countUnreadMessages(room)).toBe(0);
         });
     });
 });
