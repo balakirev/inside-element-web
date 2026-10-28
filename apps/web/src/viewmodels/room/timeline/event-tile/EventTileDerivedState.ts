@@ -45,6 +45,17 @@ export function getIsContinuation(
     return continuation;
 }
 
+/** Whether the timeline groups avatars at the last bubble of a series (Inside, bubble layout). */
+export function isInsideBubbleSeriesTimeline(
+    layout: Layout | undefined,
+    timelineRenderingType: TimelineRenderingType,
+): boolean {
+    return (
+        layout === Layout.Bubble &&
+        (timelineRenderingType === TimelineRenderingType.Room || timelineRenderingType === TimelineRenderingType.Search)
+    );
+}
+
 /** Inputs for EventTile avatar and sender profile derivation. */
 export interface EventTileSenderProfileStateInput {
     /** Whether the tile is rendering as a notification. */
@@ -67,6 +78,8 @@ export interface EventTileSenderProfileStateInput {
     isCallInvite: boolean;
     /** Whether the event is an RTC notification. */
     isRtcNotification: boolean;
+    /** Whether the tile is the last event of its sender's series. */
+    isLastInSection?: boolean;
 }
 
 /** EventTile avatar and sender profile display state. */
@@ -89,6 +102,7 @@ export function getEventTileSenderProfileState({
     isRoomCreate,
     isCallInvite,
     isRtcNotification,
+    isLastInSection,
 }: EventTileSenderProfileStateInput): EventTileSenderProfileState {
     if (isRenderingNotification) {
         return { avatarSize: "24px", needsSenderProfile: true };
@@ -111,6 +125,17 @@ export function getEventTileSenderProfileState({
 
     if (layout === Layout.IRC) {
         return { avatarSize: "14px", needsSenderProfile: true };
+    }
+
+    // Inside: in the bubble layout of the room timeline and search the avatar sits at the last bubble of a
+    // sender's series, as in Telegram, while the sender name stays above the first bubble.
+    if (
+        isInsideBubbleSeriesTimeline(layout, timelineRenderingType) &&
+        !isCallInvite &&
+        !ElementCallEventType.matches(eventType) &&
+        !isRtcNotification
+    ) {
+        return { avatarSize: isLastInSection ? "30px" : null, needsSenderProfile: !continuation };
     }
 
     if (

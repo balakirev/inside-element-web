@@ -205,7 +205,7 @@ exports[`AppearanceUserSettingsTab > should render 1`] = `
                       <div
                         aria-atomic="true"
                         aria-live="off"
-                        class="_root mx_EventTile _stateOwnEvent _layoutGroup"
+                        class="_root mx_EventTile _stateOwnEvent _stateLastInSection _layoutGroup"
                         data-event-id="$9999999999999999999999999999999999999999999"
                         data-scroll-tokens="$9999999999999999999999999999999999999999999"
                         data-testid="event-tile"
@@ -313,7 +313,7 @@ exports[`AppearanceUserSettingsTab > should render 1`] = `
                       <div
                         aria-atomic="true"
                         aria-live="off"
-                        class="_root mx_EventTile _stateOwnEvent _layoutBubble"
+                        class="_root mx_EventTile mx_EventTile_inside_lastInSeries _stateOwnEvent _stateLastInSection _layoutBubble"
                         data-event-id="$9999999999999999999999999999999999999999999"
                         data-scroll-tokens="$9999999999999999999999999999999999999999999"
                         data-testid="event-tile"
@@ -421,7 +421,7 @@ exports[`AppearanceUserSettingsTab > should render 1`] = `
                       <div
                         aria-atomic="true"
                         aria-live="off"
-                        class="_root mx_EventTile _stateOwnEvent _layoutIrc"
+                        class="_root mx_EventTile _stateOwnEvent _stateLastInSection _layoutIrc"
                         data-event-id="$9999999999999999999999999999999999999999999"
                         data-scroll-tokens="$9999999999999999999999999999999999999999999"
                         data-testid="event-tile"

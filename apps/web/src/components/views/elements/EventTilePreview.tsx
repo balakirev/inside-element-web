@@ -123,6 +123,7 @@ export default class EventTilePreview extends React.Component<IProps, IState> {
                         mxEvent={event}
                         layout={this.props.layout}
                         as="div"
+                        lastInSection
                         hideTimestamp
                         inhibitInteraction
                         useEventSenderSnapshot

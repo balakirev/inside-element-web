@@ -19,6 +19,7 @@ import {
     type EventTileSenderProfileState,
     type FooterDisplayState,
     getEventTileSenderProfileState,
+    isInsideBubbleSeriesTimeline,
     getEventTileTimestamp,
     getFooterDisplayState,
     getIsContinuation,
@@ -275,6 +276,12 @@ const EVENT_TILE_VIEW_CLASS_NAMES: EventTileViewClassNames = {
     line: "mx_EventTile_line",
 };
 
+/** Inside: class names for the tile that carries the avatar of a bubble series (its last bubble). */
+const INSIDE_LAST_IN_SERIES_CLASS_NAMES: EventTileViewClassNames = {
+    ...EVENT_TILE_VIEW_CLASS_NAMES,
+    root: "mx_EventTile mx_EventTile_inside_lastInSeries",
+};
+
 /** Sender state derived for the EventTile snapshot. */
 export interface EventTileSenderSnapshot {
     /** The Matrix sender ID, when available. */
@@ -515,7 +522,13 @@ export class EventTileViewModel extends BaseViewModel<EventTileViewModelRenderSt
             snapshot,
             root: snapshot.root,
             line: snapshot.line,
-            classNames: EVENT_TILE_VIEW_CLASS_NAMES,
+            classNames:
+                isInsideBubbleSeriesTimeline(props.display.layout, props.display.timelineRenderingType) &&
+                props.display.isLastInSection &&
+                !props.display.isInfoMessage &&
+                snapshot.sender.profileState.avatarSize !== null
+                    ? INSIDE_LAST_IN_SERIES_CLASS_NAMES
+                    : EVENT_TILE_VIEW_CLASS_NAMES,
             timestamp: snapshot.timestamp,
             e2ePadlock: {
                 showInGroupLine: !useIRCLayout && showPadlock,
@@ -613,6 +626,7 @@ export class EventTileViewModel extends BaseViewModel<EventTileViewModelRenderSt
             isRoomCreate: event.isRoomCreate,
             isCallInvite: event.isCallInvite,
             isRtcNotification: event.isRtcNotification,
+            isLastInSection: display.isLastInSection,
         });
         const showTimestamp = getShouldShowTimestamp({
             eventTs: event.eventTs,
