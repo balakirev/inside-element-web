@@ -13,10 +13,13 @@ import { PillType } from "../components/views/elements/PillType";
 import { SDKContext } from "../contexts/SDKContext";
 import { type SDKContextClass } from "../contexts/SDKContextClass";
 import { type PermalinkParts } from "../utils/permalinks/PermalinkConstructor";
+import { InsideLocalizedNames } from "../utils/InsideLocalizedNames";
 
 const createMemberFromProfile = (userId: string, profile: IMatrixProfile): RoomMember => {
     const member = new RoomMember("", userId);
-    member.name = profile.displayname ?? userId;
+    // Inside: the profile carries the Latin name (`is.ins.name.en`); show it in an English interface.
+    InsideLocalizedNames.instance.noteProfile(userId, profile as Record<string, unknown>);
+    member.name = InsideLocalizedNames.instance.localizeUserName(userId, profile.displayname ?? userId);
     member.rawDisplayName = member.name;
     member.events.member = {
         getContent: () => {

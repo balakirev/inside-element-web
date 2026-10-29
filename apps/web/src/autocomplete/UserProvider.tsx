@@ -33,6 +33,7 @@ import { makeUserPermalink } from "../utils/permalinks/Permalinks";
 import { type ICompletion, type ISelectionRange } from "./Autocompleter";
 import MemberAvatar from "../components/views/avatars/MemberAvatar";
 import { type TimelineRenderingType } from "../contexts/RoomContext";
+import { InsideLocalizedNames } from "../utils/InsideLocalizedNames";
 
 const USER_REGEX = /\B@\S*/g;
 
@@ -55,7 +56,11 @@ export default class UserProvider extends AutocompleteProvider {
         this.room = room;
         this.matcher = new QueryMatcher<RoomMember>([], {
             keys: ["name"],
-            funcs: [(obj) => obj.userId.slice(1)], // index by user id minus the leading '@'
+            funcs: [
+                (obj) => obj.userId.slice(1), // index by user id minus the leading '@'
+                // Inside: either spelling of the name (Latin `is.ins.name.en` or the display name).
+                (obj) => InsideLocalizedNames.instance.getMemberSpellings(obj),
+            ],
             shouldMatchWordsOnly: false,
         });
 

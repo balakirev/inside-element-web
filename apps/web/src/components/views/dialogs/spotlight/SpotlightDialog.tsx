@@ -98,6 +98,7 @@ import { filterBoolean } from "../../../../utils/arrays";
 import { transformSearchTerm } from "../../../../utils/SearchInput";
 import { Filter } from "./Filter";
 import { useInsideLayout } from "../../../../utils/InsideLayout";
+import { InsideLocalizedNames } from "../../../../utils/InsideLocalizedNames";
 
 const MAX_RECENT_SEARCHES = 10;
 const SECTION_LIMIT = 50; // only show 50 results per section for performance reasons
@@ -216,7 +217,10 @@ const toRoomResult = (room: Room): IRoomResult => {
     if (otherUserId) {
         const otherMembers = room.getMembers().filter((it) => it.userId !== myUserId);
         const query = [
-            ...otherMembers.map((it) => it.name.toLowerCase()),
+            // Inside: either spelling of the name (Latin `is.ins.name.en` or the display name).
+            ...otherMembers
+                .flatMap((it) => InsideLocalizedNames.instance.getMemberSpellings(it))
+                .map((it) => it.toLowerCase()),
             ...otherMembers.map((it) => it.userId.toLowerCase()),
         ].filter(Boolean);
         return {
@@ -236,6 +240,8 @@ const toRoomResult = (room: Room): IRoomResult => {
             room,
             section: Section.Rooms,
             filter: [],
+            // Inside: a system room is found by its name in either language.
+            query: InsideLocalizedNames.instance.getRoomNameSpellings(room).map((it) => it.toLowerCase()),
         };
     }
 };
@@ -245,7 +251,14 @@ const toMemberResult = (member: Member | RoomMember, alreadyFiltered: boolean): 
     member,
     section: Section.Suggestions,
     filter: [Filter.People],
-    query: [member.userId.toLowerCase(), member.name.toLowerCase()].filter(Boolean),
+    query: [
+        member.userId.toLowerCase(),
+        // Inside: either spelling of the name (Latin `is.ins.name.en` or the display name).
+        ...(member instanceof RoomMember
+            ? InsideLocalizedNames.instance.getMemberSpellings(member)
+            : InsideLocalizedNames.instance.getNameSpellings(member.userId, member.name)
+        ).map((it) => it.toLowerCase()),
+    ].filter(Boolean),
 });
 
 export const useWebSearchMetrics = (numResults: number, queryLength: number, viaSpotlight: boolean): void => {
