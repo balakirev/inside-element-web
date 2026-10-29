@@ -7,7 +7,7 @@
 
 // @vitest-environment happy-dom
 
-import { vi, describe, it, expect, beforeEach } from "vitest";
+import { vi, describe, it, expect, beforeEach, afterEach } from "vitest";
 import React from "react";
 import { render, screen } from "test-utils-rtl";
 import { clientAndSDKContextRenderOptions, createTestClient, TestSDKContext } from "test-utils";
@@ -98,5 +98,37 @@ describe("<RoomListPanel />", () => {
         await userEv.keyboard("{Control>}{F6}{/Control}");
 
         expect(LandmarkNavigation.findAndFocusNextLandmark).not.toHaveBeenCalled();
+    });
+
+    // Inside: windows too narrow for the space panel get its folders as tabs, a menu and a new message button.
+    describe("in a narrow window", () => {
+        beforeEach(() => {
+            vi.spyOn(window, "matchMedia").mockImplementation(
+                (query: string) =>
+                    ({
+                        matches: query.includes("925px"),
+                        addEventListener: vi.fn(),
+                        removeEventListener: vi.fn(),
+                    }) as unknown as MediaQueryList,
+            );
+        });
+        afterEach(() => {
+            vi.mocked(window.matchMedia).mockRestore();
+        });
+
+        it("shows the menu, the search, the folder tabs and the new message button instead of the header", () => {
+            renderComponent();
+            expect(screen.getByRole("button", { name: "Menu" })).toBeInTheDocument();
+            expect(screen.getByRole("button", { name: "Search Ctrl K" })).toBeInTheDocument();
+            expect(screen.getByRole("tablist", { name: "Folders" })).toBeInTheDocument();
+            expect(screen.getByRole("button", { name: "New message" })).toBeInTheDocument();
+            expect(screen.queryByRole("toolbar", { name: "Sections" })).toBeNull();
+        });
+    });
+
+    it("shows the header and the bar under the list in a wide window", () => {
+        renderComponent();
+        expect(screen.queryByRole("tablist", { name: "Folders" })).toBeNull();
+        expect(screen.getByRole("toolbar", { name: "Sections" })).toBeInTheDocument();
     });
 });
