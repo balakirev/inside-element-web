@@ -55,6 +55,11 @@ export interface RoomAvatarEventViewProps {
      */
     renderAvatar(snapshot: RoomAvatarEventViewSnapshot): ReactNode;
     /**
+     * Inside: optionally renders the sender's name (e.g. as a button opening their user card);
+     * the plain display name otherwise.
+     */
+    renderSenderName?(snapshot: RoomAvatarEventViewSnapshot): ReactNode;
+    /**
      * Optional CSS class names applied to the root element.
      */
     className?: string;
@@ -70,6 +75,7 @@ export interface RoomAvatarEventViewProps {
 export function RoomAvatarEventView({
     vm,
     renderAvatar,
+    renderSenderName,
     className,
     ref,
 }: Readonly<RoomAvatarEventViewProps>): JSX.Element {
@@ -77,11 +83,14 @@ export function RoomAvatarEventView({
     const _t = useI18n().translate;
     const eventPresentationAttributes = useEventPresentationAttributes();
     const classes = classNames(styles.textualEvent, className);
+    // Inside: tags are replaced after variables, and only in text, so a rendered name goes in as a tag of its own.
+    const senderName = renderSenderName?.(snapshot);
+    const senderDisplayName = senderName ? "<senderName/>" : snapshot.senderDisplayName;
 
     if (snapshot.isRemoved) {
         return (
             <div className={classes} ref={ref as Ref<HTMLDivElement>} {...eventPresentationAttributes}>
-                {_t("timeline|m.room.avatar|removed", { senderDisplayName: snapshot.senderDisplayName })}
+                {_t("timeline|m.room.avatar|removed", { senderDisplayName }, { senderName: () => senderName })}
             </div>
         );
     }
@@ -90,8 +99,9 @@ export function RoomAvatarEventView({
         <span className={classes} ref={ref} {...eventPresentationAttributes}>
             {_t(
                 "timeline|m.room.avatar|changed_img",
-                { senderDisplayName: snapshot.senderDisplayName },
+                { senderDisplayName },
                 {
+                    senderName: () => senderName,
                     img: () => (
                         <button
                             type="button"

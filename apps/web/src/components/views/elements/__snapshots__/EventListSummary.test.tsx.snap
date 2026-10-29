@@ -27,7 +27,14 @@ exports[`EventListSummary > correctly orders sequences of transitions by the ord
   class="mx_TextualEvent mx_GenericEventListSummary_summary"
 >
   <span>
-    user_2
+    <span
+      class="mx_AccessibleButton mx_InsideServiceName"
+      data-user-id="@user_2:some.domain"
+      role="button"
+      tabindex="0"
+    >
+      user_2
+    </span>
      
     was unbanned and joined and left 2 times
   </span>
@@ -56,9 +63,23 @@ exports[`EventListSummary > handles a summary length = 2, with 1 "other" 1`] = `
 >
   <span>
     <span>
-      user_1
+      <span
+        class="mx_AccessibleButton mx_InsideServiceName"
+        data-user-id="@user_1:some.domain"
+        role="button"
+        tabindex="0"
+      >
+        user_1
+      </span>
       , 
-      user_2
+      <span
+        class="mx_AccessibleButton mx_InsideServiceName"
+        data-user-id="@user_2:some.domain"
+        role="button"
+        tabindex="0"
+      >
+        user_2
+      </span>
        and one other
     </span>
      
@@ -73,9 +94,23 @@ exports[`EventListSummary > handles a summary length = 2, with many "others" 1`]
 >
   <span>
     <span>
-      user_0
+      <span
+        class="mx_AccessibleButton mx_InsideServiceName"
+        data-user-id="@user_0:some.domain"
+        role="button"
+        tabindex="0"
+      >
+        user_0
+      </span>
       , 
-      user_1
+      <span
+        class="mx_AccessibleButton mx_InsideServiceName"
+        data-user-id="@user_1:some.domain"
+        role="button"
+        tabindex="0"
+      >
+        user_1
+      </span>
        and 18 others
     </span>
      
@@ -89,9 +124,23 @@ exports[`EventListSummary > handles a summary length = 2, with no "others" 1`] =
   class="mx_TextualEvent mx_GenericEventListSummary_summary"
 >
   <span>
-    user_1
+    <span
+      class="mx_AccessibleButton mx_InsideServiceName"
+      data-user-id="@user_1:some.domain"
+      role="button"
+      tabindex="0"
+    >
+      user_1
+    </span>
      and 
-    user_2
+    <span
+      class="mx_AccessibleButton mx_InsideServiceName"
+      data-user-id="@user_2:some.domain"
+      role="button"
+      tabindex="0"
+    >
+      user_2
+    </span>
      
     joined 2 times
   </span>
@@ -103,7 +152,14 @@ exports[`EventListSummary > handles invitation plurals correctly when there are 
   class="mx_TextualEvent mx_GenericEventListSummary_summary"
 >
   <span>
-    user_1
+    <span
+      class="mx_AccessibleButton mx_InsideServiceName"
+      data-user-id="@user_1:some.domain"
+      role="button"
+      tabindex="0"
+    >
+      user_1
+    </span>
      
     rejected their invitation 2 times
   </span>
@@ -116,7 +172,14 @@ exports[`EventListSummary > handles invitation plurals correctly when there are 
 >
   <span>
     <span>
-      user_1
+      <span
+        class="mx_AccessibleButton mx_InsideServiceName"
+        data-user-id="@user_1:some.domain"
+        role="button"
+        tabindex="0"
+      >
+        user_1
+      </span>
        and one other
     </span>
      
@@ -180,7 +243,14 @@ exports[`EventListSummary > knocks (ask to join enabled) > summarises a knock th
   class="mx_TextualEvent mx_GenericEventListSummary_summary"
 >
   <span>
-    user_1
+    <span
+      class="mx_AccessibleButton mx_InsideServiceName"
+      data-user-id="@user_1:some.domain"
+      role="button"
+      tabindex="0"
+    >
+      user_1
+    </span>
      
     requested to join, was granted access and joined
   </span>
@@ -192,7 +262,14 @@ exports[`EventListSummary > knocks (ask to join enabled) > summarises a knock th
   class="mx_TextualEvent mx_GenericEventListSummary_summary"
 >
   <span>
-    user_1
+    <span
+      class="mx_AccessibleButton mx_InsideServiceName"
+      data-user-id="@user_1:some.domain"
+      role="button"
+      tabindex="0"
+    >
+      user_1
+    </span>
      
     requested to join, cancelled their request to join, requested to join and had their request to join rejected
   </span>
@@ -204,7 +281,14 @@ exports[`EventListSummary > renders collapsed events if events.length = props.th
   class="mx_TextualEvent mx_GenericEventListSummary_summary"
 >
   <span>
-    user_1
+    <span
+      class="mx_AccessibleButton mx_InsideServiceName"
+      data-user-id="@user_1:some.domain"
+      role="button"
+      tabindex="0"
+    >
+      user_1
+    </span>
      
     joined and left and joined
   </span>
@@ -259,7 +343,14 @@ exports[`EventListSummary > truncates long join,leave repetitions 1`] = `
   class="mx_TextualEvent mx_GenericEventListSummary_summary"
 >
   <span>
-    user_1
+    <span
+      class="mx_AccessibleButton mx_InsideServiceName"
+      data-user-id="@user_1:some.domain"
+      role="button"
+      tabindex="0"
+    >
+      user_1
+    </span>
      
     joined and left 7 times
   </span>
@@ -271,7 +362,14 @@ exports[`EventListSummary > truncates long join,leave repetitions between other 
   class="mx_TextualEvent mx_GenericEventListSummary_summary"
 >
   <span>
-    user_1
+    <span
+      class="mx_AccessibleButton mx_InsideServiceName"
+      data-user-id="@user_1:some.domain"
+      role="button"
+      tabindex="0"
+    >
+      user_1
+    </span>
      
     was unbanned, joined and left 7 times and was invited
   </span>

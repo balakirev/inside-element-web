@@ -10,7 +10,7 @@ Please see LICENSE files in the repository root for full details.
 
 import { describe, it, expect, beforeEach, afterEach, afterAll, vi, type MockInstance } from "vitest";
 import React, { type ComponentProps } from "react";
-import { render, type RenderResult } from "test-utils-rtl";
+import { fireEvent, render, screen, type RenderResult } from "test-utils-rtl";
 import { type MatrixEvent, RoomMember } from "matrix-js-sdk/src/matrix";
 import { KnownMembership, type Membership } from "matrix-js-sdk/src/types";
 import {
@@ -26,6 +26,8 @@ import { Layout } from "../../../settings/enums/Layout";
 import SettingsStore from "../../../settings/SettingsStore";
 import MatrixClientContext from "../../../contexts/MatrixClientContext";
 import * as languageSettings from "../../../i18n/settings";
+import defaultDispatcher from "../../../dispatcher/dispatcher";
+import { Action } from "../../../dispatcher/actions";
 
 describe("EventListSummary", function () {
     const roomId = "!room:server.org";
@@ -895,6 +897,41 @@ describe("EventListSummary", function () {
                 { avatar_url: null },
             );
             expect(summaryFor(event)).toBe("user_1 changed their profile picture");
+        });
+
+        it("Inside: makes the name in a summary of name changes a button opening the user card", () => {
+            const dispatch = vi.spyOn(defaultDispatcher, "dispatch");
+            const events = ["А", "Б", "В", "Г", "Д"].map((name, i, all) => {
+                const e = generateProfileEvent(
+                    "@dmitry:some.domain",
+                    { displayname: all[i - 1] ?? "Дима" },
+                    { displayname: name },
+                );
+                e.event.event_id = `event${i}`;
+                e.target!.name = "Дмитрий Балакирев";
+                return e;
+            });
+            const { container } = renderComponent({
+                events,
+                children: generateTiles(events),
+                summaryLength: 1,
+                avatarsMaxLength: 5,
+                threshold: 3,
+            });
+
+            const summary = container.querySelector(".mx_GenericEventListSummary_summary")!;
+            expect(summary).toHaveTextContent("Дмитрий Балакирев changed their name 5 times");
+            const button = screen.getByRole("button", { name: "Дмитрий Балакирев" });
+            expect(button).toHaveClass("mx_InsideServiceName");
+
+            fireEvent.click(button);
+            expect(dispatch).toHaveBeenCalledWith({
+                action: Action.ViewUser,
+                member: events[events.length - 1].target,
+                push: false,
+            });
+            // The click opens the card and does not expand the summary.
+            expect(container.querySelector(".mx_GenericEventListSummary")).toHaveAttribute("data-expanded", "false");
         });
     });
 });

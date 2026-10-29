@@ -1,0 +1,24 @@
+/*
+Copyright 2026 Inside Estate.
+
+SPDX-License-Identifier: AGPL-3.0-only OR GPL-3.0-only OR LicenseRef-Element-Commercial
+Please see LICENSE files in the repository root for full details.
+*/
+
+/* Inside: a person's name in a service message, as in Telegram (InsideServiceName.tsx). */
+.mx_InsideServiceName {
+    font-weight: 600;
+    color: inherit;
+    cursor: pointer;
+    border-radius: 2px;
+
+    &:hover,
+    &:focus-visible {
+        text-decoration: underline;
+    }
+
+    &:focus-visible {
+        outline: 2px solid var(--cpd-color-border-focused);
+        outline-offset: 1px;
+    }
+}

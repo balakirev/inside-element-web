@@ -38,6 +38,7 @@ import LegacyCallEvent from "../components/views/messages/LegacyCallEvent";
 import { CallEvent } from "../components/views/messages/CallEvent";
 import { RoomPredecessorTile } from "../components/views/messages/RoomPredecessorTile";
 import RoomAvatar from "../components/views/avatars/RoomAvatar";
+import InsideServiceName from "../components/views/elements/InsideServiceName";
 import { WIDGET_LAYOUT_EVENT_TYPE } from "../stores/widgets/WidgetLayoutStore";
 import { ALL_RULE_TYPES } from "../mjolnir/BanList";
 import { MatrixClientPeg } from "../MatrixClientPeg";
@@ -158,7 +159,7 @@ function MJitsiWidgetEventWrappedView({ mxEvent, ref }: IBodyProps): JSX.Element
     return <MJitsiWidgetEventView vm={vm} ref={ref} className="mx_EventTileBubble" />;
 }
 
-function RoomAvatarEventWrappedView({ mxEvent, ref }: IBodyProps): JSX.Element {
+function RoomAvatarEventWrappedView({ mxEvent, ref, forExport }: IBodyProps): JSX.Element {
     const cli = useMatrixClientContext() ?? MatrixClientPeg.safeGet();
     const vm = useCreateAutoDisposedViewModel(() => new RoomAvatarEventViewModel({ mxEvent, cli }));
 
@@ -183,6 +184,15 @@ function RoomAvatarEventWrappedView({ mxEvent, ref }: IBodyProps): JSX.Element {
                     }}
                 />
             )}
+            renderSenderName={
+                forExport || !mxEvent.getSender()
+                    ? undefined
+                    : (snapshot) => (
+                          <InsideServiceName userId={mxEvent.getSender()!} member={mxEvent.sender}>
+                              {snapshot.senderDisplayName}
+                          </InsideServiceName>
+                      )
+            }
         />
     );
 }

@@ -405,9 +405,11 @@ describe("renderTile", () => {
             client,
         );
         if (!tile) throw new Error("Expected a room avatar event tile");
-        const { getByText, getByRole } = render(tile, withClientContextRenderOptions(client));
+        const { container, getByRole } = render(tile, withClientContextRenderOptions(client));
 
-        expect(getByText("Alice changed the room avatar to")).toBeInTheDocument();
+        expect(container).toHaveTextContent("Alice changed the room avatar to");
         expect(getByRole("button", { name: "Alice changed the avatar for General" })).toBeInTheDocument();
+        // Inside: the sender's name opens their user card.
+        expect(getByRole("button", { name: "Alice" })).toHaveClass("mx_InsideServiceName");
     });
 });
