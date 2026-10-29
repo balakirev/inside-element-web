@@ -8,11 +8,11 @@ Please see LICENSE files in the repository root for full details.
 
 // @vitest-environment happy-dom
 
-import { describe, it, beforeEach, expect, vi } from "vitest";
+import { describe, it, beforeEach, afterEach, expect, vi } from "vitest";
 import React from "react";
-import { render, fireEvent } from "test-utils-rtl";
+import { render, fireEvent, act } from "test-utils-rtl";
 
-import MainSplit from "./MainSplit";
+import MainSplit, { INSIDE_PANEL_LEAVE_MS, PANEL_LEAVING_CLASS } from "./MainSplit";
 import { PosthogAnalytics } from "../../PosthogAnalytics.ts";
 import { SDKContext } from "../../contexts/SDKContext.ts";
 import { SDKContextClass } from "../../contexts/SDKContextClass";
@@ -88,6 +88,71 @@ describe("<MainSplit/>", () => {
             panel: "right",
             roomType: "other_room",
             size: 400,
+        });
+    });
+
+    describe("Inside: the right panel slides out when closed", () => {
+        /** Pretend the window is `width` px wide, optionally asking for reduced motion. */
+        function mockWindow(width: number, reducedMotion = false): void {
+            vi.spyOn(window, "matchMedia").mockImplementation((query: string) => {
+                const max = /max-width:\s*(\d+)px/.exec(query);
+                const matches = max ? width <= Number(max[1]) : /reduce/.test(query) && reducedMotion;
+                return {
+                    matches,
+                    media: query,
+                    addEventListener: () => {},
+                    removeEventListener: () => {},
+                } as unknown as MediaQueryList;
+            });
+        }
+
+        beforeEach(() => {
+            vi.useFakeTimers();
+        });
+
+        afterEach(() => {
+            vi.useRealTimers();
+            vi.restoreAllMocks();
+        });
+
+        const renderSplit = (withPanel: boolean): ReturnType<typeof render> =>
+            render(
+                <MainSplit children={children} panel={withPanel ? panel : undefined} analyticsRoomType="other_room" />,
+            );
+
+        it("keeps the panel on a phone while it slides out, then removes it", () => {
+            mockWindow(390);
+            const { container, rerender } = renderSplit(true);
+            rerender(<MainSplit children={children} panel={undefined} analyticsRoomType="other_room" />);
+
+            const wrapper = container.querySelector(".mx_RightPanel_ResizeWrapper");
+            expect(wrapper).toHaveClass(PANEL_LEAVING_CLASS);
+            expect(wrapper).toHaveTextContent("Right panel");
+
+            act(() => vi.advanceTimersByTime(INSIDE_PANEL_LEAVE_MS));
+            expect(container.querySelector(".mx_RightPanel_ResizeWrapper")).toBeNull();
+        });
+
+        it("shows the panel again if it is reopened while sliding out", () => {
+            mockWindow(390);
+            const { container, rerender } = renderSplit(true);
+            rerender(<MainSplit children={children} panel={undefined} analyticsRoomType="other_room" />);
+            rerender(<MainSplit children={children} panel={panel} analyticsRoomType="other_room" />);
+
+            act(() => vi.advanceTimersByTime(INSIDE_PANEL_LEAVE_MS));
+            const wrapper = container.querySelector(".mx_RightPanel_ResizeWrapper");
+            expect(wrapper).not.toHaveClass(PANEL_LEAVING_CLASS);
+            expect(wrapper).toHaveTextContent("Right panel");
+        });
+
+        it.each([
+            ["a wide window", 1440, false],
+            ["reduced motion", 390, true],
+        ])("removes the panel at once with %s", (_, width, reducedMotion) => {
+            mockWindow(width, reducedMotion);
+            const { container, rerender } = renderSplit(true);
+            rerender(<MainSplit children={children} panel={undefined} analyticsRoomType="other_room" />);
+            expect(container.querySelector(".mx_RightPanel_ResizeWrapper")).toBeNull();
         });
     });
 });
