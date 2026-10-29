@@ -261,6 +261,95 @@ describe("BasicMessageComposer", () => {
         // but the important thing is that the event wasn't ignored
         // The test passes if no errors are thrown and the event is handled
     });
+
+    describe("Inside: formats as in Telegram Desktop", () => {
+        const wrapper = ({ children }: { children: React.ReactNode }) => (
+            <SDKContext.Provider value={SDKContextClass.instance}>{children}</SDKContext.Provider>
+        );
+
+        function formats(model: EditorModel) {
+            return model.parts.map((p) => (p.format ? [p.text, p.format] : p.text));
+        }
+
+        it("pastes HTML with its formatting, not as markdown", async () => {
+            const model = new EditorModel([], pc, renderer);
+            render(<BasicMessageComposer model={model} room={room} />, { wrapper });
+            await userEvent.paste(
+                generateMockDataTransfer({
+                    "text/plain": "Hello world, see docs",
+                    "text/html":
+                        '<meta charset="utf-8"><p>Hello <b>world</b>, see <a href="https://example.org/docs">docs</a></p>',
+                }),
+            );
+            expect(formats(model)).toEqual([
+                "Hello ",
+                ["world", { bold: true }],
+                ", see ",
+                ["docs", { link: "https://example.org/docs" }],
+            ]);
+            // Shown formatted in the field.
+            expect(screen.getByText("world")).toHaveClass("mx_BasicMessageComposer_format_bold");
+            expect(screen.getByText("docs")).toHaveClass("mx_BasicMessageComposer_format_link");
+        });
+
+        it("turns markdown in pasted plain text into formats", async () => {
+            const model = new EditorModel([], pc, renderer);
+            render(<BasicMessageComposer model={model} room={room} />, { wrapper });
+            await userEvent.paste(generateMockDataTransferForString("**bold**, *it* and `x = 1`, [site](https://a.b)"));
+            expect(formats(model)).toEqual([
+                ["bold", { bold: true }],
+                ", ",
+                ["it", { italic: true }],
+                " and ",
+                ["x = 1", { code: true }],
+                ", ",
+                ["site", { link: "https://a.b" }],
+            ]);
+        });
+
+        it("pastes plain text without markdown as it is", async () => {
+            const model = new EditorModel([], pc, renderer);
+            render(<BasicMessageComposer model={model} room={room} />, { wrapper });
+            await userEvent.paste(generateMockDataTransferForString("2*3*4 and snake_case_name"));
+            expect(formats(model)).toEqual(["2*3*4 and snake_case_name"]);
+        });
+
+        it.each([
+            ["KeyB", false, { bold: true }],
+            ["KeyI", false, { italic: true }],
+            ["KeyU", false, { underline: true }],
+            ["KeyX", true, { strike: true }],
+            ["KeyM", true, { code: true }],
+        ])("Ctrl+%s (shift: %s) formats the selection", async (code, shiftKey, format) => {
+            const model = new EditorModel([pc.plain("hello world")], pc, renderer);
+            render(<BasicMessageComposer model={model} room={room} />, { wrapper });
+            const input = screen.getByRole("textbox");
+            const textNode = input.querySelector("div")!.firstChild!;
+            const range = document.createRange();
+            range.setStart(textNode, 6);
+            range.setEnd(textNode, 11);
+            document.getSelection()!.removeAllRanges();
+            document.getSelection()!.addRange(range);
+            const isMac = navigator.platform.toUpperCase().includes("MAC");
+            fireEvent.keyDown(input, {
+                code,
+                key: code.slice(3).toLowerCase(),
+                shiftKey,
+                ctrlKey: !isMac,
+                metaKey: isMac,
+            });
+            expect(formats(model)).toEqual(["hello ", ["world", format]]);
+            // And off again.
+            fireEvent.keyDown(input, {
+                code,
+                key: code.slice(3).toLowerCase(),
+                shiftKey,
+                ctrlKey: !isMac,
+                metaKey: isMac,
+            });
+            expect(formats(model)).toEqual(["hello world"]);
+        });
+    });
 });
 
 function generateMockDataTransferForString(string: string): DataTransfer {
@@ -280,4 +369,12 @@ function generateMockDataTransferForString(string: string): DataTransfer {
         setData: () => {},
         setDragImage: () => {},
     };
+}
+
+function generateMockDataTransfer(data: Record<string, string>): DataTransfer {
+    return {
+        ...generateMockDataTransferForString(data["text/plain"] ?? ""),
+        getData: (type: string) => data[type] ?? "",
+        types: Object.keys(data),
+    } as DataTransfer;
 }

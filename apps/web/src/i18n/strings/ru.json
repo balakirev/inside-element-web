@@ -586,6 +586,9 @@
         "warning": "Внимание"
     },
     "composer": {
+        "attach_camera": "Камера",
+        "attach_file": "Файл",
+        "attach_photo_video": "Фото или видео",
         "autocomplete": {
             "@room_description": "Уведомить весь чат",
             "command_a11y": "Автозаполнение команды",
@@ -610,6 +613,9 @@
         "format_italic": "Курсив",
         "format_italics": "Курсив",
         "format_link": "Ссылка",
+        "format_link_placeholder": "Адрес ссылки",
+        "format_link_remove": "Убрать ссылку",
+        "format_monospace": "Моноширинный",
         "format_ordered_list": "Нумерованный список",
         "format_strikethrough": "Перечёркнутый",
         "format_underline": "Подчёркнутый",

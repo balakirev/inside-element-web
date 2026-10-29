@@ -18,15 +18,19 @@ import type EditorModel from "../../../editor/model";
 import HistoryManager from "../../../editor/history";
 import { type Caret, setSelection } from "../../../editor/caret";
 import {
+    clearRangeFormat,
     formatRange,
-    formatRangeAsLink,
+    rangeFormat,
     replaceRangeAndMoveCaret,
+    setRangeLink,
     toggleInlineFormat,
+    toggleInlineMark,
 } from "../../../editor/operations";
+import { type InlineFormat, type InlineMark, normalizeLinkTarget, withLink } from "../../../editor/insideFormat";
 import { getCaretOffsetAndText, getRangeForSelection } from "../../../editor/dom";
 import Autocomplete, { generateCompletionDomId } from "../rooms/Autocomplete";
 import { getAutoCompleteCreator, type Part, type SerializedPart, Type } from "../../../editor/parts";
-import { parseEvent, parsePlainTextMessage } from "../../../editor/deserialize";
+import { parseEvent, parsePastedContent, parsePlainTextMessage } from "../../../editor/deserialize";
 import { renderModel } from "../../../editor/render";
 import SettingsStore from "../../../settings/SettingsStore";
 import { IS_MAC, Key } from "../../../Keyboard";
@@ -36,7 +40,7 @@ import MessageComposerFormatBar, { Formatting } from "./MessageComposerFormatBar
 import type DocumentOffset from "../../../editor/offset";
 import { type IDiff } from "../../../editor/diff";
 import type AutocompleteWrapperModel from "../../../editor/autocomplete";
-import type DocumentPosition from "../../../editor/position";
+import DocumentPosition from "../../../editor/position";
 import { type ICompletion } from "../../../autocomplete/Autocompleter";
 import { getKeyBindingsManager } from "../../../KeyBindingsManager";
 import { ALTERNATE_KEY_NAME, KeyBindingAction } from "../../../accessibility/KeyboardShortcuts";
@@ -111,7 +115,43 @@ interface IState {
     autoComplete?: AutocompleteWrapperModel;
     completionIndex?: number;
     surroundWith: boolean;
+    /** Inside: the formats of the selected text, for the format bar. */
+    activeFormat?: InlineFormat;
 }
+
+/**
+ * Inside: markdown typed in the composer that turns into a format as its closing marker is typed, as in
+ * Telegram Desktop: `**bold**`, `__italic__`, `*italic*`, `_italic_`, `~~strike~~`, `` `monospace` ``.
+ * The opening marker must start a word, the closing one end it, so `2*3*4` or `snake_case_` stay.
+ */
+const TYPED_MARKDOWN: { regex: RegExp; format: InlineFormat }[] = [
+    { regex: /(^|[\s(«"'„“])\*\*(?=\S)([^*\n]*?\S)\*\*$/, format: { bold: true } },
+    { regex: /(^|[\s(«"'„“])__(?=\S)([^_\n]*?\S)__$/, format: { italic: true } },
+    { regex: /(^|[\s(«"'„“])~~(?=\S)([^~\n]*?\S)~~$/, format: { strike: true } },
+    { regex: /(^|[\s(«"'„“])\*(?=[^\s*])([^*\n]*?[^\s*])\*$/, format: { italic: true } },
+    { regex: /(^|[\s(«"'„“])_(?=[^\s_])([^_\n]*?[^\s_])_$/, format: { italic: true } },
+    { regex: /(^|[^`])`([^`\n]+)`$/, format: { code: true } },
+];
+
+/** Inside: the format shortcuts of Telegram Desktop, by key code so that they work in any keyboard layout. */
+const FORMAT_SHORTCUTS: { code: string; shift: boolean; action: Formatting | "clear" }[] = [
+    { code: "KeyB", shift: false, action: Formatting.Bold },
+    { code: "KeyI", shift: false, action: Formatting.Italics },
+    { code: "KeyU", shift: false, action: Formatting.Underline },
+    { code: "KeyX", shift: true, action: Formatting.Strikethrough },
+    { code: "KeyM", shift: true, action: Formatting.Code },
+    { code: "KeyE", shift: false, action: Formatting.Code },
+    { code: "KeyK", shift: false, action: Formatting.InsertLink },
+    { code: "KeyN", shift: true, action: "clear" },
+];
+
+const FORMAT_MARKS: Partial<Record<Formatting, InlineMark>> = {
+    [Formatting.Bold]: "bold",
+    [Formatting.Italics]: "italic",
+    [Formatting.Underline]: "underline",
+    [Formatting.Strikethrough]: "strike",
+    [Formatting.Code]: "code",
+};
 
 export default class BasicMessageEditor extends React.Component<IProps, IState> {
     public static contextType = SDKContext;
@@ -135,6 +175,10 @@ export default class BasicMessageEditor extends React.Component<IProps, IState> 
     private shouldShowPillAvatarSettingHandle?: string;
     private surroundWithHandle?: string;
     private readonly historyManager = new HistoryManager();
+    /** Inside: the text the link field of the format bar applies to. */
+    private linkRange?: Range;
+    /** Inside: text typed at this offset does not take the format before it (just after typed markdown). */
+    private detachFormatAt: number | null = null;
 
     public constructor(props: IProps) {
         super(props);
@@ -348,15 +392,18 @@ export default class BasicMessageEditor extends React.Component<IProps, IState> 
             const serializedTextParts = JSON.parse(partsText);
             parts = serializedTextParts.map((p: SerializedPart) => partCreator.deserializePart(p));
         } else {
-            parts = parsePlainTextMessage(plainText, partCreator, { shouldEscape: false });
+            // Inside: HTML keeps its formatting, markdown in plain text becomes formatting (editor/insideFormat.ts).
+            parts = parsePastedContent(data.getData("text/html"), plainText, partCreator);
         }
 
         this.modifiedFlag = true;
+        this.historyManager.ensureLastChangesPushed(model);
         const range = getRangeForSelection(this.editorRef.current, model, document.getSelection()!);
 
         // If the user is pasting a link, and has a range selected which is not a link, wrap the range with the link
         if (plainText && range.length > 0 && isLinkable(plainText) && !isLinkable(range.text)) {
-            formatRangeAsLink(range, plainText);
+            // Inside: as a link format, as Telegram does, rather than markdown.
+            setRangeLink(range, normalizeLinkTarget(plainText) ?? plainText.trim());
         } else {
             replaceRangeAndMoveCaret(range, parts);
         }
@@ -462,8 +509,13 @@ export default class BasicMessageEditor extends React.Component<IProps, IState> 
         return this._isCaretAtEnd;
     }
 
-    private onBlur = (): void => {
+    private onBlur = (ev: React.FocusEvent): void => {
         document.removeEventListener("selectionchange", this.onSelectionChange);
+        // Inside: the format bar goes with the focus, unless the focus went into it (the link field).
+        if (!this.formatBarRef.current?.contains(ev.relatedTarget as Node | null)) {
+            this.formatBarRef.current?.hide();
+            this.hasTextSelected = false;
+        }
     };
 
     private onFocus = (): void => {
@@ -485,7 +537,12 @@ export default class BasicMessageEditor extends React.Component<IProps, IState> 
         } else if (!selection.isCollapsed && !isEmpty) {
             this.hasTextSelected = true;
             const range = getRangeForSelection(this.editorRef.current, this.props.model, selection);
-            if (this.formatBarRef.current && this.state.useMarkdown && !!range.text.trim()) {
+            // Inside: formats do not need markdown, so the bar is there with markdown off too.
+            if (this.formatBarRef.current && !!range.text.trim()) {
+                const activeFormat = rangeFormat(range);
+                if (JSON.stringify(activeFormat) !== JSON.stringify(this.state.activeFormat)) {
+                    this.setState({ activeFormat });
+                }
                 const selectionRect = selection.getRangeAt(0).getBoundingClientRect();
                 this.formatBarRef.current.showAt(selectionRect);
             }
@@ -572,6 +629,13 @@ export default class BasicMessageEditor extends React.Component<IProps, IState> 
         }
 
         if (handled) {
+            event.preventDefault();
+            event.stopPropagation();
+            return;
+        }
+
+        // Inside: the format shortcuts of Telegram Desktop (Ctrl/Cmd+B, I, U, K, Shift+X, Shift+M, Shift+N).
+        if (this.handleFormatShortcut(event)) {
             event.preventDefault();
             event.stopPropagation();
             return;
@@ -718,9 +782,14 @@ export default class BasicMessageEditor extends React.Component<IProps, IState> 
         this.setState({ surroundWith });
     };
 
-    private transform = (documentPosition: DocumentPosition): void => {
+    private transform = (documentPosition: DocumentPosition, inputType?: string, diff?: IDiff): number => {
+        // Inside: links and typed markdown (see detachTypedText and replaceTypedMarkdown).
+        this.detachTypedText(inputType, diff);
+        const markdownAdded = this.replaceTypedMarkdown(documentPosition, inputType, diff);
+        if (markdownAdded) return markdownAdded;
         const shouldReplace = SettingsStore.getValue("MessageComposerInput.autoReplaceEmoji");
         if (shouldReplace) this.replaceEmoticon(documentPosition, REGEX_EMOTICON_WHITESPACE);
+        return 0;
     };
 
     public componentWillUnmount(): void {
@@ -793,18 +862,156 @@ export default class BasicMessageEditor extends React.Component<IProps, IState> 
         return caretPosition;
     }
 
+    /** Inside: a format shortcut of Telegram Desktop, by key code. Returns whether it was one. */
+    private handleFormatShortcut(event: React.KeyboardEvent): boolean {
+        const primary = IS_MAC ? event.metaKey && !event.ctrlKey : event.ctrlKey && !event.metaKey;
+        if (!primary || event.altKey) return false;
+        const shortcut = FORMAT_SHORTCUTS.find((s) => s.code === event.code && s.shift === event.shiftKey);
+        if (!shortcut) return false;
+        const selection = document.getSelection();
+        const collapsed = !selection || selection.isCollapsed;
+        // Without a selection Ctrl+K stays the search, as in the rest of the app.
+        if (shortcut.action === Formatting.InsertLink && collapsed) return false;
+        if (shortcut.action === "clear") {
+            if (!collapsed && this.editorRef.current) {
+                const range = getRangeForSelection(this.editorRef.current, this.props.model, selection!);
+                this.historyManager.ensureLastChangesPushed(this.props.model);
+                this.modifiedFlag = true;
+                clearRangeFormat(range);
+                this.refreshActiveFormat();
+            }
+            return true;
+        }
+        // Also without a selection: the browser would otherwise put its own <b> into the field.
+        if (!collapsed) this.onFormatAction(shortcut.action);
+        return true;
+    }
+
+    private refreshActiveFormat(): void {
+        const selection = document.getSelection();
+        if (!this.editorRef.current || !selection || selection.isCollapsed) return;
+        const range = getRangeForSelection(this.editorRef.current, this.props.model, selection);
+        this.setState({ activeFormat: rangeFormat(range) });
+    }
+
     public onFormatAction = (action: Formatting): void => {
-        if (!this.state.useMarkdown || !this.editorRef.current) {
+        if (!this.editorRef.current) {
             return;
         }
 
         const range: Range = getRangeForSelection(this.editorRef.current, this.props.model, document.getSelection()!);
+
+        // Inside: bold, italic, underline, strike and monospace are formats of the text, shown as such, and a
+        // link is set in the bar's link field, as in Telegram. Quotes and multi-line code stay markdown.
+        const mark = FORMAT_MARKS[action];
+        if (mark && !(action === Formatting.Code && range.text.trim().includes("\n"))) {
+            this.historyManager.ensureLastChangesPushed(this.props.model);
+            this.modifiedFlag = true;
+            toggleInlineMark(range, mark);
+            this.refreshActiveFormat();
+            return;
+        }
+        if (action === Formatting.InsertLink) {
+            this.openLinkField(range);
+            return;
+        }
+
+        if (!this.state.useMarkdown) {
+            return;
+        }
 
         this.historyManager.ensureLastChangesPushed(this.props.model);
         this.modifiedFlag = true;
 
         formatRange(range, action);
     };
+
+    /** Inside: the link field of the format bar, for the selected text. */
+    private openLinkField(range: Range): void {
+        const selection = document.getSelection();
+        const rect = selection?.rangeCount ? selection.getRangeAt(0).getBoundingClientRect() : undefined;
+        this.linkRange = range;
+        const current = rangeFormat(range)?.link;
+        this.setState({ activeFormat: rangeFormat(range) });
+        this.formatBarRef.current?.showLinkField(rect, current);
+    }
+
+    private onLinkSubmit = (value: string | undefined): void => {
+        const range = this.linkRange;
+        this.linkRange = undefined;
+        this.editorRef.current?.focus();
+        if (!range) return;
+        const href = value === undefined ? undefined : (normalizeLinkTarget(value) ?? null);
+        if (href === null) {
+            // Not an address we would send: give the selection back untouched.
+            setSelection(this.editorRef.current!, this.props.model, range);
+            return;
+        }
+        this.historyManager.ensureLastChangesPushed(this.props.model);
+        this.modifiedFlag = true;
+        setRangeLink(range, href);
+    };
+
+    private onLinkCancel = (refocus: boolean): void => {
+        const range = this.linkRange;
+        this.linkRange = undefined;
+        if (!refocus) return;
+        this.editorRef.current?.focus();
+        if (range && this.editorRef.current) setSelection(this.editorRef.current, this.props.model, range);
+    };
+
+    /**
+     * Inside: text typed at the end of a link does not extend the link, and text typed just after markdown
+     * that became a format does not take that format (Telegram). Returns the length change (none).
+     */
+    private detachTypedText(inputType: string | undefined, diff: IDiff | undefined): number {
+        const detachAt = this.detachFormatAt;
+        this.detachFormatAt = null;
+        if (!diff?.added || diff.removed || !inputType?.startsWith("insert") || inputType === "insertFromPaste") {
+            return 0;
+        }
+        const { model } = this.props;
+        const start = diff.at ?? 0;
+        const end = start + diff.added.length;
+        const pos = model.positionForOffset(end, true);
+        const part = model.parts[pos.index];
+        if (!part || part.type !== Type.Plain || !part.format || pos.offset !== part.text.length) return 0;
+        if (pos.offset < diff.added.length) return 0;
+        const detach = detachAt === start;
+        if (!detach && !part.format.link) return 0;
+        const format = detach ? undefined : withLink(part.format, undefined);
+        const range = model.startRange(
+            new DocumentPosition(pos.index, pos.offset - diff.added.length),
+            new DocumentPosition(pos.index, pos.offset),
+        );
+        range.replace([model.partCreator.plain(diff.added, format)]);
+        return 0;
+    }
+
+    /** Inside: typed markdown (see TYPED_MARKDOWN) becomes a format once it is closed. */
+    private replaceTypedMarkdown(caretPosition: DocumentPosition, inputType: string | undefined, diff?: IDiff): number {
+        if (inputType !== "insertText" || !diff?.added || !/[*_~`]$/.test(diff.added)) return 0;
+        const { model } = this.props;
+        const range = model.startRange(caretPosition);
+        let n = 500;
+        range.expandBackwardsWhile((index, offset, part) => {
+            n -= 1;
+            return n >= 0 && part.type === Type.Plain && !part.format && part.text[offset] !== "\n";
+        });
+        const text = range.text;
+        for (const { regex, format } of TYPED_MARKDOWN) {
+            const match = regex.exec(text);
+            if (!match) continue;
+            const prefix = match[1] ?? "";
+            const inner = match[2];
+            range.moveStartForwards(match.index + prefix.length);
+            const startOffset = range.start.asOffset(model).offset;
+            const added = range.replace([model.partCreator.plain(inner, format)]);
+            this.detachFormatAt = startOffset + inner.length;
+            return added;
+        }
+        return 0;
+    }
 
     public render(): React.ReactNode {
         let autoComplete: JSX.Element | undefined;
@@ -835,9 +1042,11 @@ export default class BasicMessageEditor extends React.Component<IProps, IState> 
         const shortcuts = {
             [Formatting.Bold]: ctrlShortcutLabel("B"),
             [Formatting.Italics]: ctrlShortcutLabel("I"),
-            [Formatting.Code]: ctrlShortcutLabel("E"),
+            [Formatting.Underline]: ctrlShortcutLabel("U"),
+            [Formatting.Strikethrough]: ctrlShortcutLabel("X", true),
+            [Formatting.Code]: ctrlShortcutLabel("M", true),
             [Formatting.Quote]: ctrlShortcutLabel(">", true),
-            [Formatting.InsertLink]: ctrlShortcutLabel("L", true),
+            [Formatting.InsertLink]: ctrlShortcutLabel("K"),
         };
 
         const { completionIndex } = this.state;
@@ -854,6 +1063,9 @@ export default class BasicMessageEditor extends React.Component<IProps, IState> 
                     ref={this.formatBarRef}
                     onAction={this.onFormatAction}
                     shortcuts={shortcuts}
+                    activeFormat={this.state.activeFormat}
+                    onLinkSubmit={this.onLinkSubmit}
+                    onLinkCancel={this.onLinkCancel}
                 />
                 <div
                     className={classes}

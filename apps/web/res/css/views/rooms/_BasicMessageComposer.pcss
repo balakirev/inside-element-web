@@ -101,3 +101,35 @@ Please see LICENSE files in the repository root for full details.
         height: 0;
     }
 }
+
+/* Inside: inline formats in the composer, shown as the message will show them (editor/insideFormat.ts). */
+.mx_BasicMessageComposer_format_bold {
+    font-weight: var(--cpd-font-weight-semibold);
+}
+.mx_BasicMessageComposer_format_italic {
+    font-style: italic;
+}
+.mx_BasicMessageComposer_format_underline {
+    text-decoration-line: underline;
+}
+.mx_BasicMessageComposer_format_strike {
+    text-decoration-line: line-through;
+}
+.mx_BasicMessageComposer_format_underline.mx_BasicMessageComposer_format_strike {
+    text-decoration-line: underline line-through;
+}
+.mx_BasicMessageComposer_format_code {
+    font-family: var(--cpd-font-family-mono), monospace;
+    font-size: 0.92em;
+    padding: 0 2px;
+    border-radius: 4px;
+    background-color: var(--cpd-color-bg-subtle-primary);
+}
+.mx_BasicMessageComposer_format_link {
+    color: var(--cpd-color-text-link-external);
+    text-decoration-line: underline;
+    text-underline-offset: 2px;
+}
+.mx_BasicMessageComposer_format_link.mx_BasicMessageComposer_format_strike {
+    text-decoration-line: underline line-through;
+}

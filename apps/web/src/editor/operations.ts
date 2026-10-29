@@ -10,6 +10,7 @@ import type Range from "./range";
 import { type Part, Type } from "./parts";
 import { Formatting } from "../components/views/rooms/MessageComposerFormatBar";
 import { longestBacktickSequence } from "./deserialize";
+import { type InlineFormat, type InlineMark, INLINE_MARKS, normalizeFormat, withLink, withMark } from "./insideFormat";
 
 /**
  * Some common queries and transformations on the editor model
@@ -305,4 +306,59 @@ export function toggleInlineFormat(range: Range, prefix: string, suffix = prefix
     } else {
         replaceRangeAndExpandSelection(range, parts);
     }
+}
+
+/**
+ * Inside: the formats every plain part of the range has (for the pressed buttons of the format bar).
+ */
+export function rangeFormat(range: Range): InlineFormat | undefined {
+    const plain = range.parts.filter((p) => p.type === Type.Plain && p.text.trim());
+    if (!plain.length) return undefined;
+    const out: InlineFormat = {};
+    for (const mark of INLINE_MARKS) {
+        if (plain.every((p) => p.format?.[mark])) out[mark] = true;
+    }
+    const link = plain[0].format?.link;
+    if (link && plain.every((p) => p.format?.link === link)) out.link = link;
+    return normalizeFormat(out);
+}
+
+function mapPlainParts(range: Range, map: (format?: InlineFormat) => InlineFormat | undefined): void {
+    const { partCreator } = range.model;
+    const newParts = range.parts.map((p) => (p.type === Type.Plain ? partCreator.plain(p.text, map(p.format)) : p));
+    replaceRangeAndExpandSelection(range, newParts);
+}
+
+/**
+ * Inside: turns a mark (bold, italic…) on for the selected text, or off if all of it has it, as Ctrl+B and
+ * the others do in Telegram Desktop. The text stays selected. Nothing happens without a selection.
+ */
+export function toggleInlineMark(range: Range, mark: InlineMark): void {
+    range.trim();
+    if (range.length === 0) return;
+    const plain = range.parts.filter((p) => p.type === Type.Plain && p.text.trim());
+    if (!plain.length) return;
+    const on = !plain.every((p) => p.format?.[mark]);
+    mapPlainParts(range, (format) => withMark(format, mark, on));
+}
+
+/**
+ * Inside: makes the selected text a link to `href` (removes the link when `href` is undefined). Without a
+ * selection the address is inserted as a link at the caret.
+ */
+export function setRangeLink(range: Range, href: string | undefined): void {
+    if (range.length === 0 || !range.text.trim()) {
+        if (!href) return;
+        const { partCreator } = range.model;
+        replaceRangeAndMoveCaret(range, [partCreator.plain(href, { link: href })]);
+        return;
+    }
+    range.trim();
+    mapPlainParts(range, (format) => withLink(format, href));
+}
+
+/** Inside: removes every format from the selected text (Ctrl+Shift+N in Telegram Desktop). */
+export function clearRangeFormat(range: Range): void {
+    if (range.length === 0) return;
+    mapPlainParts(range, () => undefined);
 }

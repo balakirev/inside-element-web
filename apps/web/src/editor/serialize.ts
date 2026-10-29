@@ -15,9 +15,88 @@ import { makeGenericPermalink } from "../utils/permalinks/Permalinks";
 import type EditorModel from "./model";
 import SettingsStore from "../settings/SettingsStore";
 import SdkConfig from "../SdkConfig";
-import { Type } from "./parts";
+import { type Part, Type } from "./parts";
+import { type FormatSegment, escapeMarkdownInline, segmentsToHtml, segmentsToMarkdown } from "./insideFormat";
+
+/** Inside: whether any part of the composer has an inline format (bold, link…). */
+export function hasInlineFormat(model: EditorModel): boolean {
+    return model.parts.some((p) => p.type === Type.Plain && !!p.format);
+}
+
+/**
+ * Inside: serialises the parts line by line, a formatted plain part through `formatted`, any other part
+ * through `unformatted`, and each line's formatted runs with `wrapLine`.
+ */
+function serializeWithFormats(
+    model: EditorModel,
+    unformatted: (part: Part) => string,
+    formatted: (text: string) => string,
+    wrapLine: (segments: FormatSegment[]) => string,
+    newline: string,
+): string {
+    let out = "";
+    let line: FormatSegment[] = [];
+    for (const part of model.parts) {
+        if (part.type === Type.Newline) {
+            out += wrapLine(line) + newline;
+            line = [];
+        } else if (part.type === Type.Plain && part.format) {
+            line.push({ out: formatted(part.text), raw: part.text, format: part.format });
+        } else {
+            line.push({ out: unformatted(part), raw: part.text });
+        }
+    }
+    return out + wrapLine(line);
+}
+
+function mdSerializePart(part: Part): string {
+    switch (part.type) {
+        case Type.Newline:
+            return "\n";
+        case Type.Plain:
+        case Type.Emoji:
+        case Type.Command:
+        case Type.PillCandidate:
+        case Type.AtRoomPill:
+            return part.text;
+        case Type.RoomPill: {
+            const url = makeGenericPermalink(part.resourceId, true);
+            const title = part.resourceId.replace(/[[\\\]]/g, (c) => "\\" + c);
+            return `[${title}](${url})`;
+        }
+        case Type.UserPill: {
+            const url = makeGenericPermalink(part.resourceId, true);
+            const title = part.text.replace(/[[\\\]]/g, (c) => "\\" + c).replace(/\n/g, "<br>");
+            return `[${title}](${url})`;
+        }
+    }
+}
+
+/**
+ * Inside: HTML for a composer with inline formats when markdown is off: the text as it is, the formats as tags.
+ */
+function htmlSerializeFormatted(model: EditorModel): string {
+    return serializeWithFormats(
+        model,
+        (part) => {
+            if (part.type === Type.UserPill || part.type === Type.RoomPill) {
+                const url = makeGenericPermalink(part.resourceId, true);
+                const text = part.type === Type.RoomPill ? part.resourceId : part.text;
+                return `<a href="${escapeHtml(url)}">${escapeHtml(text)}</a>`;
+            }
+            return escapeHtml(part.text);
+        },
+        escapeHtml,
+        segmentsToHtml,
+        "<br/>",
+    );
+}
 
 export function mdSerialize(model: EditorModel): string {
+    // Inside: formatted parts go out as tags the markdown renderer keeps, their text escaped.
+    if (hasInlineFormat(model)) {
+        return serializeWithFormats(model, mdSerializePart, escapeMarkdownInline, segmentsToMarkdown, "\n");
+    }
     return model.parts.reduce((html, part) => {
         switch (part.type) {
             case Type.Newline:
@@ -56,6 +135,7 @@ export function htmlSerializeIfNeeded(
     { forceHTML = false, useMarkdown = true }: ISerializeOpts = {},
 ): string | undefined {
     if (!useMarkdown) {
+        if (hasInlineFormat(model)) return htmlSerializeFormatted(model);
         return escapeHtml(textSerialize(model)).replace(/\n/g, "<br/>");
     }
 

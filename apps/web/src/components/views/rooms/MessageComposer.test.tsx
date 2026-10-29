@@ -214,7 +214,10 @@ describe("MessageComposer", () => {
                     beforeEach(async () => {
                         await act(() => SettingsStore.setValue(setting, null, SettingLevel.DEVICE, value));
                         wrapAndRender({ room });
-                        await userEvent.click(screen.getByLabelText("More options"));
+                        // Inside: the poll is in the attach menu.
+                        await userEvent.click(
+                            screen.getByLabelText(buttonLabel === "Poll" ? "Attachment" : "More options"),
+                        );
                     });
 
                     it(`should${value ? "" : " not"} display the button`, () => {
