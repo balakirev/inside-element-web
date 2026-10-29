@@ -104,6 +104,15 @@ export function getRoomI18nTopic(room: Room, lang: NamesLanguage = currentNamesL
     return pickI18n(room.currentState?.getStateEvents(ROOM_TOPIC_I18N_EVENT, "")?.getContent(), lang);
 }
 
+/**
+ * The page (or test environment) is still there. A timer of a client that a test assigned and never
+ * stopped can fire after the environment is torn down ("window is not defined", CI shard failure on
+ * build -31): such a timer does nothing.
+ */
+function environmentAlive(): boolean {
+    return typeof window !== "undefined";
+}
+
 function getLocalStorage(): Storage | undefined {
     try {
         return typeof window !== "undefined" ? window.localStorage : undefined;
@@ -196,6 +205,7 @@ export class LatinNameCache {
         if (!this.storage || this.saveTimer) return;
         this.saveTimer = setTimeout(() => {
             this.saveTimer = undefined;
+            if (!environmentAlive()) return;
             this.save();
         }, 1000);
     }
@@ -288,6 +298,7 @@ export class LatinNameLoader {
         if (this.flushTimer || !this.changed.size) return;
         this.flushTimer = setTimeout(() => {
             this.flushTimer = undefined;
+            if (!environmentAlive()) return;
             const userIds = [...this.changed];
             this.changed.clear();
             if (userIds.length) this.onChanged(userIds);
@@ -436,6 +447,7 @@ export class InsideLocalizedNames {
         // Once a day per name: ask again for the stale ones of people the client knows.
         this.refreshTimer = setInterval(
             () => {
+                if (!environmentAlive()) return;
                 for (const userId of this.cache.staleUserIds()) this.loader.request(userId);
             },
             60 * 60 * 1000,
