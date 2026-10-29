@@ -295,6 +295,99 @@ describe("<EditMessageComposer/>", () => {
         });
     });
 
+    describe("createEditContent for a media caption (Inside)", () => {
+        const photoContent = {
+            "msgtype": "m.image",
+            "url": "mxc://server/photo",
+            "info": { mimetype: "image/jpeg", w: 800, h: 600, size: 1234 },
+            "estate.inside.lobby.flag": true,
+        };
+        const photo = (content: Record<string, unknown>) =>
+            mkEvent({ type: "m.room.message", user: userId, room: roomId, content, event: true });
+        const modelWith = (text: string): EditorModel => {
+            const model = new EditorModel([], createPartCreator());
+            if (text) model.update(text, "insertText", new DocumentOffset(text.length, true));
+            return model;
+        };
+
+        it("replaces a caption with a new one, keeping the whole media content", () => {
+            const event = photo({ ...photoContent, body: "Old caption", filename: "photo.jpg" });
+            const content = createEditContent(modelWith("New caption"), event);
+
+            expect(content).toEqual({
+                "msgtype": "m.text",
+                "body": "* New caption",
+                "m.new_content": {
+                    ...photoContent,
+                    "body": "New caption",
+                    "filename": "photo.jpg",
+                    "m.mentions": {},
+                },
+                "m.relates_to": { rel_type: "m.replace", event_id: event.getId() },
+                "m.mentions": {},
+            });
+        });
+
+        it("adds a caption to media without one, moving the file name to filename", () => {
+            const event = photo({ ...photoContent, body: "photo.jpg" });
+            const content = createEditContent(modelWith("Hello *world*"), event);
+            const newContent = content["m.new_content"] as unknown as Record<string, unknown>;
+
+            expect(newContent).toEqual({
+                ...photoContent,
+                "body": "Hello *world*",
+                "filename": "photo.jpg",
+                "format": "org.matrix.custom.html",
+                "formatted_body": "Hello <em>world</em>",
+                "m.mentions": {},
+            });
+            expect(content.body).toBe("* Hello *world*");
+            expect((content as unknown as Record<string, unknown>).formatted_body).toBe("* Hello <em>world</em>");
+        });
+
+        it("removes the caption when it is cleared", () => {
+            const event = photo({
+                ...photoContent,
+                body: "Old *caption*",
+                filename: "photo.jpg",
+                format: "org.matrix.custom.html",
+                formatted_body: "Old <em>caption</em>",
+            });
+            const content = createEditContent(modelWith(""), event);
+
+            expect(content["m.new_content"]).toEqual({
+                ...photoContent,
+                "body": "photo.jpg",
+                "filename": "photo.jpg",
+                "m.mentions": {},
+            });
+            expect(content.body).toBe("* photo.jpg");
+            expect(content).not.toHaveProperty("formatted_body");
+        });
+
+        it("opens the editor with the caption and saves the edit", async () => {
+            const event = photo({ ...photoContent, body: "Old caption", filename: "photo.jpg" });
+            getComponent(new EditorStateTransfer(event));
+            expect(screen.getByRole("textbox")).toHaveTextContent("Old caption");
+
+            await editText(" + more");
+            fireEvent.click(screen.getByText("Save"));
+
+            await waitFor(() => expect(mockClient.sendMessage).toHaveBeenCalled());
+            const sent = mockClient.sendMessage.mock.calls[0][2] as unknown as Record<string, any>;
+            expect(sent["m.new_content"]).toMatchObject({
+                ...photoContent,
+                body: "Old caption + more",
+                filename: "photo.jpg",
+            });
+        });
+
+        it("opens the editor empty for media without a caption", () => {
+            getComponent(new EditorStateTransfer(photo({ ...photoContent, body: "photo.jpg" })));
+            expect(screen.getByRole("textbox").textContent).toBe("");
+        });
+    });
+
     describe("when message is not a reply", () => {
         it("should attach an empty mentions object for a message with no mentions", async () => {
             const editState = new EditorStateTransfer(editedEvent);

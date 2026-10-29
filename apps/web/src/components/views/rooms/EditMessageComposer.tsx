@@ -23,7 +23,7 @@ import EditorModel from "../../../editor/model";
 import { getCaretOffsetAndText } from "../../../editor/dom";
 import { htmlSerializeIfNeeded, textSerialize, containsEmote, stripEmoteCommand } from "../../../editor/serialize";
 import { findEditableEvent } from "../../../utils/EventUtils";
-import { parseEvent } from "../../../editor/deserialize";
+import { parseEvent, parseMediaCaption } from "../../../editor/deserialize";
 import { CommandPartCreator, type Part, type PartCreator, type SerializedPart } from "../../../editor/parts";
 import type EditorStateTransfer from "../../../utils/EditorStateTransfer";
 import BasicMessageComposer, { REGEX_EMOTICON } from "./BasicMessageComposer";
@@ -46,6 +46,7 @@ import type DocumentOffset from "../../../editor/offset";
 import { attachMentions, attachRelation } from "../../../utils/messages";
 import { filterBoolean } from "../../../utils/arrays";
 import { MatrixClientPeg } from "../../../MatrixClientPeg";
+import { buildMediaCaptionContent, getMediaBaseContent, isCaptionEditableEvent } from "../../../utils/mediaCaption";
 
 // exported for tests
 export function createEditContent(
@@ -53,6 +54,8 @@ export function createEditContent(
     editedEvent: MatrixEvent,
     replyToEvent?: MatrixEvent,
 ): RoomMessageEventContent {
+    if (isCaptionEditableEvent(editedEvent)) return createMediaCaptionEditContent(model, editedEvent, replyToEvent);
+
     const isEmote = containsEmote(model);
     if (isEmote) {
         model = stripEmoteCommand(model);
@@ -84,6 +87,36 @@ export function createEditContent(
     attachRelation(contentBody, { rel_type: "m.replace", event_id: editedEvent.getId() });
 
     return contentBody as RoomMessageEventContent;
+}
+
+/**
+ * Inside: the edit of a media message's caption. `m.new_content` is the whole media content with the
+ * new caption (see utils/mediaCaption.ts), so every client keeps showing the file; the fallback for
+ * clients without edits is the caption as text, "* caption".
+ */
+function createMediaCaptionEditContent(
+    model: EditorModel,
+    editedEvent: MatrixEvent,
+    replyToEvent?: MatrixEvent,
+): RoomMessageEventContent {
+    const caption = textSerialize(model).trim() ? textSerialize(model) : "";
+    const formattedCaption = caption
+        ? htmlSerializeIfNeeded(model, { useMarkdown: SettingsStore.getValue("MessageComposerInput.useMarkdown") })
+        : undefined;
+    const newContent = buildMediaCaptionContent(getMediaBaseContent(editedEvent), caption, formattedCaption);
+    const contentBody: Record<string, unknown> = {
+        "msgtype": MsgType.Text,
+        "body": `* ${newContent.body}`,
+        "m.new_content": newContent,
+    };
+    if (newContent.formatted_body) {
+        contentBody.format = newContent.format;
+        contentBody.formatted_body = `* ${newContent.formatted_body}`;
+    }
+    const content = contentBody as unknown as RoomMessageEventContent;
+    attachMentions(editedEvent.sender!.userId, content, model, replyToEvent, editedEvent.getContent());
+    attachRelation(content, { rel_type: "m.replace", event_id: editedEvent.getId() });
+    return content;
 }
 
 interface IEditMessageComposerProps extends MatrixClientProps {
@@ -343,7 +376,8 @@ export class EditMessageComposer extends React.Component<IEditMessageComposerPro
         // either text content or list of URL previews modified counts
         if (this.isContentModified(newContent) || this.props.isUrlPreviewsModified) {
             const roomId = editedEvent.getRoomId()!;
-            if (!containsEmote(this.model) && isSlashCommand(this.model)) {
+            // Inside: a caption is sent as typed, it cannot become a command's message.
+            if (!isCaptionEditableEvent(editedEvent) && !containsEmote(this.model) && isSlashCommand(this.model)) {
                 const [cmd, args, commandText] = getSlashCommand(roomId, this.model);
                 if (cmd) {
                     const threadId = editedEvent?.getThread()?.id || null;
@@ -444,9 +478,10 @@ export class EditMessageComposer extends React.Component<IEditMessageComposerPro
         } else {
             // otherwise, either restore serialized parts from localStorage or parse the body of the event
             const restoredParts = this.restoreStoredEditorState(partCreator);
+            const parse = isCaptionEditableEvent(editState.getEvent()) ? parseMediaCaption : parseEvent;
             parts =
                 restoredParts ||
-                parseEvent(editState.getEvent(), partCreator, {
+                parse(editState.getEvent(), partCreator, {
                     shouldEscape: SettingsStore.getValue("MessageComposerInput.useMarkdown"),
                 });
             isRestored = !!restoredParts;

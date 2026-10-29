@@ -86,6 +86,28 @@ Please see LICENSE files in the repository root for full details.
         color: var(--cpd-color-icon-accent-primary);
     }
 
+    /* The photo, video or file whose caption is edited. */
+    .mx_EditPreview_thumbnail {
+        flex-shrink: 0;
+        width: 36px;
+        height: 36px;
+        border-radius: 6px;
+        object-fit: cover;
+    }
+
+    .mx_EditPreview_thumbnail_icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: var(--cpd-color-bg-subtle-secondary);
+
+        svg {
+            width: 20px;
+            height: 20px;
+            color: var(--cpd-color-icon-secondary);
+        }
+    }
+
     .mx_EditPreview_content {
         flex: 1;
         min-width: 0;

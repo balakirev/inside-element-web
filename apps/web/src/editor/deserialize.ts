@@ -16,6 +16,7 @@ import SdkConfig from "../SdkConfig";
 import Markdown from "../Markdown";
 import { textToHtmlRainbow } from "../utils/colour";
 import { stripPlainReply } from "../utils/Reply";
+import { hasMediaCaption } from "../utils/mediaCaption";
 
 const LIST_TYPES = ["UL", "OL", "LI"];
 
@@ -301,6 +302,25 @@ export function parsePlainTextMessage(body: string, pc: PartCreator, opts: IPars
         }
         return parts;
     }, [] as Part[]);
+}
+
+/**
+ * Inside: the caption of a media message as editor parts, none when it has no caption (`body` is the
+ * file name then). See utils/mediaCaption.ts.
+ */
+export function parseMediaCaption(
+    event: MatrixEvent,
+    pc: PartCreator,
+    opts: IParseOptions = { shouldEscape: true },
+): Part[] {
+    const content = event.getContent();
+    if (!hasMediaCaption(content)) return [];
+    if (content.format === "org.matrix.custom.html" && content.formatted_body) {
+        return parseHtmlMessage(content.formatted_body, pc, opts);
+    }
+    const body: string = content.body;
+    const caption = event.replyEventId ? stripPlainReply(body) : body;
+    return parsePlainTextMessage(caption, pc, { ...opts, shouldEscape: opts.shouldEscape && needsEscaping(caption) });
 }
 
 export function parseEvent(event: MatrixEvent, pc: PartCreator, opts: IParseOptions = { shouldEscape: true }): Part[] {
