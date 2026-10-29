@@ -31,6 +31,7 @@ import { launchPollEditor } from "../components/views/messages/MPollBody";
 import { Action } from "../dispatcher/actions";
 import { type ViewRoomPayload } from "../dispatcher/payloads/ViewRoomPayload";
 import { ModuleApi } from "../modules/Api";
+import { isCaptionEditableContent } from "./mediaCaption";
 
 /**
  * Returns whether an event should allow actions like reply, reactions, edit, etc.
@@ -87,7 +88,21 @@ export function canEditContent(matrixClient: MatrixClient, mxEvent: MatrixEvent)
     const { msgtype, body } = mxEvent.getOriginalContent();
     return (
         M_POLL_START.matches(mxEvent.getType()) ||
-        ((msgtype === MsgType.Text || msgtype === MsgType.Emote) && !!body && typeof body === "string")
+        ((msgtype === MsgType.Text || msgtype === MsgType.Emote) && !!body && typeof body === "string") ||
+        canEditMediaCaption(mxEvent)
+    );
+}
+
+/**
+ * Inside: the caption of an own photo, video, file or audio message can be edited (or added), as in
+ * Telegram; not of voice or round video messages. Edited in the composer, so not with the rich text
+ * editor (labs), which edits in the timeline and knows only text.
+ */
+function canEditMediaCaption(mxEvent: MatrixEvent): boolean {
+    return (
+        mxEvent.getType() === EventType.RoomMessage &&
+        isCaptionEditableContent(mxEvent.getOriginalContent()) &&
+        !SettingsStore.getValue("feature_wysiwyg_composer")
     );
 }
 
@@ -130,7 +145,13 @@ export function findEditableEvent({
             // don't look further than MAX_JUMP_DISTANCE events from `fromEventId`
             // to not iterate potentially 1000nds of events on key up/down
             endIdx = Math.min(Math.max(0, i + inc * MAX_JUMP_DISTANCE), maxIdx);
-        } else if (foundFromEventId && !shouldHideEvent(e) && canEditOwnEvent(matrixClient, e)) {
+        } else if (
+            foundFromEventId &&
+            !shouldHideEvent(e) &&
+            canEditOwnEvent(matrixClient, e) &&
+            // Inside: up/down arrows keep editing text only, as in Element; captions are edited from the menu.
+            !isCaptionEditableContent(e.getOriginalContent())
+        ) {
             // otherwise look for editable event
             return e;
         }

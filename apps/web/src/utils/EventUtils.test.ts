@@ -25,6 +25,7 @@ import { vi, describe, it, expect, beforeEach, afterAll } from "vitest";
 import { getMockClientWithEventEmitter, makeBeaconInfoEvent, makePollStartEvent, stubClient } from "test-utils";
 
 import { MatrixClientPeg } from "../MatrixClientPeg";
+import SettingsStore from "../settings/SettingsStore";
 import {
     canCancel,
     canEditContent,
@@ -238,6 +239,71 @@ describe("EventUtils", () => {
 
             it.each<TestCase>(editableCases)("returns true for %s", (_description, event) => {
                 expect(canEditContent(mockClient, event)).toBe(true);
+            });
+        });
+        describe("canEditContent() for media captions (Inside)", () => {
+            const media = (content: Record<string, unknown>, sender = userId): MatrixEvent =>
+                new MatrixEvent({ type: EventType.RoomMessage, sender, content });
+            const url = "mxc://server/abc";
+
+            it.each<[string, Record<string, unknown>]>([
+                ["photo without a caption", { msgtype: MsgType.Image, body: "a.jpg", url }],
+                ["photo with a caption", { msgtype: MsgType.Image, body: "Look", filename: "a.jpg", url }],
+                ["video", { msgtype: MsgType.Video, body: "v.mp4", url }],
+                ["file", { msgtype: MsgType.File, body: "doc.pdf", filename: "doc.pdf", url }],
+                ["audio", { msgtype: MsgType.Audio, body: "song.mp3", url }],
+                ["encrypted file", { msgtype: MsgType.File, body: "doc.pdf", file: { url } }],
+            ])("returns true for an own %s", (_description, content) => {
+                expect(canEditContent(mockClient, media(content))).toBe(true);
+            });
+
+            it.each<[string, MatrixEvent]>([
+                ["someone else's photo", media({ msgtype: MsgType.Image, body: "a.jpg", url }, "@bob:server")],
+                [
+                    "voice message",
+                    media({ "msgtype": MsgType.Audio, "body": "Voice", url, "org.matrix.msc3245.voice": {} }),
+                ],
+                [
+                    "round video message",
+                    media({
+                        "msgtype": MsgType.Video,
+                        "body": "round.mp4",
+                        url,
+                        "estate.inside.lobby.video_note": true,
+                        "info": { w: 384, h: 384, duration: 5000 },
+                    }),
+                ],
+                ["media without a file", media({ msgtype: MsgType.Image, body: "a.jpg" })],
+                ["sticker", stickerEvent],
+            ])("returns false for a %s", (_description, event) => {
+                expect(canEditContent(mockClient, event)).toBe(false);
+            });
+
+            it("returns false for a redacted photo", () => {
+                const event = media({ msgtype: MsgType.Image, body: "a.jpg", url });
+                event.makeRedacted(event, new Room(roomId, mockClient, userId));
+                expect(canEditContent(mockClient, event)).toBe(false);
+            });
+
+            it("returns false while the rich text editor (labs) is on", () => {
+                const spy = vi
+                    .spyOn(SettingsStore, "getValue")
+                    .mockImplementation((name: string) => name === "feature_wysiwyg_composer");
+                try {
+                    expect(canEditContent(mockClient, media({ msgtype: MsgType.Image, body: "a.jpg", url }))).toBe(
+                        false,
+                    );
+                } finally {
+                    spy.mockRestore();
+                }
+            });
+
+            it("is skipped by the up arrow, which edits the last text message", () => {
+                const text = media({ msgtype: MsgType.Text, body: "Hi" });
+                const photo = media({ msgtype: MsgType.Image, body: "a.jpg", url });
+                expect(findEditableEvent({ events: [text, photo], isForward: false, matrixClient: mockClient })).toBe(
+                    text,
+                );
             });
         });
         describe("canEditOwnContent()", () => {

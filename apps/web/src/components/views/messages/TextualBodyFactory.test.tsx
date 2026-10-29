@@ -246,6 +246,37 @@ describe("<TextualBody />", () => {
         await waitFor(() => expect(container).toHaveTextContent("* sender waves(edited)"));
     });
 
+    it("Inside: renders the edited caption of a photo with the edited marker", () => {
+        DMRoomMap.makeShared(defaultMatrixClient);
+        const media = { msgtype: "m.image", url: "mxc://server/photo", info: { mimetype: "image/jpeg" } };
+        const ev = mkEvent({
+            type: "m.room.message",
+            room: room1Id,
+            user: "sender",
+            content: { ...media, body: "Old caption", filename: "photo.jpg" },
+            event: true,
+        });
+        const edit = mkEvent({
+            type: "m.room.message",
+            room: room1Id,
+            user: "sender",
+            content: {
+                "msgtype": "m.text",
+                "body": "* New caption",
+                "m.new_content": { ...media, body: "New caption", filename: "photo.jpg" },
+                "m.relates_to": { rel_type: "m.replace", event_id: ev.getId() },
+            },
+            event: true,
+        });
+        ev.makeReplaced(edit);
+
+        const { container } = getComponent({ mxEvent: ev, replacingEventId: edit.getId() });
+
+        expect(container.querySelector(".mx_EventTile_caption")).not.toBeNull();
+        expect(container).toHaveTextContent("New caption(edited)");
+        expect(container).not.toHaveTextContent("Old caption");
+    });
+
     it("keeps the body while the message is edited in the composer", () => {
         const ev = mkRoomTextMessage("Original text");
         const { container } = getComponent({ mxEvent: ev, editState: new EditorStateTransfer(ev) });

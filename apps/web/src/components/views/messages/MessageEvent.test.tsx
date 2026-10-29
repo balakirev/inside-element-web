@@ -187,6 +187,42 @@ describe("MessageEvent", () => {
         expect(result.queryByTestId("video-body")).toBeNull();
     });
 
+    it("Inside: shows the caption added by an edit to a photo sent without one", () => {
+        const media = {
+            msgtype: MsgType.Image,
+            url: "mxc://server/image",
+            info: { w: 40, h: 50, mimetype: "image/png" },
+        };
+        event = mkEvent({
+            event: true,
+            type: EventType.RoomMessage,
+            user: client.getUserId()!,
+            room: room.roomId,
+            content: { ...media, body: "image.png" },
+        });
+        let result = renderMessageEvent();
+        expect(result.queryByTestId("textual-body")).toBeNull();
+        result.unmount();
+
+        event.makeReplaced(
+            mkEvent({
+                event: true,
+                type: EventType.RoomMessage,
+                user: client.getUserId()!,
+                room: room.roomId,
+                content: {
+                    "msgtype": MsgType.Text,
+                    "body": "* A caption",
+                    "m.new_content": { ...media, body: "A caption", filename: "image.png" },
+                    "m.relates_to": { rel_type: "m.replace", event_id: event.getId() },
+                },
+            }),
+        );
+        result = renderMessageEvent();
+        expect(result.getByTestId("image-body")).toBeVisible();
+        expect(result.getByTestId("textual-body")).toBeVisible();
+    });
+
     describe("when an image with a caption is sent", () => {
         let result: RenderResult;
 
