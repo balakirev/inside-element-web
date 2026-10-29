@@ -13,6 +13,10 @@ import { UIComponent } from "../../../../settings/UIFeature";
 import { RoomListSearch } from "./RoomListSearch";
 import { RoomListView } from "./RoomListView";
 import { RoomListBottomBar } from "./RoomListBottomBar";
+import { InsideFolderTabs } from "./InsideFolderTabs";
+import { InsideMainMenu } from "./InsideMainMenu";
+import { InsideComposeFab } from "./InsideComposeFab";
+import { useInsideLayout } from "../../../../utils/InsideLayout";
 import { _t } from "../../../../languageHandler";
 import { getKeyBindingsManager } from "../../../../KeyBindingsManager";
 import { KeyBindingAction } from "../../../../accessibility/KeyboardShortcuts";
@@ -62,6 +66,8 @@ export const RoomListPanel: React.FC<RoomListPanelProps> = ({ activeSpace }) => 
         [focusedElement],
     );
 
+    const narrow = useInsideLayout() !== "desktop";
+
     const matrixClient = useMatrixClientContext();
     const vm = useCreateAutoDisposedViewModel(
         () => new RoomListHeaderViewModel({ matrixClient, spaceStore: sdkContext.spaceStore }),
@@ -78,10 +84,26 @@ export const RoomListPanel: React.FC<RoomListPanelProps> = ({ activeSpace }) => 
             onBlur={onBlur}
             onKeyDown={onKeyDown}
         >
-            {displayRoomSearch && <RoomListSearch activeSpace={activeSpace} />}
-            <RoomListHeaderView vm={vm} />
-            <RoomListView />
-            <RoomListBottomBar />
+            {narrow ? (
+                // Inside: narrow windows have no space panel — a menu button left of the search, the folders as
+                // tabs, and a round "new message" button instead of the header, as Telegram Web.
+                <>
+                    <div className="mx_RoomListPanel_inside_topBar">
+                        <InsideMainMenu />
+                        {displayRoomSearch && <RoomListSearch activeSpace={activeSpace} />}
+                    </div>
+                    <InsideFolderTabs />
+                    <RoomListView />
+                    <InsideComposeFab />
+                </>
+            ) : (
+                <>
+                    {displayRoomSearch && <RoomListSearch activeSpace={activeSpace} />}
+                    <RoomListHeaderView vm={vm} />
+                    <RoomListView />
+                    <RoomListBottomBar />
+                </>
+            )}
         </Flex>
     );
 };

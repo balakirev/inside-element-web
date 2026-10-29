@@ -2047,6 +2047,10 @@
         "forget_room": "Forget this room",
         "forget_space": "Forget this space",
         "header": {
+            "inside_back_unread": {
+                "one": "Back, %(count)s unread chat",
+                "other": "Back, %(count)s unread chats"
+            },
             "inside_online": {
                 "one": "%(count)s online",
                 "other": "%(count)s online"
@@ -2180,6 +2184,13 @@
         "failed_add_tag": "Failed to add tag %(tagName)s to room",
         "failed_remove_tag": "Failed to remove tag %(tagName)s from room",
         "failed_set_dm_tag": "Failed to set direct message tag",
+        "inside_folder_all": "All",
+        "inside_folders": "Folders",
+        "inside_menu": "Menu",
+        "inside_new_chat": "New chat",
+        "inside_new_group": "New group",
+        "inside_new_message": "New message",
+        "inside_night_mode": "Night mode",
         "list_title": "Room list",
         "more_options": {
             "leave_room": "Leave room"

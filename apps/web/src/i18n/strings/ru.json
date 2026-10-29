@@ -2029,6 +2029,12 @@
         "forget_room": "Забыть эту комнату",
         "forget_space": "Забыть это пространство",
         "header": {
+            "inside_back_unread": {
+                "one": "Назад, %(count)s непрочитанный чат",
+                "few": "Назад, %(count)s непрочитанных чата",
+                "many": "Назад, %(count)s непрочитанных чатов",
+                "other": "Назад, %(count)s непрочитанных чатов"
+            },
             "inside_online": {
                 "one": "%(count)s в сети",
                 "few": "%(count)s в сети",
@@ -2165,6 +2171,13 @@
         "failed_add_tag": "Не удалось добавить тег %(tagName)s в комнату",
         "failed_remove_tag": "Не удалось удалить тег %(tagName)s из комнаты",
         "failed_set_dm_tag": "Не удалось установить метку личного сообщения",
+        "inside_folder_all": "Все",
+        "inside_folders": "Папки",
+        "inside_menu": "Меню",
+        "inside_new_chat": "Новый чат",
+        "inside_new_group": "Новая группа",
+        "inside_new_message": "Новое сообщение",
+        "inside_night_mode": "Ночной режим",
         "list_title": "Список комнат",
         "more_options": {
             "leave_room": "Покинуть комнату"
