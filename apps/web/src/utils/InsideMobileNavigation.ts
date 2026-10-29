@@ -9,6 +9,8 @@ import defaultDispatcher from "../dispatcher/dispatcher";
 import { Action } from "../dispatcher/actions";
 import { type ActionPayload } from "../dispatcher/payloads";
 import RightPanelStore from "../stores/right-panel/RightPanelStore";
+import SettingsStore from "../settings/SettingsStore";
+import { SettingLevel } from "../settings/SettingLevel";
 import { getInsideLayout, prefersReducedMotion } from "./InsideLayout";
 
 /**
@@ -40,7 +42,16 @@ let dispatcherRef: string | undefined;
 function onAction(payload: ActionPayload): void {
     if (payload.action !== Action.ViewRoom || payload.metricsTrigger !== "RoomList" || !payload.room_id) return;
     if (getInsideLayout() !== "mobile") return;
-    if (RightPanelStore.instance.isOpenForRoom(payload.room_id)) RightPanelStore.instance.hide(payload.room_id);
+    const roomId: string = payload.room_id;
+    if (RightPanelStore.instance.isOpenForRoom(roomId)) {
+        RightPanelStore.instance.hide(roomId);
+        return;
+    }
+    // Not viewed yet in this session: the store will restore the panel from the settings when the room opens.
+    const saved = SettingsStore.getValue("RightPanel.phases", roomId);
+    if (saved?.isOpen) {
+        void SettingsStore.setValue("RightPanel.phases", roomId, SettingLevel.ROOM_DEVICE, { ...saved, isOpen: false });
+    }
 }
 
 function onHashChange(): void {

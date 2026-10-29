@@ -12,6 +12,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import defaultDispatcher from "../dispatcher/dispatcher";
 import { Action } from "../dispatcher/actions";
 import RightPanelStore from "../stores/right-panel/RightPanelStore";
+import SettingsStore from "../settings/SettingsStore";
+import { SettingLevel } from "../settings/SettingLevel";
 import {
     goBackToRoomList,
     INSIDE_COLUMN_TRANSITION_MS,
@@ -115,6 +117,19 @@ describe("InsideMobileNavigation", () => {
             const hide = vi.spyOn(RightPanelStore.instance, "hide").mockImplementation(() => {});
             open("RoomList");
             expect(hide).toHaveBeenCalledWith("!a:server");
+        });
+
+        it("closes the panel stored for a room not opened yet", () => {
+            vi.mocked(window.matchMedia).mockReturnValue({ matches: true } as MediaQueryList);
+            vi.spyOn(RightPanelStore.instance, "isOpenForRoom").mockReturnValue(false);
+            const stored = { isOpen: true, history: [{ phase: "RoomSummary" }] };
+            vi.spyOn(SettingsStore, "getValue").mockReturnValue(stored);
+            const setValue = vi.spyOn(SettingsStore, "setValue").mockResolvedValue(undefined);
+            open("RoomList");
+            expect(setValue).toHaveBeenCalledWith("RightPanel.phases", "!a:server", SettingLevel.ROOM_DEVICE, {
+                ...stored,
+                isOpen: false,
+            });
         });
 
         it("keeps the right panel in wider windows and from elsewhere", () => {
