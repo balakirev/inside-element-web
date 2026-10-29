@@ -19,7 +19,16 @@ import { render } from "test-utils-rtl";
 import { vi, describe, it, expect, beforeEach, afterEach, afterAll, type MockedObject } from "vitest";
 import { getRoomContext, mkEvent, mkStubRoom, stubClient } from "test-utils";
 
-import { RoomUploadContextProvider, RoomUploadViewModel } from "./RoomUploadViewModel";
+import {
+    canOfferCamera,
+    type FilePickerOptions,
+    INSIDE_UPLOAD_CAMERA,
+    INSIDE_UPLOAD_FILE,
+    INSIDE_UPLOAD_MEDIA,
+    RoomUploadContextProvider,
+    RoomUploadViewModel,
+    useRoomUploadViewModel,
+} from "./RoomUploadViewModel";
 import { TimelineRenderingType } from "../../contexts/RoomContext";
 import defaultDispatcher, { MatrixDispatcher } from "../../dispatcher/dispatcher";
 import ContentMessages from "../../ContentMessages";
@@ -59,10 +68,11 @@ describe("RoomUploadViewModel", () => {
             undefined,
             () => {},
         );
-        expect(vm.getSnapshot().options).toHaveLength(maySendMessage ? 1 : 0);
+        // Inside: photo or video, and file (no camera without a touch screen).
+        expect(vm.getSnapshot().options).toHaveLength(maySendMessage ? 2 : 0);
         room.maySendMessage.mockReturnValue(!maySendMessage);
         room.emit(RoomEvent.CurrentStateUpdated, room, null as any, null as any);
-        expect(vm.getSnapshot().options).toHaveLength(maySendMessage ? 0 : 1);
+        expect(vm.getSnapshot().options).toHaveLength(maySendMessage ? 0 : 2);
     });
 
     it("handles custom upload option", async () => {
@@ -90,6 +100,7 @@ describe("RoomUploadViewModel", () => {
         });
         // The module option must appear exactly once, alongside the built-in local option.
         expect(vm.getSnapshot().options).toEqual([
+            expect.objectContaining({ type: "inside_media" }),
             expect.objectContaining({ type: "local" }),
             { type: "org.example.test", label: "My uploader", icon },
         ]);
@@ -333,6 +344,79 @@ describe("RoomUploadViewModel", () => {
             const vm = createVm(vi.fn(), undefined, undefined, TimelineRenderingType.File);
             expect(() => vm.onUploadOptionSelected("local")).toThrow("TimelineRenderingType must be Room or Thread");
             expect(trackEvent).not.toHaveBeenCalled();
+        });
+    });
+
+    describe("Inside: attach menu kinds", () => {
+        const originalMatchMedia = window.matchMedia;
+        afterEach(() => {
+            window.matchMedia = originalMatchMedia;
+        });
+
+        function mkVm(open: (options?: FilePickerOptions) => void): RoomUploadViewModel {
+            room.maySendMessage.mockReturnValue(true);
+            return new RoomUploadViewModel(room, client, TimelineRenderingType.Room, dis, undefined, undefined, open);
+        }
+
+        it("offers photo or video and file, in that order", () => {
+            const vm = mkVm(vi.fn());
+            expect(vm.getSnapshot().options.map((o) => [o.type, o.label])).toEqual([
+                [INSIDE_UPLOAD_MEDIA, "Photo or video"],
+                [INSIDE_UPLOAD_FILE, "File"],
+            ]);
+        });
+
+        it("offers the camera on a touch screen", () => {
+            window.matchMedia = vi.fn().mockReturnValue({ matches: true }) as unknown as typeof window.matchMedia;
+            Object.defineProperty(navigator, "mediaDevices", { value: {}, configurable: true });
+            expect(canOfferCamera()).toBe(true);
+            const vm = mkVm(vi.fn());
+            expect(vm.getSnapshot().options.map((o) => o.type)).toEqual([
+                INSIDE_UPLOAD_MEDIA,
+                INSIDE_UPLOAD_FILE,
+                INSIDE_UPLOAD_CAMERA,
+            ]);
+        });
+
+        it("opens the picker for the kind picked", () => {
+            const open = vi.fn();
+            const vm = mkVm(open);
+            vm.onUploadOptionSelected(INSIDE_UPLOAD_MEDIA);
+            expect(open).toHaveBeenLastCalledWith({ accept: "image/*,video/*" });
+            vm.onUploadOptionSelected(INSIDE_UPLOAD_FILE);
+            expect(open).toHaveBeenLastCalledWith();
+            vm.onUploadOptionSelected(INSIDE_UPLOAD_CAMERA);
+            expect(open).toHaveBeenLastCalledWith({ accept: "image/*,video/*", capture: "environment" });
+        });
+
+        it("sets up the file input of the provider for the kind", () => {
+            let vm: RoomUploadViewModel | null = null;
+            function Grab(): null {
+                vm = useRoomUploadViewModel();
+                return null;
+            }
+            const { getByTestId } = render(
+                <MatrixClientContext.Provider value={client}>
+                    <ScopedRoomContextProvider {...getRoomContext(room, {})}>
+                        <RoomUploadContextProvider>
+                            <Grab />
+                        </RoomUploadContextProvider>
+                    </ScopedRoomContextProvider>
+                </MatrixClientContext.Provider>,
+            );
+            const input = getByTestId("room-upload-context-input") as HTMLInputElement;
+            const click = vi.spyOn(input, "click").mockImplementation(() => {});
+
+            vm!.openUploadDialog({ accept: "image/*,video/*", capture: "environment" });
+            expect(input.getAttribute("accept")).toBe("image/*,video/*");
+            expect(input.getAttribute("capture")).toBe("environment");
+            expect(input.multiple).toBe(false);
+
+            vm!.openUploadDialog();
+            expect(input.hasAttribute("accept")).toBe(false);
+            expect(input.hasAttribute("capture")).toBe(false);
+            expect(input.multiple).toBe(true);
+            expect(click).toHaveBeenCalledTimes(2);
         });
     });
 });

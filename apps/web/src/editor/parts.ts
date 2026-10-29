@@ -19,12 +19,15 @@ import defaultDispatcher from "../dispatcher/dispatcher";
 import { Action } from "../dispatcher/actions";
 import SettingsStore from "../settings/SettingsStore";
 import { getFirstGrapheme, graphemeSegmenter } from "../utils/strings";
+import { type InlineFormat, formatClassName, formatsEqual, normalizeFormat, FORMAT_CLASS } from "./insideFormat";
 
 const REGIONAL_EMOJI_SEPARATOR = String.fromCodePoint(0x200b);
 
 interface ISerializedPart {
     type: Type.Plain | Type.Newline | Type.Emoji | Type.Command | Type.PillCandidate;
     text: string;
+    /** Inside: the inline format of a plain part (bold, link…). */
+    format?: InlineFormat;
 }
 
 interface ISerializedPillPart {
@@ -51,6 +54,8 @@ interface IBasePart {
     type: Type.Plain | Type.Newline | Type.Emoji;
     canEdit: boolean;
     acceptsCaret: boolean;
+    /** Inside: the inline format of a plain part, undefined for other parts. */
+    format?: InlineFormat;
 
     createAutoComplete(updateCallback: UpdateCallback): void;
 
@@ -241,8 +246,81 @@ abstract class PlainBasePart extends BasePart {
 
 // exported for unit tests, should otherwise only be used through PartCreator
 export class PlainPart extends PlainBasePart implements IBasePart {
+    private readonly _format?: InlineFormat;
+
+    /**
+     * @param format - Inside: the inline format (bold, italic, link…), shown in the composer and sent as HTML.
+     */
+    public constructor(text = "", format?: InlineFormat) {
+        super(text);
+        this._format = normalizeFormat(format);
+    }
+
     public get type(): IBasePart["type"] {
         return Type.Plain;
+    }
+
+    public get format(): InlineFormat | undefined {
+        return this._format;
+    }
+
+    public merge(part: Part): boolean {
+        if (part.type === Type.Plain && formatsEqual(this._format, part.format)) {
+            this._text = this.text + part.text;
+            return true;
+        }
+        return false;
+    }
+
+    public split(offset: number): IBasePart {
+        const splitText = this.text.slice(offset);
+        this._text = this.text.slice(0, offset);
+        return new PlainPart(splitText, this._format);
+    }
+
+    public toDOMNode(): Node {
+        if (!this._format) return super.toDOMNode();
+        const span = document.createElement("span");
+        this.updateFormatNode(span);
+        span.appendChild(document.createTextNode(this.text));
+        return span;
+    }
+
+    public updateDOMNode(node: Node): void {
+        if (!this._format) return super.updateDOMNode(node);
+        this.updateFormatNode(node as HTMLElement);
+        const textNode = node.childNodes[0];
+        if (textNode.textContent !== this.text) textNode.textContent = this.text;
+    }
+
+    public canUpdateDOMNode(node: Node): boolean {
+        if (!this._format) return super.canUpdateDOMNode(node);
+        return (
+            node.nodeType === Node.ELEMENT_NODE &&
+            node.nodeName === "SPAN" &&
+            (node as HTMLElement).classList.contains(FORMAT_CLASS) &&
+            node.childNodes.length === 1 &&
+            node.childNodes[0].nodeType === Node.TEXT_NODE
+        );
+    }
+
+    private updateFormatNode(node: HTMLElement): void {
+        const className = formatClassName(this._format!);
+        if (node.className !== className) node.className = className;
+        const link = this._format!.link;
+        if (link) {
+            if (node.title !== link) node.title = link;
+        } else if (node.hasAttribute("title")) {
+            node.removeAttribute("title");
+        }
+    }
+
+    public serialize(): SerializedPart {
+        return this._format ? { type: Type.Plain, text: this.text, format: this._format } : super.serialize();
+    }
+
+    public toString(): string {
+        return this._format ? `${this.type}(${this.text}; ${JSON.stringify(this._format)})` : super.toString();
     }
 }
 
@@ -593,7 +671,7 @@ export class PartCreator {
     public deserializePart(part: SerializedPart): Part | undefined {
         switch (part.type) {
             case Type.Plain:
-                return this.plain(part.text);
+                return this.plain(part.text, (part as ISerializedPart).format);
             case Type.Newline:
                 return this.newline();
             case Type.Emoji:
@@ -609,8 +687,8 @@ export class PartCreator {
         }
     }
 
-    public plain(text: string): PlainPart {
-        return new PlainPart(text);
+    public plain(text: string, format?: InlineFormat): PlainPart {
+        return new PlainPart(text, format);
     }
 
     public newline(): NewlinePart {
@@ -651,14 +729,17 @@ export class PartCreator {
         return codePoint != 0 && c.length == 2 && 0x1f1e6 <= codePoint && codePoint <= 0x1f1ff;
     }
 
-    public plainWithEmoji(text: string): (PlainPart | EmojiPart)[] {
+    /**
+     * @param format - Inside: the inline format of the plain parts.
+     */
+    public plainWithEmoji(text: string, format?: InlineFormat): (PlainPart | EmojiPart)[] {
         const parts: (PlainPart | EmojiPart)[] = [];
         let plainText = "";
 
         for (const data of graphemeSegmenter.segment(text)) {
             if (EMOJI_REGEX.test(data.segment)) {
                 if (plainText) {
-                    parts.push(this.plain(plainText));
+                    parts.push(this.plain(plainText, format));
                     plainText = "";
                 }
                 parts.push(this.emoji(data.segment));
@@ -670,7 +751,7 @@ export class PartCreator {
             }
         }
         if (plainText) {
-            parts.push(this.plain(plainText));
+            parts.push(this.plain(plainText, format));
         }
         return parts;
     }

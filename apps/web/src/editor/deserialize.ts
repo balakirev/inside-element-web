@@ -17,6 +17,15 @@ import Markdown from "../Markdown";
 import { textToHtmlRainbow } from "../utils/colour";
 import { stripPlainReply } from "../utils/Reply";
 import { hasMediaCaption } from "../utils/mediaCaption";
+import {
+    type FormatRun,
+    type InlineFormat,
+    htmlHasFormatting,
+    htmlToLines,
+    markdownTextToLines,
+    withLink,
+    withMark,
+} from "./insideFormat";
 
 const LIST_TYPES = ["UL", "OL", "LI"];
 
@@ -67,7 +76,12 @@ function parseAtRoomMentions(text: string, pc: PartCreator, opts: IParseOptions)
     const parts: Part[] = [];
     text.split(ATROOM).forEach((textPart, i, arr) => {
         if (textPart.length) {
-            parts.push(...pc.plainWithEmoji(opts.shouldEscape ? escape(textPart) : textPart));
+            // Inside: formatted text is shown and sent as it is; the serialiser escapes it.
+            if (opts.format) {
+                parts.push(...pc.plainWithEmoji(textPart, opts.format));
+            } else {
+                parts.push(...pc.plainWithEmoji(opts.shouldEscape ? escape(textPart) : textPart));
+            }
         }
         // it's safe to never append @room after the last textPart
         // as split will report an empty string at the end if
@@ -97,6 +111,9 @@ function parseLink(n: Node, pc: PartCreator, opts: IParseOptions): Part[] {
     const children = Array.from(n.childNodes);
     if (href === n.textContent && children.every((c) => c.nodeType === Node.TEXT_NODE)) {
         return parseAtRoomMentions(n.textContent, pc, opts);
+    } else if (href) {
+        // Inside: a link is a formatted run in the composer, as it is shown in the message.
+        return parseChildren(n, pc, { ...opts, format: withLink(opts.format, href) });
     } else {
         return [pc.plain("["), ...parseChildren(n, pc, opts), pc.plain(`](${href})`)];
     }
@@ -201,26 +218,31 @@ function parseNode(n: Node, pc: PartCreator, opts: IParseOptions, mkListItem?: (
                     return [pc.newline()];
                 case "HR":
                     return [pc.plain("---")];
+                // Inside: bold, italic, underline and strike are formats of the text in the composer, as in
+                // the message, instead of markdown or tags around it.
                 case "EM":
-                    return [pc.plain("_"), ...parseChildren(n, pc, opts), pc.plain("_")];
+                case "I":
+                    return parseChildren(n, pc, { ...opts, format: withMark(opts.format, "italic", true) });
                 case "STRONG":
-                    return [pc.plain("**"), ...parseChildren(n, pc, opts), pc.plain("**")];
+                case "B":
+                    return parseChildren(n, pc, { ...opts, format: withMark(opts.format, "bold", true) });
                 case "DEL":
-                    return [pc.plain("<del>"), ...parseChildren(n, pc, opts), pc.plain("</del>")];
                 case "S":
-                    return [pc.plain("<s>"), ...parseChildren(n, pc, opts), pc.plain("</s>")];
+                    return parseChildren(n, pc, { ...opts, format: withMark(opts.format, "strike", true) });
                 case "SUB":
                     return [pc.plain("<sub>"), ...parseChildren(n, pc, opts), pc.plain("</sub>")];
                 case "SUP":
                     return [pc.plain("<sup>"), ...parseChildren(n, pc, opts), pc.plain("</sup>")];
                 case "U":
-                    return [pc.plain("<u>"), ...parseChildren(n, pc, opts), pc.plain("</u>")];
+                    return parseChildren(n, pc, { ...opts, format: withMark(opts.format, "underline", true) });
                 case "PRE":
                     return parseCodeBlock(n, pc, opts);
                 case "CODE": {
-                    // Escape backticks by using multiple backticks for the fence if necessary
-                    const fence = "`".repeat(longestBacktickSequence(n.textContent || "") + 1);
-                    return pc.plainWithEmoji(`${fence}${n.textContent}${fence}`);
+                    // Inside: inline code is monospace text in the composer.
+                    if (n.textContent) {
+                        return pc.plainWithEmoji(n.textContent, withMark(opts.format, "code", true));
+                    }
+                    return [];
                 }
                 case "BLOCKQUOTE": {
                     const parts = parseChildren(n, pc, opts);
@@ -276,6 +298,8 @@ function parseNode(n: Node, pc: PartCreator, opts: IParseOptions, mkListItem?: (
 interface IParseOptions {
     isQuotedMessage?: boolean;
     shouldEscape?: boolean;
+    /** Inside: the inline format of the text being parsed (inside <strong>, <a>…). */
+    format?: InlineFormat;
 }
 
 function parseHtmlMessage(html: string, pc: PartCreator, opts: IParseOptions): Part[] {
@@ -354,4 +378,45 @@ export function parseEvent(event: MatrixEvent, pc: PartCreator, opts: IParseOpti
     }
 
     return parts;
+}
+
+/**
+ * Inside: composer parts for lines of formatted runs (pasted HTML or markdown). A link to a user or room
+ * becomes a pill, as it does when a message is edited.
+ */
+export function formatRunsToParts(lines: FormatRun[][], pc: PartCreator): Part[] {
+    const parts: Part[] = [];
+    lines.forEach((runs, i) => {
+        if (i > 0) parts.push(pc.newline());
+        for (const run of runs) {
+            const link = run.format?.link;
+            const resourceId = link ? getPrimaryPermalinkEntity(link) : null;
+            if (resourceId?.[0] === "@") {
+                parts.push(pc.userPill(run.text, resourceId));
+            } else if (resourceId?.[0] === "#") {
+                parts.push(pc.roomPill(resourceId));
+            } else {
+                parts.push(...pc.plainWithEmoji(run.text, run.format));
+            }
+        }
+    });
+    return parts;
+}
+
+/**
+ * Inside: composer parts for pasted content, as Telegram Desktop pastes it: HTML with formatting (a browser,
+ * Notion, Google Docs, Telegram, ChatGPT) keeps bold, italic, underline, strike, monospace and links as
+ * formats, lists and quotes as markdown lines; plain text has its markdown (`**bold**`, `[text](url)`…) turned
+ * into formats. Other plain text is pasted as it is.
+ */
+export function parsePastedContent(html: string, plainText: string, pc: PartCreator): Part[] {
+    if (html && htmlHasFormatting(html)) {
+        return formatRunsToParts(htmlToLines(html), pc);
+    }
+    const text = plainText || (html ? (new DOMParser().parseFromString(html, "text/html").body.textContent ?? "") : "");
+    const lines = markdownTextToLines(text);
+    if (lines.some((runs) => runs.some((r) => r.format))) {
+        return formatRunsToParts(lines, pc);
+    }
+    return parsePlainTextMessage(text, pc, { shouldEscape: false });
 }

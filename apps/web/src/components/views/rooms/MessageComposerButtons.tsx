@@ -23,7 +23,7 @@ import {
     StickerIcon,
     TextFormattingIcon,
 } from "@vector-im/compound-design-tokens/assets/web/icons";
-import { UploadButton, useViewModel } from "@element-hq/web-shared-components";
+import { useViewModel } from "@element-hq/web-shared-components";
 
 import { _t } from "../../../languageHandler";
 import { CollapsibleButton, OverflowMenuContext } from "./CollapsibleButton";
@@ -44,6 +44,7 @@ import { useSettingValue } from "../../../hooks/useSettings";
 import AccessibleButton, { type ButtonEvent } from "../elements/AccessibleButton";
 import { useScopedRoomContext } from "../../../contexts/ScopedRoomContext.tsx";
 import { useRoomUploadViewModel } from "../../../viewmodels/room/RoomUploadViewModel.tsx";
+import { InsideAttachButton } from "./InsideAttachButton";
 
 interface IProps {
     addEmoji: (emoji: string) => boolean;
@@ -114,12 +115,21 @@ const MessageComposerButtons: React.FC<IProps> = (props: IProps) => {
             ) : (
                 emojiButton(props)
             ),
-            <UploadButton key="upload" vm={roomUploadVM} />,
+            // Inside: the attach button opens Telegram's menu (photo or video, file, camera, poll), so the poll
+            // is no longer in the "more" menu.
+            <InsideAttachButton
+                key="upload"
+                vm={roomUploadVM}
+                onPoll={
+                    props.showPollsButton && props.relation?.rel_type !== THREAD_RELATION_TYPE.name
+                        ? () => openPollCreateDialog(room, props.relation)
+                        : undefined
+                }
+            />,
         ];
         moreButtons = [
             showStickersButton(props),
             voiceRecordingButton(props, narrow),
-            props.showPollsButton ? pollButton(room, props.relation) : null,
             showLocationButton(props, room, matrixClient),
         ];
     }
@@ -209,36 +219,37 @@ interface IPollButtonProps {
     relation?: IEventRelation;
 }
 
+/** Opens the poll dialog, or says why polls cannot be started here. Inside: also used by the attach menu. */
+export function openPollCreateDialog(room: Room, relation?: IEventRelation): void {
+    const canSend = room.currentState.maySendEvent(M_POLL_START.name, MatrixClientPeg.safeGet().getSafeUserId());
+    if (!canSend) {
+        Modal.createDialog(ErrorDialog, {
+            title: _t("composer|poll_button_no_perms_title"),
+            description: _t("composer|poll_button_no_perms_description"),
+        });
+    } else {
+        const threadId = relation?.rel_type === THREAD_RELATION_TYPE.name ? relation.event_id : undefined;
+
+        Modal.createDialog(
+            PollCreateDialog,
+            {
+                room,
+                threadId,
+            },
+            "mx_CompoundDialog",
+            false, // isPriorityModal
+            true, // isStaticModal
+        );
+    }
+}
+
 class PollButton extends React.PureComponent<IPollButtonProps> {
     public static contextType = OverflowMenuContext;
     declare public context: React.ContextType<typeof OverflowMenuContext>;
 
     private onCreateClick = (): void => {
         this.context?.(); // close overflow menu
-        const canSend = this.props.room.currentState.maySendEvent(
-            M_POLL_START.name,
-            MatrixClientPeg.safeGet().getSafeUserId(),
-        );
-        if (!canSend) {
-            Modal.createDialog(ErrorDialog, {
-                title: _t("composer|poll_button_no_perms_title"),
-                description: _t("composer|poll_button_no_perms_description"),
-            });
-        } else {
-            const threadId =
-                this.props.relation?.rel_type === THREAD_RELATION_TYPE.name ? this.props.relation.event_id : undefined;
-
-            Modal.createDialog(
-                PollCreateDialog,
-                {
-                    room: this.props.room,
-                    threadId,
-                },
-                "mx_CompoundDialog",
-                false, // isPriorityModal
-                true, // isStaticModal
-            );
-        }
+        openPollCreateDialog(this.props.room, this.props.relation);
     };
 
     public render(): React.ReactNode {

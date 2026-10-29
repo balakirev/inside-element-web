@@ -6,57 +6,89 @@ SPDX-License-Identifier: AGPL-3.0-only OR GPL-3.0-only OR LicenseRef-Element-Com
 Please see LICENSE files in the repository root for full details.
 */
 
+/* Inside: as Telegram's bar over a selection — a row of 36 px buttons on a floating card, centred over the
+   selection (MessageComposerFormatBar.position); the link button turns it into an address field. */
 .mx_MessageComposerFormatBar {
     display: none;
-    width: calc(32px * 6);
-    height: 32px;
+    align-items: center;
+    gap: 2px;
+    box-sizing: border-box;
+    height: 40px;
+    padding: 2px;
     position: absolute;
-    cursor: pointer;
-    border-radius: 8px;
+    cursor: default;
+    border-radius: 10px;
     background-color: $background;
     border: var(--cpd-border-width-1) solid var(--cpd-color-border-disabled);
+    box-shadow: 0 4px 16px rgb(0 0 0 / 0.12);
     user-select: none;
+    white-space: nowrap;
     /* equal to z-index of mx_ReplyPreview and mx_RoomView_statusArea (1000) */
     /* but as it appears after them in the DOM, will appear on top. */
     z-index: 1000;
 
     &.mx_MessageComposerFormatBar_shown {
-        display: block;
-    }
-
-    > * {
-        white-space: nowrap;
-        display: inline-block;
-        position: relative;
-        margin: 2px;
+        display: flex;
     }
 
     .mx_MessageComposerFormatBar_button {
-        width: 28px;
-        height: 28px;
+        flex: none;
+        width: 34px;
+        height: 34px;
         box-sizing: border-box;
-        vertical-align: middle;
+        display: grid;
+        place-items: center;
         background: none;
         border: none;
+        border-radius: 8px;
         padding: 0;
+        cursor: pointer;
 
         svg {
-            width: inherit;
-            height: inherit;
-            box-sizing: border-box;
-            padding: var(--cpd-space-1x);
+            width: 20px;
+            height: 20px;
             color: var(--cpd-color-icon-secondary);
         }
 
-        &:hover {
+        &:hover,
+        &:focus-visible {
             background: var(--cpd-color-bg-subtle-secondary);
-            border-radius: 6px;
-            z-index: 1;
 
             svg {
                 color: var(--cpd-color-icon-primary);
             }
         }
+
+        &.mx_MessageComposerFormatBar_buttonActive svg {
+            color: var(--cpd-color-icon-accent-primary);
+        }
+    }
+
+    &.mx_MessageComposerFormatBar_linkMode {
+        width: 300px;
+        max-width: calc(100vw - 16px);
+        padding-inline-start: 10px;
+        cursor: text;
+    }
+
+    .mx_MessageComposerFormatBar_linkIcon {
+        flex: none;
+        width: 18px;
+        height: 18px;
+        color: var(--cpd-color-icon-secondary);
+    }
+
+    .mx_MessageComposerFormatBar_linkInput {
+        flex: 1;
+        min-width: 0;
+        height: 34px;
+        margin: 0 4px 0 8px;
+        padding: 0;
+        border: none;
+        outline: none;
+        background: transparent;
+        color: var(--cpd-color-text-primary);
+        font: var(--cpd-font-body-md-regular);
     }
 }
 

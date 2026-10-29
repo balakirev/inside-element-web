@@ -3,7 +3,14 @@
 exports[`editor/deserialize > html messages > escapes angle brackets 1`] = `
 [
   {
-    "text": "\\> \\\\<del>no formatting here\\\\</del>",
+    "text": "\\> \\\\",
+    "type": "plain",
+  },
+  {
+    "format": {
+      "strike": true,
+    },
+    "text": "no formatting here\\",
     "type": "plain",
   },
 ]
@@ -30,7 +37,10 @@ exports[`editor/deserialize > html messages > escapes backslashes 1`] = `
 exports[`editor/deserialize > html messages > escapes backticks in code blocks 1`] = `
 [
   {
-    "text": "\`\`this → \` is a backtick\`\`",
+    "format": {
+      "code": true,
+    },
+    "text": "this → \` is a backtick",
     "type": "plain",
   },
   {
@@ -107,7 +117,35 @@ exports[`editor/deserialize > html messages > escapes underscores 1`] = `
 exports[`editor/deserialize > html messages > preserves nested formatting 1`] = `
 [
   {
-    "text": "a<sub>b_c**d<u>e</u>**_</sub>",
+    "text": "a<sub>b",
+    "type": "plain",
+  },
+  {
+    "format": {
+      "italic": true,
+    },
+    "text": "c",
+    "type": "plain",
+  },
+  {
+    "format": {
+      "bold": true,
+      "italic": true,
+    },
+    "text": "d",
+    "type": "plain",
+  },
+  {
+    "format": {
+      "bold": true,
+      "italic": true,
+      "underline": true,
+    },
+    "text": "e",
+    "type": "plain",
+  },
+  {
+    "text": "</sub>",
     "type": "plain",
   },
 ]

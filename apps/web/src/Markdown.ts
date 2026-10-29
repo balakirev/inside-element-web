@@ -13,7 +13,8 @@ import { escape } from "lodash";
 import { logger } from "matrix-js-sdk/src/logger";
 import { findLinksInString } from "@element-hq/web-shared-components";
 
-const ALLOWED_HTML_TAGS = ["sub", "sup", "del", "s", "u", "br", "br/"];
+// Inside: "strong" and "em" too, which the composer sends for bold and italic text (editor/insideFormat.ts).
+const ALLOWED_HTML_TAGS = ["sub", "sup", "del", "s", "u", "br", "br/", "strong", "em"];
 
 // These types of node are definitely text
 const TEXT_NODES = ["text", "softbreak", "linebreak", "paragraph", "document"];

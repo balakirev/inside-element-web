@@ -118,26 +118,40 @@ describe("editor/deserialize", function () {
         it("inline styling", function () {
             const html = "<strong>bold</strong> and <em>emphasized</em> text";
             const parts = normalize(parseEvent(htmlMessage(html), createPartCreator()));
-            expect(parts.length).toBe(1);
-            expect(parts[0]).toStrictEqual({ type: "plain", text: "**bold** and _emphasized_ text" });
+            // Inside: formats of the text in the composer, not markdown.
+            expect(parts).toStrictEqual([
+                { type: "plain", text: "bold", format: { bold: true } },
+                { type: "plain", text: " and " },
+                { type: "plain", text: "emphasized", format: { italic: true } },
+                { type: "plain", text: " text" },
+            ]);
         });
         it("hyperlink", function () {
             const html = 'click <a href="http://example.com/">this</a>!';
             const parts = normalize(parseEvent(htmlMessage(html), createPartCreator()));
-            expect(parts.length).toBe(1);
-            expect(parts[0]).toStrictEqual({ type: "plain", text: "click [this](http://example.com/)!" });
+            expect(parts).toStrictEqual([
+                { type: "plain", text: "click " },
+                { type: "plain", text: "this", format: { link: "http://example.com/" } },
+                { type: "plain", text: "!" },
+            ]);
         });
         it("hyperlink without a trailing slash keeps the original URL", function () {
             const html = 'click <a href="http://example.com">this</a>!';
             const parts = normalize(parseEvent(htmlMessage(html), createPartCreator()));
-            expect(parts.length).toBe(1);
-            expect(parts[0]).toStrictEqual({ type: "plain", text: "click [this](http://example.com)!" });
+            expect(parts).toStrictEqual([
+                { type: "plain", text: "click " },
+                { type: "plain", text: "this", format: { link: "http://example.com" } },
+                { type: "plain", text: "!" },
+            ]);
         });
         it("hyperlink with a relative URL keeps the original URL", function () {
             const html = 'click <a href="/local/path">this</a>!';
             const parts = normalize(parseEvent(htmlMessage(html), createPartCreator()));
-            expect(parts.length).toBe(1);
-            expect(parts[0]).toStrictEqual({ type: "plain", text: "click [this](/local/path)!" });
+            expect(parts).toStrictEqual([
+                { type: "plain", text: "click " },
+                { type: "plain", text: "this", format: { link: "/local/path" } },
+                { type: "plain", text: "!" },
+            ]);
         });
         it("autolinked URL is not rewritten as a markdown link", function () {
             const html = '<a href="http://example.com">http://example.com</a>';
@@ -176,13 +190,15 @@ describe("editor/deserialize", function () {
         it("quote", function () {
             const html = "<blockquote><p><em>wise</em><br><strong>words</strong></p></blockquote><p>indeed</p>";
             const parts = normalize(parseEvent(htmlMessage(html), createPartCreator()));
-            expect(parts.length).toBe(6);
-            expect(parts[0]).toStrictEqual({ type: "plain", text: "> _wise_" });
-            expect(parts[1]).toStrictEqual({ type: "newline", text: "\n" });
-            expect(parts[2]).toStrictEqual({ type: "plain", text: "> **words**" });
-            expect(parts[3]).toStrictEqual({ type: "newline", text: "\n" });
-            expect(parts[4]).toStrictEqual({ type: "newline", text: "\n" });
-            expect(parts[5]).toStrictEqual({ type: "plain", text: "indeed" });
+            expect(parts.length).toBe(8);
+            expect(parts[0]).toStrictEqual({ type: "plain", text: "> " });
+            expect(parts[1]).toStrictEqual({ type: "plain", text: "wise", format: { italic: true } });
+            expect(parts[2]).toStrictEqual({ type: "newline", text: "\n" });
+            expect(parts[3]).toStrictEqual({ type: "plain", text: "> " });
+            expect(parts[4]).toStrictEqual({ type: "plain", text: "words", format: { bold: true } });
+            expect(parts[5]).toStrictEqual({ type: "newline", text: "\n" });
+            expect(parts[6]).toStrictEqual({ type: "newline", text: "\n" });
+            expect(parts[7]).toStrictEqual({ type: "plain", text: "indeed" });
         });
         it("user pill", function () {
             const html = 'Hi <a href="https://matrix.to/#/@alice:hs.tld">Alice</a>!';
@@ -235,15 +251,20 @@ describe("editor/deserialize", function () {
         it("@room pill", function () {
             const html = "<em>formatted</em> message for @room";
             const parts = normalize(parseEvent(htmlMessage(html), createPartCreator()));
-            expect(parts.length).toBe(2);
-            expect(parts[0]).toStrictEqual({ type: "plain", text: "_formatted_ message for " });
-            expect(parts[1]).toStrictEqual({ type: "at-room-pill", text: "@room" });
+            expect(parts).toStrictEqual([
+                { type: "plain", text: "formatted", format: { italic: true } },
+                { type: "plain", text: " message for " },
+                { type: "at-room-pill", text: "@room" },
+            ]);
         });
         it("inline code", function () {
             const html = "there is no place like <code>127.0.0.1</code>!";
             const parts = normalize(parseEvent(htmlMessage(html), createPartCreator()));
-            expect(parts.length).toBe(1);
-            expect(parts[0]).toStrictEqual({ type: "plain", text: "there is no place like `127.0.0.1`!" });
+            expect(parts).toStrictEqual([
+                { type: "plain", text: "there is no place like " },
+                { type: "plain", text: "127.0.0.1", format: { code: true } },
+                { type: "plain", text: "!" },
+            ]);
         });
         it("code block with no trailing text", function () {
             const html = "<pre><code>0xDEADBEEF\n</code></pre>\n";
@@ -325,8 +346,11 @@ describe("editor/deserialize", function () {
         it("emote", function () {
             const html = "says <em>DON'T SHOUT</em>!";
             const parts = normalize(parseEvent(htmlMessage(html, "m.emote"), createPartCreator()));
-            expect(parts.length).toBe(1);
-            expect(parts[0]).toStrictEqual({ type: "plain", text: "/me says _DON'T SHOUT_!" });
+            expect(parts).toStrictEqual([
+                { type: "plain", text: "/me says " },
+                { type: "plain", text: "DON'T SHOUT", format: { italic: true } },
+                { type: "plain", text: "!" },
+            ]);
         });
         it("spoiler", function () {
             const parts = normalize(
@@ -388,14 +412,17 @@ describe("editor/deserialize", function () {
         });
     });
     describe("plaintext messages", function () {
-        it("turns html tags back into markdown", function () {
+        it("turns html tags into formats", function () {
             const html = '<strong>bold</strong> and <em>emphasized</em> text <a href="http://example.com/">this</a>!';
             const parts = normalize(parseEvent(htmlMessage(html), createPartCreator(), { shouldEscape: false }));
-            expect(parts.length).toBe(1);
-            expect(parts[0]).toStrictEqual({
-                type: "plain",
-                text: "**bold** and _emphasized_ text [this](http://example.com/)!",
-            });
+            expect(parts).toStrictEqual([
+                { type: "plain", text: "bold", format: { bold: true } },
+                { type: "plain", text: " and " },
+                { type: "plain", text: "emphasized", format: { italic: true } },
+                { type: "plain", text: " text " },
+                { type: "plain", text: "this", format: { link: "http://example.com/" } },
+                { type: "plain", text: "!" },
+            ]);
         });
         it("keeps backticks unescaped", () => {
             const html = "this → ` is a backtick and here are 3 of them:\n```";

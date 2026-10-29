@@ -586,6 +586,9 @@
         "warning": "Warning"
     },
     "composer": {
+        "attach_camera": "Camera",
+        "attach_file": "File",
+        "attach_photo_video": "Photo or video",
         "autocomplete": {
             "@room_description": "Notify the whole room",
             "command_a11y": "Command Autocomplete",
@@ -610,6 +613,9 @@
         "format_italic": "Italic",
         "format_italics": "Italics",
         "format_link": "Link",
+        "format_link_placeholder": "Enter a link address",
+        "format_link_remove": "Remove link",
+        "format_monospace": "Monospace",
         "format_ordered_list": "Numbered list",
         "format_strikethrough": "Strikethrough",
         "format_underline": "Underline",

@@ -36,19 +36,27 @@ async function md2html(markdown: string): Promise<string> {
     return htmlSerializeIfNeeded(oldModel, { forceHTML: true })!;
 }
 
-function html2md(html: string): string {
+// Inside: the composer keeps bold, italic, links… as formats of the text rather than markdown, so a message
+// round-trips when editing it sends the same HTML again (the markdown it was typed in is gone).
+function html2model(html: string): EditorModel {
     const pc = createPartCreator();
     const parts = parseEvent(htmlMessage(html), pc);
-    const newModel = new EditorModel(parts, pc);
-    return textSerialize(newModel);
+    return new EditorModel(parts, pc);
+}
+
+function html2md(html: string): string {
+    return textSerialize(html2model(html));
 }
 
 async function roundTripMarkdown(markdown: string): Promise<string> {
-    return html2md(await md2html(markdown));
+    const html = await md2html(markdown);
+    const again = htmlSerializeIfNeeded(html2model(html), { forceHTML: true })!;
+    // The markdown it was typed in when the HTML comes back the same, to keep the tables below readable.
+    return again === html ? markdown : `${html2md(html)} -> ${again} (was ${html})`;
 }
 
 async function roundTripHtml(html: string): Promise<string> {
-    return await md2html(html2md(html));
+    return htmlSerializeIfNeeded(html2model(html), { forceHTML: true })!;
 }
 
 describe("editor/roundtrip", function () {
@@ -113,7 +121,9 @@ describe("editor/roundtrip", function () {
         });
 
         it("styling, but * becomes _ and __ becomes **", async function () {
-            expect(await roundTripMarkdown("__bold__ and *emphasised*")).toEqual("**bold** and _emphasised_");
+            expect(await roundTripMarkdown("__bold__ and *emphasised*")).toEqual("__bold__ and *emphasised*");
+            // Inside: in the composer the text is formatted, without the markdown.
+            expect(html2md(await md2html("__bold__ and *emphasised*"))).toEqual("bold and emphasised");
         });
     });
 

@@ -99,7 +99,8 @@ describe("MessageComposerButtons", () => {
                 "Emoji",
                 "Attachment",
                 "More options",
-                ["Sticker", "Voice Message", "Poll", "Location"],
+                // Inside: the poll is in the attach menu.
+                ["Sticker", "Voice Message", "Location"],
             ]);
         });
     });
@@ -131,7 +132,7 @@ describe("MessageComposerButtons", () => {
             true,
         );
 
-        expect(getButtonLabels()).toEqual(["Emoji", "More options", ["Attachment", "Sticker", "Poll", "Location"]]);
+        expect(getButtonLabels()).toEqual(["Emoji", "More options", ["Photo or video", "File", "Sticker", "Poll", "Location"]]);
     });
 
     describe("polls button", () => {
@@ -147,7 +148,7 @@ describe("MessageComposerButtons", () => {
                 true,
             );
 
-            expect(getButtonLabels()).toEqual(["Emoji", "More options", ["Attachment", "Sticker", "Poll", "Location"]]);
+            expect(getButtonLabels()).toEqual(["Emoji", "More options", ["Photo or video", "File", "Sticker", "Poll", "Location"]]);
         });
 
         it("should not render when asked not to", () => {
@@ -166,7 +167,8 @@ describe("MessageComposerButtons", () => {
                 "Emoji",
                 "More options",
                 [
-                    "Attachment",
+                    "Photo or video",
+                    "File",
                     "Sticker",
                     // "Poll", // should be hidden
                     "Location",

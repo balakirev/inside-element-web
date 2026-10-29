@@ -13,7 +13,7 @@ import {
     useCreateAutoDisposedViewModel,
 } from "@element-hq/web-shared-components";
 import { logger as rootLogger } from "matrix-js-sdk/src/logger";
-import { AttachmentIcon } from "@vector-im/compound-design-tokens/assets/web/icons";
+import { AttachmentIcon, ImageIcon, TakePhotoIcon } from "@vector-im/compound-design-tokens/assets/web/icons";
 import React, {
     type ChangeEventHandler,
     createContext,
@@ -51,6 +51,28 @@ import type { AttachmentCancel } from "@matrix-org/analytics-events/types/typesc
 
 const logger = rootLogger.getChild("RoomUploadViewModel");
 
+/** Inside: the kinds of the attach menu, as in Telegram. "local" (Element's) is "File". */
+export const INSIDE_UPLOAD_MEDIA = "inside_media";
+export const INSIDE_UPLOAD_FILE = "local";
+export const INSIDE_UPLOAD_CAMERA = "inside_camera";
+
+/** Inside: how the file picker is opened: which files it offers, or the camera. */
+export interface FilePickerOptions {
+    accept?: string;
+    capture?: "user" | "environment";
+}
+
+const MEDIA_ACCEPT = "image/*,video/*";
+
+/**
+ * Inside: whether "Camera" makes sense here: a phone or a tablet, where `capture` opens the camera. A desktop
+ * browser ignores `capture` and would show the file picker under that name.
+ */
+export function canOfferCamera(): boolean {
+    if (typeof window === "undefined" || !window.matchMedia) return false;
+    return window.matchMedia("(pointer: coarse)").matches && !!navigator.mediaDevices;
+}
+
 interface RoomUploadViewSnapshot extends UploadButtonViewSnapshot {
     mayDragAndDropFile: boolean;
 }
@@ -67,7 +89,7 @@ export class RoomUploadViewModel
         private readonly dispatcher: MatrixDispatcher,
         private replyToEvent: MatrixEvent | undefined,
         private threadRelation: IEventRelation | undefined,
-        public readonly openUploadDialog: () => void,
+        public readonly openUploadDialog: (options?: FilePickerOptions) => void,
         private readonly moduleComposerApi = ModuleApi.instance.composer,
     ) {
         super(
@@ -83,7 +105,11 @@ export class RoomUploadViewModel
         for (const option of moduleComposerApi.fileUploadOptions) {
             this.uploadSelectFns.set(option.type, option.onSelected);
         }
-        this.uploadSelectFns.set("local", this.openUploadDialog);
+        this.uploadSelectFns.set(INSIDE_UPLOAD_FILE, () => this.openUploadDialog());
+        this.uploadSelectFns.set(INSIDE_UPLOAD_MEDIA, () => this.openUploadDialog({ accept: MEDIA_ACCEPT }));
+        this.uploadSelectFns.set(INSIDE_UPLOAD_CAMERA, () =>
+            this.openUploadDialog({ accept: MEDIA_ACCEPT, capture: "environment" }),
+        );
         this.disposables.trackListener(room, RoomEvent.CurrentStateUpdated, this.onRoomCurrentStateUpdated);
         this.disposables.trackListener(
             moduleComposerApi,
@@ -103,11 +129,20 @@ export class RoomUploadViewModel
             mayDragAndDropFile: maySendMessage,
             options: maySendMessage
                 ? [
+                      // Inside: photo or video, file and (on a phone) camera, as Telegram's attach menu.
                       {
-                          type: "local",
-                          label: _t("common|attachment"),
+                          type: INSIDE_UPLOAD_MEDIA,
+                          label: _t("composer|attach_photo_video"),
+                          icon: ImageIcon,
+                      },
+                      {
+                          type: INSIDE_UPLOAD_FILE,
+                          label: _t("composer|attach_file"),
                           icon: AttachmentIcon,
                       },
+                      ...(canOfferCamera()
+                          ? [{ type: INSIDE_UPLOAD_CAMERA, label: _t("composer|attach_camera"), icon: TakePhotoIcon }]
+                          : []),
                       ...this.moduleComposerApi.fileUploadOptions.map((option) => ({
                           type: option.type,
                           label: option.label,
@@ -236,12 +271,22 @@ export function RoomUploadContextProvider({
     const client = useMatrixClientContext();
     const uploadInput = useRef<HTMLInputElement>(null);
 
-    const openFilePicker = useCallback((): void => {
-        if (!uploadInput.current) {
-            throw new Error("Input not ready");
-        }
-        uploadInput.current.click();
-    }, [uploadInput]);
+    const openFilePicker = useCallback(
+        (options?: FilePickerOptions): void => {
+            const input = uploadInput.current;
+            if (!input) {
+                throw new Error("Input not ready");
+            }
+            // Inside: one input for every kind of the attach menu, set up for the kind picked.
+            if (options?.accept) input.setAttribute("accept", options.accept);
+            else input.removeAttribute("accept");
+            if (options?.capture) input.setAttribute("capture", options.capture);
+            else input.removeAttribute("capture");
+            input.multiple = !options?.capture;
+            input.click();
+        },
+        [uploadInput],
+    );
 
     const vm = useCreateAutoDisposedViewModel(() => {
         if (!room) {
