@@ -142,6 +142,7 @@ import { type IScreen } from "../../vector/routing.ts";
 import { type URLParams } from "../../vector/url_utils.ts";
 import { type QrLoginCredentials } from "../views/auth/LoginWithQR.tsx";
 import { configureFromCompletedOAuthLogin } from "../../Lifecycle";
+import { getInsideLayout } from "../../utils/InsideLayout";
 
 const AUTH_SCREENS = ["register", "mobile_register", "login", "forgot_password", "start_sso", "start_cas", "welcome"];
 
@@ -1496,7 +1497,8 @@ export default class MatrixChat extends React.PureComponent<IProps, IState> {
             logger.debug(`showScreenAfterLogin: showing screen ${this.screenAfterLogin.screen}`);
             this.showScreen(this.screenAfterLogin.screen, this.screenAfterLogin.params);
             this.screenAfterLogin = undefined;
-        } else if (localStorage && localStorage.getItem("mx_last_room_id")) {
+        } else if (localStorage && localStorage.getItem("mx_last_room_id") && getInsideLayout() !== "mobile") {
+            // Inside: on a phone-sized window the app starts on the room list, as Telegram does.
             // Before defaulting to directory, show the last viewed room
             logger.debug("showScreenAfterLogin: showing last room");
             this.viewLastRoom();
