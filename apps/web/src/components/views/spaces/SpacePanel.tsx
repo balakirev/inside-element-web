@@ -53,9 +53,7 @@ import {
 } from "../../../stores/spaces";
 import { RovingTabIndexProvider } from "../../../accessibility/RovingTabIndex";
 import { FilterEnum } from "../../../stores/room-list-v3/skip-list/filters";
-import RoomListStoreV3, { RoomListStoreV3Event } from "../../../stores/room-list-v3/RoomListStoreV3";
-import { SummarizedNotificationState } from "../../../stores/notifications/SummarizedNotificationState";
-import { StaticNotificationState } from "../../../stores/notifications/StaticNotificationState";
+import { useInsideFolderUnread } from "../../../stores/room-list-v3/InsideFolderUnread";
 import {
     INSIDE_FOLDERS,
     InsideFolderStore,
@@ -286,28 +284,6 @@ const insideFolderButtons: Record<string, { label: TranslationKey; icon: JSX.Ele
 };
 
 /**
- * Inside: for each folder, its number of unread chats at the loudest level among them; none when all are read.
- */
-function getFolderUnreadStates(sdkContext: SDKContextClass): Map<FilterEnum, NotificationState> {
-    const rooms = (sdkContext.client?.getRooms() ?? []).filter(
-        (room) => !room.isSpaceRoom() && ["join", "invite"].includes(room.getMyMembership()),
-    );
-    const states = new Map<FilterEnum, NotificationState>();
-    for (const filter of INSIDE_FOLDERS) {
-        const summary = new SummarizedNotificationState();
-        for (const room of rooms) {
-            if (RoomListStoreV3.instance.roomMatchesFilter(room, filter)) {
-                summary.add(sdkContext.roomNotificationStateStore.getRoomState(room));
-            }
-        }
-        if (summary.numUnreadStates > 0) {
-            states.set(filter, StaticNotificationState.forCount(summary.numUnreadStates, summary.level));
-        }
-    }
-    return states;
-}
-
-/**
  * Inside: folders under "All chats", as in other messengers — groups, colleagues, clients, VIP, favourites.
  * Each one shows all chats through a room list filter.
  */
@@ -323,10 +299,7 @@ const InsideFolderButtons: React.FC<{ activeSpace: SpaceKey; isPanelCollapsed: b
     );
 
     // The number of unread chats in each folder, as in other messengers.
-    const [unread, setUnread] = useState(() => getFolderUnreadStates(sdkContext));
-    const updateUnread = useCallback(() => setUnread(getFolderUnreadStates(sdkContext)), [sdkContext]);
-    useEventEmitter(sdkContext.roomNotificationStateStore, UPDATE_STATUS_INDICATOR, updateUnread);
-    useEventEmitter(RoomListStoreV3.instance, RoomListStoreV3Event.ListsUpdate, updateUnread);
+    const unread = useInsideFolderUnread().folders;
 
     return (
         <>
