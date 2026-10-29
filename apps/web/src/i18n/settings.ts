@@ -6,7 +6,13 @@
  */
 
 import { logger } from "matrix-js-sdk/src/logger";
-import { normalizeLanguageKey, getLangsJson, registerTranslations, setLocale } from "@element-hq/web-shared-components";
+import {
+    normalizeLanguageKey,
+    getLangsJson,
+    getLocale,
+    registerTranslations,
+    setLocale,
+} from "@element-hq/web-shared-components";
 
 import SettingsStore from "../settings/SettingsStore";
 import PlatformPeg from "../PlatformPeg";
@@ -20,7 +26,13 @@ export function getUserLanguage(): string {
     if (typeof language === "string" && language !== "") {
         return language;
     } else {
-        return normalizeLanguageKey(getLanguageFromBrowser());
+        // INSIDE: the automatic language is not stored (see setLanguage), so formats follow the
+        // language the UI actually uses. The browser's regional variant (en-gb, ru-ru) is kept when
+        // it is the same language; a browser language we do not ship (de) must not mix German
+        // dates into the English UI.
+        const browser = normalizeLanguageKey(getLanguageFromBrowser());
+        const current = getLocale();
+        return browser.split("-")[0] === current.split("-")[0] ? browser : current;
     }
 }
 
@@ -40,7 +52,10 @@ export async function setLanguage(...preferredLangs: string[]): Promise<void> {
     registerTranslations(chosenLanguage, languageData);
     setLocale(chosenLanguage);
 
-    await SettingsStore.setValue("language", null, SettingLevel.DEVICE, chosenLanguage);
+    // INSIDE: upstream stores the chosen language on the device every time, which freezes the
+    // browser language of the first visit. We store only an explicit choice (Settings → Language,
+    // the language selector on auth pages write the setting themselves), so without one the app
+    // follows the system language on every start.
     // Adds a lot of noise to test runs, so disable logging there.
     // oxlint-disable-next-line node/no-process-env
     if (process.env.NODE_ENV !== "test") {
@@ -54,4 +69,30 @@ export async function setLanguage(...preferredLangs: string[]): Promise<void> {
     }
 
     await registerCustomTranslations();
+}
+
+/**
+ * INSIDE: localStorage flag of the one-time language reset below. Lifecycle.clearStorage keeps it
+ * across logout, like the language itself, so a language chosen after the reset survives a re-login.
+ */
+export const INSIDE_LANGUAGE_AUTO_KEY = "inside_language_auto_v1";
+
+/**
+ * INSIDE: one-time reset of the language stored on this device.
+ *
+ * Until build -30 our config forced `language: "ru"` and upstream stored it on the device at every
+ * start, so every device has "ru" saved whether the person chose it or not. Russian is dropped once,
+ * and the app then follows the system language. Any other stored value can only be an explicit
+ * choice (the forced value was always "ru"), so it is kept.
+ */
+export async function insideResetForcedLanguage(): Promise<void> {
+    try {
+        if (window.localStorage.getItem(INSIDE_LANGUAGE_AUTO_KEY)) return;
+        if (SettingsStore.getValueAt(SettingLevel.DEVICE, "language", null, true, true) === "ru") {
+            await SettingsStore.setValue("language", null, SettingLevel.DEVICE, null);
+        }
+        window.localStorage.setItem(INSIDE_LANGUAGE_AUTO_KEY, "1");
+    } catch (e) {
+        logger.warn("Unable to reset the stored language", e);
+    }
 }

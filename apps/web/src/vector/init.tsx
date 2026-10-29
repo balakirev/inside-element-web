@@ -15,7 +15,7 @@ import { ModuleLoader } from "@element-hq/element-web-module-api";
 import { getNormalizedLanguageKeys } from "@element-hq/web-shared-components";
 
 import { getLanguagesFromBrowser } from "../i18n/browser";
-import { setLanguage } from "../i18n/settings";
+import { insideResetForcedLanguage, setLanguage } from "../i18n/settings";
 import { getCurrentLanguage } from "../i18n";
 import SettingsStore from "../settings/SettingsStore";
 import PlatformPeg from "../PlatformPeg";
@@ -102,6 +102,7 @@ export async function loadConfig(): Promise<void> {
 }
 
 export async function loadLanguage(): Promise<void> {
+    await insideResetForcedLanguage();
     const prefLang = SettingsStore.getValue("language", null, /*excludeDefault=*/ true);
     let langs: string[] = [];
 

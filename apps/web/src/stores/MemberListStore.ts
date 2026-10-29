@@ -12,6 +12,7 @@ import { KnownMembership } from "matrix-js-sdk/src/types";
 import SettingsStore from "../settings/SettingsStore";
 import { type SDKContextClass } from "../contexts/SDKContextClass";
 import SdkConfig from "../SdkConfig";
+import { getUserLanguage } from "../i18n/settings";
 
 // Regex applied to filter our punctuation in member names before applying sort, to fuzzy it a little
 // matches all ASCII punctuation: !"#$%&'()*+,-./:;<=>?@[\]^_`{|}~
@@ -46,7 +47,8 @@ export class MemberListStore {
                 invited: [],
             };
         }
-        const language = SettingsStore.getValue("language");
+        // INSIDE: the automatic language is not stored, the setting alone would say "en".
+        const language = getUserLanguage();
         this.collator = new Intl.Collator(language, { sensitivity: "base", ignorePunctuation: false });
         const members = await this.loadMembers(roomId);
         // Filter then sort as it's more efficient than sorting tons of members we will just filter out later.

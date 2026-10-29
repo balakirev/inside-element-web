@@ -71,6 +71,7 @@ import { InsideMediaPrefetcher } from "./utils/media/InsideMediaPrefetcher";
 import { CallStatusListener } from "./CallStatusListener.ts";
 import { CallStore } from "./stores/CallStore.ts";
 import { ModuleApi } from "./modules/Api.ts";
+import { INSIDE_LANGUAGE_AUTO_KEY } from "./i18n/settings";
 
 const HOMESERVER_URL_KEY = "mx_hs_url";
 const ID_SERVER_URL_KEY = "mx_is_url";
@@ -1170,6 +1171,8 @@ export async function clearStorage(opts?: { deleteEverything?: boolean }): Promi
         // try to save any 3pid invites from being obliterated and registration time
         const pendingInvites = ThreepidInviteStore.instance.getWireInvites();
         const registrationTime = window.localStorage.getItem("mx_registration_time");
+        // INSIDE: the one-time language reset is done for this device, even after logout.
+        const languageAutoFlag = window.localStorage.getItem(INSIDE_LANGUAGE_AUTO_KEY);
 
         window.localStorage.clear();
 
@@ -1191,6 +1194,9 @@ export async function clearStorage(opts?: { deleteEverything?: boolean }): Promi
 
             if (registrationTime) {
                 window.localStorage.setItem("mx_registration_time", registrationTime);
+            }
+            if (languageAutoFlag) {
+                window.localStorage.setItem(INSIDE_LANGUAGE_AUTO_KEY, languageAutoFlag);
             }
         }
     }
