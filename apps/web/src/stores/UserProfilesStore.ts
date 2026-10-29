@@ -16,6 +16,7 @@ import {
 } from "matrix-js-sdk/src/matrix";
 
 import { LruCache } from "../utils/LruCache";
+import { InsideLocalizedNames } from "../utils/InsideLocalizedNames";
 
 const cacheSize = 500;
 
@@ -128,7 +129,10 @@ export class UserProfilesStore {
      */
     private async fetchProfileFromApi(userId: string, options?: GetOptions): Promise<IMatrixProfile | null> {
         try {
-            return (await this.client.getProfileInfo(userId)) ?? null;
+            const profile = (await this.client.getProfileInfo(userId)) ?? null;
+            // Inside: the profile carries the Latin name (`is.ins.name.en`); keep it for display.
+            InsideLocalizedNames.instance.noteProfile(userId, profile);
+            return profile;
         } catch (e) {
             logger.warn(`Error retrieving profile for userId ${userId}`, e);
 

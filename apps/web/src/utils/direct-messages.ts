@@ -20,6 +20,7 @@ import { privateShouldBeEncrypted } from "./rooms";
 import { createDmLocalRoom } from "./dm/createDmLocalRoom";
 import { startDm } from "./dm/startDm";
 import { resolveThreePids } from "./threepids";
+import { InsideLocalizedNames } from "./InsideLocalizedNames";
 
 export async function startDmOnFirstMessage(client: MatrixClient, targets: Member[]): Promise<string | null> {
     let resolvedTargets = targets;
@@ -128,7 +129,8 @@ export class DirectoryMember extends Member {
 
     // These next class members are for the Member interface
     public get name(): string {
-        return this.displayName || this._userId;
+        // Inside: the Latin name (`is.ins.name.en`) in an English interface, once it is known.
+        return InsideLocalizedNames.instance.localizeUserName(this._userId, this.displayName || this._userId);
     }
 
     public get userId(): string {

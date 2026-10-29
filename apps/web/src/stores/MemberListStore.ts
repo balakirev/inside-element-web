@@ -13,6 +13,7 @@ import SettingsStore from "../settings/SettingsStore";
 import { type SDKContextClass } from "../contexts/SDKContextClass";
 import SdkConfig from "../SdkConfig";
 import { getUserLanguage } from "../i18n/settings";
+import { InsideLocalizedNames } from "../utils/InsideLocalizedNames";
 
 // Regex applied to filter our punctuation in member names before applying sort, to fuzzy it a little
 // matches all ASCII punctuation: !"#$%&'()*+,-./:;<=>?@[\]^_`{|}~
@@ -167,7 +168,10 @@ export class MemberListStore {
             }
             if (query) {
                 query = query.toLowerCase();
-                const matchesName = m.name.toLowerCase().includes(query);
+                // Inside: by either spelling of the name (Latin `is.ins.name.en` or the display name).
+                const matchesName = InsideLocalizedNames.instance
+                    .getMemberSpellings(m)
+                    .some((name) => name.toLowerCase().includes(query!));
                 const matchesId = m.userId.toLowerCase().includes(query);
                 if (!matchesName && !matchesId) {
                     return;

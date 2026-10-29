@@ -27,6 +27,7 @@ import PlatformPeg from "./PlatformPeg";
 import SdkConfig from "./SdkConfig";
 import { setDeviceIsolationMode } from "./settings/controllers/DeviceIsolationModeController.ts";
 import { initialiseDehydrationIfEnabled } from "./utils/device/dehydration";
+import { InsideLocalizedNames } from "./utils/InsideLocalizedNames";
 
 export interface MatrixClientPegAssignOpts {
     /**
@@ -163,6 +164,7 @@ class MatrixClientPegClass implements IMatrixClientPeg {
 
     public unset(): void {
         this.matrixClient = null;
+        InsideLocalizedNames.instance.stop();
 
         MatrixActionCreators.stop();
     }
@@ -239,6 +241,9 @@ class MatrixClientPegClass implements IMatrixClientPeg {
         if (!this.matrixClient) {
             throw new Error("createClient must be called first");
         }
+
+        // Inside: names of people and system rooms in the interface language, before the store loads rooms.
+        InsideLocalizedNames.instance.start(this.matrixClient);
 
         for (const dbType of ["indexeddb", "memory"]) {
             try {

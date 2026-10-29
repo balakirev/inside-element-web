@@ -62,6 +62,7 @@ import { DMRoomTile } from "./invite/DMRoomTile.tsx";
 import { logErrorAndShowErrorDialog } from "../../../utils/ErrorUtils.tsx";
 import UnknownIdentityUsersWarningDialog from "./invite/UnknownIdentityUsersWarningDialog.tsx";
 import { AddressType, getAddressType } from "../../../UserAddress.ts";
+import { InsideLocalizedNames } from "../../../utils/InsideLocalizedNames";
 
 interface Result {
     userId: string;
@@ -849,7 +850,16 @@ export default class InviteDialog extends React.PureComponent<Props, IInviteDial
         if (this.state.filterText) {
             const filterBy = this.state.filterText.toLowerCase();
             sourceMembers = sourceMembers.filter(
-                (m) => m.user.name.toLowerCase().includes(filterBy) || m.userId.toLowerCase().includes(filterBy),
+                (m) =>
+                    // Inside: by either spelling of the name (Latin `is.ins.name.en` or the display name).
+                    InsideLocalizedNames.instance.nameMatches(
+                        filterBy,
+                        m.userId,
+                        m.user.name,
+                        ...(m.user instanceof RoomMember
+                            ? InsideLocalizedNames.instance.getMemberSpellings(m.user)
+                            : []),
+                    ) || m.userId.toLowerCase().includes(filterBy),
             );
 
             if (sourceMembers.length === 0 && !hasAdditionalMembers) {

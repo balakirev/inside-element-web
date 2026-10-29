@@ -17,10 +17,20 @@ import {
 } from "matrix-js-sdk/src/matrix";
 
 import { useTypedEventEmitter } from "../useEventEmitter";
+import { getRoomI18nTopic, ROOM_TOPIC_I18N_EVENT } from "../../utils/InsideLocalizedNames";
 
 export const getTopic = (room?: Room): ContentHelpers.TopicState | null => {
     const content = room?.currentState?.getStateEvents(EventType.RoomTopic, "")?.getContent<MRoomTopicEventContent>();
     return !!content ? ContentHelpers.parseTopicContent(content) : null;
+};
+
+/**
+ * Inside: the topic to show. A system room's topic in the interface language (`is.ins.room.topic_i18n`) when
+ * it has one, otherwise the room's topic. Editing keeps using {@link getTopic}.
+ */
+export const getShownTopic = (room?: Room): ContentHelpers.TopicState | null => {
+    const i18nTopic = room ? getRoomI18nTopic(room) : undefined;
+    return i18nTopic ? { text: i18nTopic } : getTopic(room);
 };
 
 /**
@@ -29,13 +39,13 @@ export const getTopic = (room?: Room): ContentHelpers.TopicState | null => {
  * @returns the raw text and an html parsion version of the room topic
  */
 export function useTopic(room?: Room): ContentHelpers.TopicState | null {
-    const [topic, setTopic] = useState(getTopic(room));
+    const [topic, setTopic] = useState(getShownTopic(room));
     useTypedEventEmitter(room?.currentState, RoomStateEvent.Events, (ev: MatrixEvent) => {
-        if (ev.getType() !== EventType.RoomTopic) return;
-        setTopic(getTopic(room));
+        if (ev.getType() !== EventType.RoomTopic && ev.getType() !== ROOM_TOPIC_I18N_EVENT) return;
+        setTopic(getShownTopic(room));
     });
     useEffect(() => {
-        setTopic(getTopic(room));
+        setTopic(getShownTopic(room));
     }, [room]);
 
     return topic;

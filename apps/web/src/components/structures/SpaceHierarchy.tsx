@@ -67,7 +67,7 @@ import { type ViewRoomPayload } from "../../dispatcher/payloads/ViewRoomPayload"
 import { type JoinRoomReadyPayload } from "../../dispatcher/payloads/JoinRoomReadyPayload";
 import { KeyBindingAction } from "../../accessibility/KeyboardShortcuts";
 import { getKeyBindingsManager } from "../../KeyBindingsManager";
-import { getTopic } from "../../hooks/room/useTopic";
+import { getShownTopic } from "../../hooks/room/useTopic";
 import { getDisplayAliasForAliasSet } from "../../Rooms";
 import SettingsStore from "../../settings/SettingsStore";
 import { filterBoolean } from "../../utils/arrays.ts";
@@ -227,7 +227,7 @@ const Tile: React.FC<ITileProps> = ({
 
     let topic: ReactNode | string | null;
     if (joinedRoom) {
-        const topicObj = getTopic(joinedRoom);
+        const topicObj = getShownTopic(joinedRoom);
         topic = topicToHtml(topicObj?.text, topicObj?.html);
     } else {
         topic = room.topic;

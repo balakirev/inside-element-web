@@ -42,6 +42,7 @@ import { notificationLevelToIndicator } from "../../../../utils/notifications";
 import { mediaFromMxc } from "../../../../customisations/Media";
 import { TimelineRenderingType } from "../../../../contexts/RoomContext";
 import { keepIfSame } from "../../../../utils/keepIfSame";
+import { getMemberNameWithoutMxid } from "../../../../utils/event/getSenderName";
 import {
     EventPreviewContentCache,
     getEventPreviewContent,
@@ -303,7 +304,8 @@ export class ThreadMessagePreviewViewModel
     ): Pick<ThreadMessagePreviewViewSnapshot, "avatar" | "participantAvatars" | "senderName" | "showDisplayName"> {
         const member = ThreadMessagePreviewViewModel.getDisplayMember(this.props, mxEvent);
         const sender = mxEvent.getSender() ?? "";
-        const senderName = member?.name ?? sender;
+        // Inside: without the " (@user:server)" of same-named members, as in other timeline texts.
+        const senderName = member ? getMemberNameWithoutMxid(member) : sender;
         const avatar = ThreadMessagePreviewViewModel.computeAvatar(this.props, mxEvent, member);
         const participantAvatars = ThreadMessagePreviewViewModel.computeParticipantAvatars(this.props, mxEvent);
 

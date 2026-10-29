@@ -30,6 +30,7 @@ import { ReactionEventPreview } from "./previews/ReactionEventPreview";
 import { UPDATE_EVENT } from "../AsyncStore";
 import { type Preview } from "./previews";
 import shouldHideEvent from "../../shouldHideEvent";
+import { InsideLocalizedNames } from "../../utils/InsideLocalizedNames";
 
 // Emitted event for when a room's preview has changed. First argument will the room for which
 // the change happened.
@@ -240,12 +241,25 @@ export class MessagePreviewStore extends AsyncStoreWithClient<EmptyObject> {
     protected async onReady(): Promise<void> {
         if (!this.matrixClient) return;
         this.matrixClient.on(RoomEvent.LocalEchoUpdated, this.onLocalEchoUpdated);
+        this.offNamesChanged = InsideLocalizedNames.instance.onNamesChanged(this.onNamesChanged);
     }
 
     protected async onNotReady(): Promise<void> {
         if (!this.matrixClient) return;
         this.matrixClient.off(RoomEvent.LocalEchoUpdated, this.onLocalEchoUpdated);
+        this.offNamesChanged?.();
+        this.offNamesChanged = undefined;
     }
+
+    private offNamesChanged?: () => void;
+
+    /** Inside: Latin names (`is.ins.name.en`) arrived; "Name: text" previews are made again. */
+    private onNamesChanged = (): void => {
+        for (const roomId of this.previews.keys()) {
+            const room = this.matrixClient?.getRoom(roomId);
+            if (room) void this.generatePreview(room, TAG_ANY);
+        }
+    };
 
     protected onLocalEchoUpdated = async (ev: MatrixEvent, room: Room): Promise<void> => {
         if (!this.previews.has(room.roomId)) return;
