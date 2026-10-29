@@ -26,7 +26,7 @@ import { removeDirectionOverrideChars } from "matrix-js-sdk/src/utils";
 import { type PollStartEvent } from "matrix-js-sdk/src/extensible_events_v1/PollStartEvent";
 import { type IRTCNotificationContent } from "matrix-js-sdk/src/matrixrtc";
 
-import { _t } from "./languageHandler";
+import { _t, type Tags } from "./languageHandler";
 import * as Roles from "./Roles";
 import { isValid3pidInvite } from "./RoomInvite";
 import SettingsStore from "./settings/SettingsStore";
@@ -42,10 +42,59 @@ import { getMemberNameWithoutMxid, getSenderName } from "./utils/event/getSender
 import PosthogTrackers from "./PosthogTrackers.ts";
 import { ElementCallEventType } from "./call-types.ts";
 import Spoiler from "./components/views/elements/Spoiler.tsx";
+import InsideServiceName from "./components/views/elements/InsideServiceName.tsx";
+import { jsxJoin } from "./utils/ReactUtils.tsx";
 
 /** Inside: a member's name for event texts, without the Matrix ID added for same-named members. */
 function memberName(member: RoomMember | null | undefined): string | undefined {
     return member ? getMemberNameWithoutMxid(member) : undefined;
+}
+
+/**
+ * Inside: a person's name in an event text. Where the text is rendered as JSX (the timeline, threads,
+ * search results) it is a button opening their user card, as in Telegram; plain text uses (room list
+ * previews, notifications, exports) get the bare name.
+ */
+function personName(
+    allowJSX: boolean,
+    name: string,
+    userId: string | null | undefined,
+    member?: RoomMember | null,
+): string | React.ReactNode {
+    if (!allowJSX || !userId) return name;
+    return (
+        <InsideServiceName userId={userId} member={member}>
+            {name}
+        </InsideServiceName>
+    );
+}
+
+/** Inside: the sender of an event as {@link personName}, with the member at the time of the event. */
+function senderPersonName(ev: MatrixEvent, client: MatrixClient, allowJSX: boolean, name: string): Renderable {
+    const userId = ev.getSender();
+    const member = ev.sender ?? (userId ? client.getRoom(ev.getRoomId())?.getMember(userId) : null);
+    return personName(allowJSX, name, userId, member);
+}
+
+/**
+ * Inside: `_t` with tags for a text whose variables may hold JSX names ({@link personName}). `substitute`
+ * cannot replace tags once a variable has turned the text into elements, so such a variable goes in as a
+ * self-closing tag of its own and the element replaces that tag.
+ */
+function tWithNames(key: TranslationKey, variables: Record<string, Renderable>, tags: Tags): React.ReactNode {
+    const stringVariables: Record<string, string> = {};
+    const allTags: Tags = { ...tags };
+    let index = 0;
+    for (const [name, value] of Object.entries(variables)) {
+        if (typeof value === "string" || typeof value === "number") {
+            stringVariables[name] = String(value);
+        } else {
+            const tag = `insideName${index++}`;
+            stringVariables[name] = `<${tag}/>`;
+            allTags[tag] = value;
+        }
+    }
+    return _t(key, stringVariables, allTags);
 }
 
 function getRoomMemberDisplayname(client: MatrixClient, event: MatrixEvent, userId = event.getSender()): string {
@@ -138,8 +187,19 @@ function textForMemberEvent(
     showHiddenEvents?: boolean,
 ): (() => Renderable) | null {
     // XXX: SYJS-16 "sender is sometimes null for join messages"
-    const senderName = memberName(ev.sender) || getRoomMemberDisplayname(client, ev);
-    const targetName = memberName(ev.target) || getRoomMemberDisplayname(client, ev, ev.getStateKey());
+    const senderName = senderPersonName(
+        ev,
+        client,
+        allowJSX,
+        memberName(ev.sender) || getRoomMemberDisplayname(client, ev),
+    );
+    const targetUserId = ev.getStateKey();
+    const targetMember = ev.target ?? (targetUserId ? client.getRoom(ev.getRoomId())?.getMember(targetUserId) : null);
+    const targetDisplayName = memberName(ev.target) || getRoomMemberDisplayname(client, ev, targetUserId);
+    /** Inside: the member whose state this is, as {@link personName}; `name` defaults to their display name. */
+    const target = (name: string = targetDisplayName): Renderable =>
+        personName(allowJSX, name, targetUserId, targetMember);
+    const targetName = target();
     const prevContent = ev.getPrevContent();
     const content = ev.getContent();
     const reason = content.reason;
@@ -175,16 +235,16 @@ function textForMemberEvent(
             if (allowJSX) {
                 return reason
                     ? () =>
-                          _t(
+                          tWithNames(
                               "timeline|m.room.member|ban_reason_spoiler",
                               { senderName, reason },
-                              { user: () => <Spoiler>{targetName}</Spoiler> },
+                              { user: () => <Spoiler>{targetDisplayName}</Spoiler> },
                           )
                     : () =>
-                          _t(
+                          tWithNames(
                               "timeline|m.room.member|ban_spoiler",
                               { senderName },
-                              { user: () => <Spoiler>{targetName}</Spoiler> },
+                              { user: () => <Spoiler>{targetDisplayName}</Spoiler> },
                           );
             }
 
@@ -204,7 +264,7 @@ function textForMemberEvent(
                             // We're taking the display namke directly from the event content here so we need
                             // to strip direction override chars which the js-sdk would normally do when
                             // calculating the display name
-                            oldDisplayName: removeDirectionOverrideChars(prevContent.displayname!),
+                            oldDisplayName: target(removeDirectionOverrideChars(prevContent.displayname!)),
                         });
                 } else if (modDisplayname === Modification.Changed) {
                     return () =>
@@ -212,13 +272,13 @@ function textForMemberEvent(
                             // We're taking the display name directly from the event content here so we need
                             // to strip direction override chars which the js-sdk would normally do when
                             // calculating the display name
-                            oldDisplayName: removeDirectionOverrideChars(prevContent.displayname!),
+                            oldDisplayName: target(removeDirectionOverrideChars(prevContent.displayname!)),
                             displayName: removeDirectionOverrideChars(content.displayname!),
                         });
                 } else if (modDisplayname === Modification.Set) {
                     return () =>
                         _t("timeline|m.room.member|set_name", {
-                            senderName: ev.getSender(),
+                            senderName: senderPersonName(ev, client, allowJSX, ev.getSender()!),
                             displayName: removeDirectionOverrideChars(content.displayname!),
                         });
                 } else if (modDisplayname === Modification.Unset) {
@@ -294,8 +354,8 @@ function textForMemberEvent(
     return null;
 }
 
-function textForTopicEvent(ev: MatrixEvent): (() => string) | null {
-    const senderDisplayName = memberName(ev.sender) || ev.getSender();
+function textForTopicEvent(ev: MatrixEvent, client: MatrixClient, allowJSX: boolean): (() => Renderable) | null {
+    const senderDisplayName = senderPersonName(ev, client, allowJSX, memberName(ev.sender) || ev.getSender()!);
     const topic = ContentHelpers.parseTopicContent(ev.getContent()).text;
     return () =>
         topic
@@ -308,13 +368,13 @@ function textForTopicEvent(ev: MatrixEvent): (() => string) | null {
               });
 }
 
-function textForRoomAvatarEvent(ev: MatrixEvent): (() => string) | null {
-    const senderDisplayName = memberName(ev?.sender) || ev.getSender();
+function textForRoomAvatarEvent(ev: MatrixEvent, client: MatrixClient, allowJSX: boolean): (() => Renderable) | null {
+    const senderDisplayName = senderPersonName(ev, client, allowJSX, memberName(ev?.sender) || ev.getSender()!);
     return () => _t("timeline|m.room.avatar|changed", { senderDisplayName });
 }
 
-function textForRoomNameEvent(ev: MatrixEvent): (() => string) | null {
-    const senderDisplayName = memberName(ev.sender) || ev.getSender();
+function textForRoomNameEvent(ev: MatrixEvent, client: MatrixClient, allowJSX: boolean): (() => Renderable) | null {
+    const senderDisplayName = senderPersonName(ev, client, allowJSX, memberName(ev.sender) || ev.getSender()!);
 
     if (!ev.getContent().name || ev.getContent().name.trim().length === 0) {
         return () => _t("timeline|m.room.name|remove", { senderDisplayName });
@@ -334,8 +394,8 @@ function textForRoomNameEvent(ev: MatrixEvent): (() => string) | null {
         });
 }
 
-function textForTombstoneEvent(ev: MatrixEvent): (() => string) | null {
-    const senderDisplayName = memberName(ev.sender) || ev.getSender();
+function textForTombstoneEvent(ev: MatrixEvent, client: MatrixClient, allowJSX: boolean): (() => Renderable) | null {
+    const senderDisplayName = senderPersonName(ev, client, allowJSX, memberName(ev.sender) || ev.getSender()!);
     return () => _t("timeline|m.room.tombstone", { senderDisplayName });
 }
 
@@ -347,7 +407,7 @@ const onViewJoinRuleSettingsClick = (): void => {
 };
 
 function textForJoinRulesEvent(ev: MatrixEvent, client: MatrixClient, allowJSX: boolean): () => Renderable {
-    const senderDisplayName = memberName(ev.sender) || ev.getSender();
+    const senderDisplayName = senderPersonName(ev, client, allowJSX, memberName(ev.sender) || ev.getSender()!);
     switch (ev.getContent().join_rule) {
         case JoinRule.Public:
             return () =>
@@ -365,7 +425,7 @@ function textForJoinRulesEvent(ev: MatrixEvent, client: MatrixClient, allowJSX: 
             if (allowJSX) {
                 return () => (
                     <span>
-                        {_t(
+                        {tWithNames(
                             "timeline|m.room.join_rules|restricted_settings",
                             {
                                 senderDisplayName,
@@ -393,8 +453,8 @@ function textForJoinRulesEvent(ev: MatrixEvent, client: MatrixClient, allowJSX: 
     }
 }
 
-function textForGuestAccessEvent(ev: MatrixEvent): (() => string) | null {
-    const senderDisplayName = memberName(ev.sender) || ev.getSender();
+function textForGuestAccessEvent(ev: MatrixEvent, client: MatrixClient, allowJSX: boolean): (() => Renderable) | null {
+    const senderDisplayName = senderPersonName(ev, client, allowJSX, memberName(ev.sender) || ev.getSender()!);
     switch (ev.getContent().guest_access) {
         case GuestAccess.CanJoin:
             return () => _t("timeline|m.room.guest_access|can_join", { senderDisplayName });
@@ -436,8 +496,12 @@ function textForMessageEvent(ev: MatrixEvent, client: MatrixClient): (() => stri
     };
 }
 
-function textForCanonicalAliasEvent(ev: MatrixEvent): (() => string) | null {
-    const senderName = getSenderName(ev);
+function textForCanonicalAliasEvent(
+    ev: MatrixEvent,
+    client: MatrixClient,
+    allowJSX: boolean,
+): (() => Renderable) | null {
+    const senderName = senderPersonName(ev, client, allowJSX, getSenderName(ev));
     const oldAlias = ev.getPrevContent().alias;
     const oldAltAliases = ev.getPrevContent().alt_aliases || [];
     const newAlias = ev.getContent().alias;
@@ -514,8 +578,12 @@ function textForThreePidInviteEvent(event: MatrixEvent): (() => string) | null {
         });
 }
 
-function textForHistoryVisibilityEvent(event: MatrixEvent): (() => string) | null {
-    const senderName = getSenderName(event);
+function textForHistoryVisibilityEvent(
+    event: MatrixEvent,
+    client: MatrixClient,
+    allowJSX: boolean,
+): (() => Renderable) | null {
+    const senderName = senderPersonName(event, client, allowJSX, getSenderName(event));
     switch (event.getContent().history_visibility) {
         case HistoryVisibility.Invited:
             return () => _t("timeline|m.room.history_visibility|invited", { senderName });
@@ -538,8 +606,8 @@ function textForHistoryVisibilityEvent(event: MatrixEvent): (() => string) | nul
 }
 
 // Currently will only display a change if a user's power level is changed
-function textForPowerEvent(event: MatrixEvent, client: MatrixClient): (() => string) | null {
-    const senderName = getSenderName(event);
+function textForPowerEvent(event: MatrixEvent, client: MatrixClient, allowJSX: boolean): (() => Renderable) | null {
+    const senderName = senderPersonName(event, client, allowJSX, getSenderName(event));
     if (!event.getPrevContent()?.users || !event.getContent()?.users) {
         return null;
     }
@@ -584,19 +652,31 @@ function textForPowerEvent(event: MatrixEvent, client: MatrixClient): (() => str
     }
 
     // XXX: This is also surely broken for i18n
-    return () =>
-        _t("timeline|m.room.power_levels|changed", {
-            senderName,
-            powerLevelDiffText: diffs
-                .map((diff) =>
-                    _t("timeline|m.room.power_levels|user_from_to", {
-                        userId: diff.name,
-                        fromPowerLevel: Roles.textualPowerLevel(diff.from, previousUserDefault),
-                        toPowerLevel: Roles.textualPowerLevel(diff.to, currentUserDefault),
-                    }),
-                )
-                .join(", "),
+    return () => {
+        const levels = (diff: (typeof diffs)[number]): { fromPowerLevel: string; toPowerLevel: string } => ({
+            fromPowerLevel: Roles.textualPowerLevel(diff.from, previousUserDefault),
+            toPowerLevel: Roles.textualPowerLevel(diff.to, currentUserDefault),
         });
+        const room = client.getRoom(event.getRoomId());
+        return _t("timeline|m.room.power_levels|changed", {
+            senderName,
+            powerLevelDiffText: allowJSX
+                ? jsxJoin(
+                      diffs.map((diff) =>
+                          _t("timeline|m.room.power_levels|user_from_to", {
+                              userId: personName(allowJSX, diff.name, diff.userId, room?.getMember(diff.userId)),
+                              ...levels(diff),
+                          }),
+                      ),
+                      ", ",
+                  )
+                : diffs
+                      .map((diff) =>
+                          _t("timeline|m.room.power_levels|user_from_to", { userId: diff.name, ...levels(diff) }),
+                      )
+                      .join(", "),
+        });
+    };
 }
 
 const onPinnedMessagesClick = (): void => {
@@ -605,7 +685,7 @@ const onPinnedMessagesClick = (): void => {
 };
 
 function textForPinnedEvent(event: MatrixEvent, client: MatrixClient, allowJSX: boolean): (() => Renderable) | null {
-    const senderName = getSenderName(event);
+    const senderName = senderPersonName(event, client, allowJSX, getSenderName(event));
     const roomId = event.getRoomId()!;
 
     const content = event.getContent<{ pinned: string[] }>();
@@ -623,7 +703,7 @@ function textForPinnedEvent(event: MatrixEvent, client: MatrixClient, allowJSX: 
 
             return () => (
                 <span>
-                    {_t(
+                    {tWithNames(
                         "timeline|m.room.pinned_events|pinned_link",
                         { senderName },
                         {
@@ -659,7 +739,7 @@ function textForPinnedEvent(event: MatrixEvent, client: MatrixClient, allowJSX: 
 
             return () => (
                 <span>
-                    {_t(
+                    {tWithNames(
                         "timeline|m.room.pinned_events|unpinned_link",
                         { senderName },
                         {
@@ -691,7 +771,7 @@ function textForPinnedEvent(event: MatrixEvent, client: MatrixClient, allowJSX: 
     if (allowJSX) {
         return () => (
             <span>
-                {_t(
+                {tWithNames(
                     "timeline|m.room.pinned_events|changed_link",
                     { senderName },
                     {

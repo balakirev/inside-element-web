@@ -17,9 +17,10 @@ import {
     type MRoomTopicEventContent,
     Room,
     RoomMember,
+    User,
 } from "matrix-js-sdk/src/matrix";
 import { KnownMembership } from "matrix-js-sdk/src/types";
-import { render } from "test-utils-rtl";
+import { fireEvent, render, screen } from "test-utils-rtl";
 import { type ReactElement } from "react";
 import { describe, it, expect, beforeAll, beforeEach, afterEach, vi, type Mocked } from "vitest";
 import React from "react";
@@ -30,7 +31,8 @@ import SettingsStore from "./settings/SettingsStore";
 import { MatrixClientPeg } from "./MatrixClientPeg";
 import { getSenderName } from "./utils/event/getSenderName";
 import { ElementCallEventType } from "./call-types";
-import Spoiler from "./components/views/elements/Spoiler";
+import defaultDispatcher from "./dispatcher/dispatcher";
+import { Action } from "./dispatcher/actions";
 
 vi.mock("./settings/SettingsStore");
 
@@ -724,11 +726,15 @@ describe("TextForEvent", () => {
                 }),
             } as unknown as Mocked<Room>);
 
-            expect(textForEvent(banEventWithReason(), mockClient, true)).toEqual(
-                <span>
-                    Admin banned <Spoiler>Bad User</Spoiler>: bad behaviour
-                </span>,
+            // Inside: the banning member's name is a button opening their user card; the target stays a spoiler.
+            const { container } = render(textForEvent(banEventWithReason(), mockClient, true) as ReactElement);
+            expect(container).toHaveTextContent("Admin banned Bad User: bad behaviour");
+            expect(container.querySelector(".mx_InsideServiceName")).toHaveTextContent("Admin");
+            expect(container.querySelector(".mx_InsideServiceName")).toHaveAttribute(
+                "data-user-id",
+                "@admin:example.com",
             );
+            expect(container.querySelector(".mx_EventTile_spoiler")).toHaveTextContent("Bad User");
         });
 
         it("hides user name for single-user bans with reason when JSX is not allowed", () => {
@@ -746,11 +752,10 @@ describe("TextForEvent", () => {
                 getMember: vi.fn().mockReturnValue({ rawDisplayName: undefined }),
             } as unknown as Mocked<Room>);
 
-            expect(textForEvent(banEvent(), mockClient, true)).toEqual(
-                <span>
-                    @admin:example.com banned <Spoiler>@bad_name:bad_server.co</Spoiler>
-                </span>,
-            );
+            const { container } = render(textForEvent(banEvent(), mockClient, true) as ReactElement);
+            expect(container).toHaveTextContent("@admin:example.com banned @bad_name:bad_server.co");
+            expect(container.querySelector(".mx_InsideServiceName")).toHaveTextContent("@admin:example.com");
+            expect(container.querySelector(".mx_EventTile_spoiler")).toHaveTextContent("@bad_name:bad_server.co");
         });
 
         it("hides user name for single-user bans when JSX is not allowed", () => {
@@ -912,6 +917,202 @@ describe("TextForEvent", () => {
                 sender: cli.getUserId()!,
             });
             expect(hasText(ev, cli, false)).toBe(true);
+        });
+    });
+
+    describe("Inside: names in service messages", () => {
+        const roomId = "!room:server";
+        const pavel = new RoomMember(roomId, "@pavel:server");
+        pavel.name = pavel.rawDisplayName = "Павел Сидоров";
+        const dmitry = new RoomMember(roomId, "@dmitry:server");
+        dmitry.name = dmitry.rawDisplayName = "Дмитрий Балакирев";
+        const members: Record<string, RoomMember> = { [pavel.userId]: pavel, [dmitry.userId]: dmitry };
+
+        beforeEach(() => {
+            vi.mocked(mockClient.getRoom).mockReturnValue({
+                getMember: vi.fn().mockImplementation((userId: string) => members[userId] ?? null),
+            } as unknown as Mocked<Room>);
+        });
+
+        afterEach(() => {
+            vi.restoreAllMocks();
+        });
+
+        const memberEvent = (
+            membership: string,
+            sender: RoomMember,
+            target: RoomMember,
+            prevContent: Record<string, unknown> = {},
+            content: Record<string, unknown> = {},
+        ): MatrixEvent => {
+            const ev = new MatrixEvent({
+                type: EventType.RoomMember,
+                room_id: roomId,
+                sender: sender.userId,
+                state_key: target.userId,
+                content: { membership, ...content },
+                unsigned: { prev_content: prevContent },
+            });
+            ev.sender = sender;
+            ev.target = target;
+            return ev;
+        };
+
+        const renderJsx = (ev: MatrixEvent): HTMLElement => render(<>{textForEvent(ev, mockClient, true)}</>).container;
+
+        const names = (container: HTMLElement): Array<[string | null, string | null]> =>
+            Array.from(container.querySelectorAll(".mx_InsideServiceName")).map((el) => [
+                el.textContent,
+                el.getAttribute("data-user-id"),
+            ]);
+
+        it("renders both names of an invite as buttons and keeps the plain text a string", () => {
+            const ev = memberEvent(KnownMembership.Invite, pavel, dmitry);
+
+            expect(textForEvent(ev, mockClient)).toBe("Павел Сидоров invited Дмитрий Балакирев");
+            const container = renderJsx(ev);
+            expect(container).toHaveTextContent("Павел Сидоров invited Дмитрий Балакирев");
+            expect(names(container)).toEqual([
+                ["Павел Сидоров", "@pavel:server"],
+                ["Дмитрий Балакирев", "@dmitry:server"],
+            ]);
+            for (const el of container.querySelectorAll(".mx_InsideServiceName")) {
+                expect(el).toHaveAttribute("role", "button");
+                expect(el).toHaveAttribute("tabindex", "0");
+            }
+        });
+
+        it("opens the user card of the clicked member", () => {
+            const dispatch = vi.spyOn(defaultDispatcher, "dispatch");
+            const container = renderJsx(memberEvent(KnownMembership.Invite, pavel, dmitry));
+
+            fireEvent.click(screen.getByRole("button", { name: "Дмитрий Балакирев" }));
+            expect(dispatch).toHaveBeenCalledWith({ action: Action.ViewUser, member: dmitry, push: false });
+
+            const pavelButton = container.querySelector<HTMLElement>('[data-user-id="@pavel:server"]')!;
+            fireEvent.keyDown(pavelButton, { key: "Enter" });
+            expect(dispatch).toHaveBeenLastCalledWith({ action: Action.ViewUser, member: pavel, push: false });
+        });
+
+        it("falls back to the user ID when the member is not known", () => {
+            const dispatch = vi.spyOn(defaultDispatcher, "dispatch");
+            const ev = new MatrixEvent({
+                type: EventType.RoomName,
+                room_id: roomId,
+                sender: "@ghost:server",
+                state_key: "",
+                content: { name: "Новая" },
+            });
+
+            const container = renderJsx(ev);
+            fireEvent.click(container.querySelector(".mx_InsideServiceName")!);
+            const payload = dispatch.mock.calls[0][0] as unknown as { member: unknown };
+            expect(payload.member).toBeInstanceOf(User);
+            expect((payload.member as User).userId).toBe("@ghost:server");
+        });
+
+        it.each([
+            ["join", () => memberEvent(KnownMembership.Join, dmitry, dmitry), ["Дмитрий Балакирев"]],
+            [
+                "leave",
+                () => memberEvent(KnownMembership.Leave, dmitry, dmitry, { membership: KnownMembership.Join }),
+                ["Дмитрий Балакирев"],
+            ],
+            [
+                "accept invite",
+                () => memberEvent(KnownMembership.Join, dmitry, dmitry, { membership: KnownMembership.Invite }),
+                ["Дмитрий Балакирев"],
+            ],
+            [
+                "kick",
+                () => memberEvent(KnownMembership.Leave, pavel, dmitry, { membership: KnownMembership.Join }),
+                ["Павел Сидоров", "Дмитрий Балакирев"],
+            ],
+            [
+                "unban",
+                () => memberEvent(KnownMembership.Leave, pavel, dmitry, { membership: KnownMembership.Ban }),
+                ["Павел Сидоров", "Дмитрий Балакирев"],
+            ],
+            [
+                "withdrawn invite",
+                () => memberEvent(KnownMembership.Leave, pavel, dmitry, { membership: KnownMembership.Invite }),
+                ["Павел Сидоров", "Дмитрий Балакирев"],
+            ],
+            ["ban (target stays a spoiler)", () => memberEvent(KnownMembership.Ban, pavel, dmitry), ["Павел Сидоров"]],
+            [
+                "display name change",
+                () =>
+                    memberEvent(
+                        KnownMembership.Join,
+                        dmitry,
+                        dmitry,
+                        { membership: KnownMembership.Join, displayname: "Дима" },
+                        { displayname: "Дмитрий Балакирев" },
+                    ),
+                ["Дима"],
+            ],
+            [
+                "avatar change",
+                () =>
+                    memberEvent(
+                        KnownMembership.Join,
+                        dmitry,
+                        dmitry,
+                        { membership: KnownMembership.Join, avatar_url: "mxc://a" },
+                        { avatar_url: "mxc://b" },
+                    ),
+                ["Дмитрий Балакирев"],
+            ],
+        ])("makes the names of a %s clickable", (_, makeEvent, expected) => {
+            const ev = makeEvent();
+            const plain = textForEvent(ev, mockClient);
+            expect(typeof plain).toBe("string");
+            const container = renderJsx(ev);
+            // A ban says "a user" in plain text and shows the target as a spoiler in the timeline.
+            expect(container).toHaveTextContent(plain.replace("a user", "Дмитрий Балакирев"));
+            expect(names(container).map(([name]) => name)).toEqual(expected);
+        });
+
+        it("makes the actor and the members of a power level change clickable", () => {
+            const ev = new MatrixEvent({
+                type: EventType.RoomPowerLevels,
+                room_id: roomId,
+                sender: pavel.userId,
+                state_key: "",
+                content: { users: { [pavel.userId]: 100, [dmitry.userId]: 100 } },
+                unsigned: { prev_content: { users: { [pavel.userId]: 100 } } },
+            });
+            ev.sender = pavel;
+
+            const plain = "Павел Сидоров changed the power level of Дмитрий Балакирев from Default to Admin.";
+            expect(textForEvent(ev, mockClient)).toBe(plain);
+            const container = renderJsx(ev);
+            expect(container).toHaveTextContent(plain);
+            expect(names(container)).toEqual([
+                ["Павел Сидоров", "@pavel:server"],
+                ["Дмитрий Балакирев", "@dmitry:server"],
+            ]);
+        });
+
+        it.each([
+            [EventType.RoomName, { name: "Новая" }],
+            [EventType.RoomTopic, { topic: "Тема" }],
+            [EventType.RoomAvatar, { url: "mxc://avatar" }],
+            [EventType.RoomPinnedEvents, { pinned: ["$a"] }],
+            [EventType.RoomPinnedEvents, { pinned: ["$a", "$b"] }],
+            [EventType.RoomJoinRules, { join_rule: JoinRule.Restricted }],
+            [EventType.RoomHistoryVisibility, { history_visibility: HistoryVisibility.Shared }],
+        ])("makes the actor of %s clickable", (type, content) => {
+            const ev = new MatrixEvent({ type, room_id: roomId, sender: pavel.userId, state_key: "", content });
+            ev.sender = pavel;
+
+            const plain = textForEvent(ev, mockClient);
+            expect(typeof plain).toBe("string");
+            expect(plain).toContain("Павел Сидоров");
+            const container = renderJsx(ev);
+            // The timeline may add a link ("View settings") after the same words.
+            expect(container.textContent).toContain(plain);
+            expect(names(container)).toEqual([["Павел Сидоров", "@pavel:server"]]);
         });
     });
 });

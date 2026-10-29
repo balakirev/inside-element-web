@@ -21,6 +21,7 @@ import GenericEventListSummary from "../../views/elements/GenericEventListSummar
 import { DateSeparatorViewModel } from "../../../viewmodels/room/timeline/DateSeparatorViewModel";
 import { SDKContext } from "../../../contexts/SDKContext.ts";
 import { getMemberNameWithoutMxid } from "../../../utils/event/getSenderName";
+import InsideServiceName from "../../views/elements/InsideServiceName";
 
 // Wrap initial room creation events into a GenericEventListSummary
 // Grouping only events sent by the same user that sent the `m.room.create` and only until
@@ -133,9 +134,18 @@ export class CreationGrouper extends BaseGrouper {
         // Get sender profile from the latest event in the summary as the m.room.create doesn't contain one
         const ev = this.events[this.events.length - 1].event;
 
-        let summaryText: string;
+        let summaryText: ReactNode;
         const roomId = ev.getRoomId();
-        const creator = ev.sender ? getMemberNameWithoutMxid(ev.sender) : ev.getSender();
+        const creatorName = ev.sender ? getMemberNameWithoutMxid(ev.sender) : ev.getSender();
+        // Inside: the creator's name opens their user card, as in Telegram.
+        const creatorId = ev.getSender();
+        const creator = creatorId ? (
+            <InsideServiceName userId={creatorId} member={ev.sender}>
+                {creatorName}
+            </InsideServiceName>
+        ) : (
+            creatorName
+        );
         if (roomId && DMRoomMap.shared().getUserIdForRoomId(roomId)) {
             summaryText = _t("timeline|creation_summary_dm", { creator });
         } else {

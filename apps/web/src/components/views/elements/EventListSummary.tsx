@@ -28,6 +28,7 @@ import { arrayHasDiff } from "../../../utils/arrays.ts";
 import { objectHasDiff } from "../../../utils/objects.ts";
 import Spoiler from "./Spoiler.tsx";
 import { getMemberNameWithoutMxid } from "../../../utils/event/getSenderName";
+import InsideServiceName from "./InsideServiceName";
 
 const onPinnedMessagesClick = (): void => {
     RightPanelStore.instance.setCard({ phase: RightPanelPhases.PinnedMessages }, false);
@@ -238,15 +239,27 @@ export default class EventListSummary extends React.Component<Props, State> {
     private generateSummary(
         eventAggregates: Record<string, string[]>,
         orderedTransitionSequences: string[],
+        aggregateUserIds: Record<string, Array<string | null>> = {},
     ): ReactNode {
+        const membersById = new Map(this.state.summaryMembers.map((m) => [m.userId, m]));
         const summaries = orderedTransitionSequences.map((transitions) => {
             const userNames = eventAggregates[transitions];
+            const userIds = aggregateUserIds[transitions] ?? [];
             let spoileredUserNames: ReactElement[];
 
             if (containsBanned(transitions)) {
                 spoileredUserNames = userNames.map((u) => <Spoiler key={u}>{u}</Spoiler>);
             } else {
-                spoileredUserNames = userNames.map((u) => <>{u}</>);
+                // Inside: each name opens that person's user card, as in Telegram (InsideServiceName).
+                spoileredUserNames = userNames.map((u, i) => {
+                    const userId = userIds[i];
+                    if (!userId) return <>{u}</>;
+                    return (
+                        <InsideServiceName key={userId} userId={userId} member={membersById.get(userId)}>
+                            {u}
+                        </InsideServiceName>
+                    );
+                });
             }
 
             const nameList = this.renderNameList(spoileredUserNames);
@@ -633,6 +646,8 @@ export default class EventListSummary extends React.Component<Props, State> {
     public getAggregate(userEvents: Record<string, IUserEvents[]>): {
         names: Record<string, string[]>;
         indices: Record<string, number>;
+        /** Inside: the Matrix ID behind each name of `names` (null for a third-party invite's display name). */
+        userIds: Record<string, Array<string | null>>;
     } {
         // A map of aggregate type to arrays of display names. Each aggregate type
         // is a comma-delimited string of transitions, e.g. "joined,left,kicked".
@@ -646,6 +661,7 @@ export default class EventListSummary extends React.Component<Props, State> {
         const aggregateIndices: Record<string, number> = {
             // $aggregateType : int
         };
+        const aggregateUserIds: Record<string, Array<string | null>> = {};
 
         const users = Object.keys(userEvents);
         users.forEach((userId) => {
@@ -656,9 +672,12 @@ export default class EventListSummary extends React.Component<Props, State> {
             if (!aggregate[seq]) {
                 aggregate[seq] = [];
                 aggregateIndices[seq] = -1;
+                aggregateUserIds[seq] = [];
             }
 
             aggregate[seq].push(displayName);
+            const isThirdPartyInvite = firstEvent.mxEvent.getType() === EventType.RoomThirdPartyInvite;
+            aggregateUserIds[seq].push(isThirdPartyInvite ? null : userId);
 
             if (aggregateIndices[seq] === -1 || firstEvent.index < aggregateIndices[seq]) {
                 aggregateIndices[seq] = firstEvent.index;
@@ -668,6 +687,7 @@ export default class EventListSummary extends React.Component<Props, State> {
         return {
             names: aggregate,
             indices: aggregateIndices,
+            userIds: aggregateUserIds,
         };
     }
 
@@ -689,7 +709,7 @@ export default class EventListSummary extends React.Component<Props, State> {
                 children={this.props.children}
                 summaryMembers={this.state.summaryMembers}
                 layout={this.props.layout}
-                summaryText={this.generateSummary(aggregate.names, orderedTransitionSequences)}
+                summaryText={this.generateSummary(aggregate.names, orderedTransitionSequences, aggregate.userIds)}
             />
         );
     }

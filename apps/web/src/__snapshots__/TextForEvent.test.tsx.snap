@@ -3,7 +3,17 @@
 exports[`TextForEvent > textForJoinRulesEvent() > returns correct JSX message when room join rule changed to restricted 1`] = `
 <span>
   <span>
-    @a changed who can join this room. 
+    <InsideServiceName
+      member={
+        {
+          "rawDisplayName": undefined,
+        }
+      }
+      userId="@a"
+    >
+      @a
+    </InsideServiceName>
+     changed who can join this room. 
     <AccessibleButton
       kind="link_inline"
       onClick={[Function]}
