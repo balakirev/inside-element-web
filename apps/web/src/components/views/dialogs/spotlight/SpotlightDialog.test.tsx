@@ -385,6 +385,42 @@ describe("Spotlight Dialog", () => {
         });
     });
 
+    describe("Inside: back button on a phone", () => {
+        const mockWidth = (width: number): void => {
+            vi.spyOn(window, "matchMedia").mockImplementation((query: string) => {
+                const max = /max-width:\s*(\d+)px/.exec(query);
+                return {
+                    matches: max ? width <= Number(max[1]) : false,
+                    media: query,
+                    addEventListener: () => {},
+                    removeEventListener: () => {},
+                } as unknown as MediaQueryList;
+            });
+        };
+
+        it("closes the search from the back button on a phone", async () => {
+            mockWidth(390);
+            const onFinished = vi.fn();
+            render(<SpotlightDialog onFinished={onFinished} />);
+            vi.advanceTimersByTime(200);
+            await flushPromisesWithFakeTimers();
+
+            fireEvent.click(screen.getByRole("button", { name: "Back" }));
+            expect(onFinished).toHaveBeenCalled();
+            vi.mocked(window.matchMedia).mockRestore();
+        });
+
+        it("has no back button in a wide window", async () => {
+            mockWidth(1440);
+            render(<SpotlightDialog onFinished={() => null} />);
+            vi.advanceTimersByTime(200);
+            await flushPromisesWithFakeTimers();
+
+            expect(document.querySelector(".mx_SpotlightDialog_inside_back")).toBeNull();
+            vi.mocked(window.matchMedia).mockRestore();
+        });
+    });
+
     describe("searching for rooms", () => {
         let options: NodeListOf<Element>;
 

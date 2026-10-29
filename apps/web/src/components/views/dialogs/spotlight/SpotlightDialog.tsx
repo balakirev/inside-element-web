@@ -39,6 +39,7 @@ import {
     GroupIcon,
     CloseIcon,
     LinkIcon,
+    ArrowLeftIcon,
 } from "@vector-im/compound-design-tokens/assets/web/icons";
 
 import { KeyBindingAction } from "../../../../accessibility/KeyboardShortcuts";
@@ -96,6 +97,7 @@ import { useFeatureEnabled } from "../../../../hooks/useSettings";
 import { filterBoolean } from "../../../../utils/arrays";
 import { transformSearchTerm } from "../../../../utils/SearchInput";
 import { Filter } from "./Filter";
+import { useInsideLayout } from "../../../../utils/InsideLayout";
 
 const MAX_RECENT_SEARCHES = 10;
 const SECTION_LIMIT = 50; // only show 50 results per section for performance reasons
@@ -318,6 +320,8 @@ interface IDirectoryOpts {
 }
 
 const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = null, onFinished }) => {
+    // Inside: on a phone the search covers the whole screen, as in Telegram; ← closes it (there is no Escape).
+    const insideMobile = useInsideLayout() === "mobile";
     const inputRef = useRef<HTMLInputElement>(null);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const cli = MatrixClientPeg.safeGet();
@@ -1300,6 +1304,16 @@ const SpotlightDialog: React.FC<IProps> = ({ initialText = "", initialFilter = n
                 screenName="UnifiedSearch"
                 aria-label={_t("spotlight_dialog|search_dialog")}
             >
+                {insideMobile && (
+                    <AccessibleButton
+                        className="mx_SpotlightDialog_inside_back"
+                        aria-label={_t("action|back")}
+                        title={_t("action|back")}
+                        onClick={onFinished}
+                    >
+                        <ArrowLeftIcon aria-hidden />
+                    </AccessibleButton>
+                )}
                 <div className="mx_SpotlightDialog_searchBox mx_textinput">
                     {filter !== null && (
                         <div className="mx_SpotlightDialog_filter">
