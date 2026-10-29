@@ -143,6 +143,9 @@ import { ModuleApi } from "../../modules/Api.ts";
 import { RoomUploadContextProvider } from "../../viewmodels/room/RoomUploadViewModel.tsx";
 import { EventPresentationContextProvider } from "../../utils/EventPresentationContextProvider";
 
+/** Inside: below this width (px) the room is "narrow" and its composer folds its buttons into a menu. */
+const INSIDE_NARROW_ROOM_WIDTH = 300;
+
 const DEBUG = false;
 const PREVENT_MULTIPLE_JITSI_WITHIN = 30_000;
 let debuglog = function (msg: string): void {};
@@ -2702,7 +2705,13 @@ export class RoomView extends React.Component<IRoomProps, IRoomState> {
                 mainSplitContentClassName = "mx_MainSplit_timeline";
                 mainSplitBody = (
                     <RoomUploadContextProvider>
-                        <Measured sensor={this.roomViewBody} onMeasurement={this.onMeasurement} />
+                        {/* Inside: a phone-wide room (from 320 px) keeps the attach and voice buttons around the
+                            composer, as Telegram does; Element moved them into "more" under 500 px. */}
+                        <Measured
+                            sensor={this.roomViewBody}
+                            breakpoint={INSIDE_NARROW_ROOM_WIDTH}
+                            onMeasurement={this.onMeasurement}
+                        />
                         {auxPanel}
                         {pinnedMessageBanner}
                         <main className={timelineClasses} data-testid="timeline">

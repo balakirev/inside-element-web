@@ -7,7 +7,9 @@ Please see LICENSE files in the repository root for full details.
 
 import defaultDispatcher from "../dispatcher/dispatcher";
 import { Action } from "../dispatcher/actions";
-import { prefersReducedMotion } from "./InsideLayout";
+import { type ActionPayload } from "../dispatcher/payloads";
+import RightPanelStore from "../stores/right-panel/RightPanelStore";
+import { getInsideLayout, prefersReducedMotion } from "./InsideLayout";
 
 /**
  * Inside: going back from a room to the room list in the one-column (mobile) layout, as in Telegram Web K.
@@ -29,6 +31,17 @@ const isRoomHash = (hash: string): boolean => hash.startsWith("#/room/");
 
 let lastHash: string | undefined;
 let roomOpenedFromList = false;
+let dispatcherRef: string | undefined;
+
+/**
+ * A room opened from the room list on a phone shows its timeline, as in Telegram, not the thread or info panel
+ * it had open last time: that panel would cover the whole room.
+ */
+function onAction(payload: ActionPayload): void {
+    if (payload.action !== Action.ViewRoom || payload.metricsTrigger !== "RoomList" || !payload.room_id) return;
+    if (getInsideLayout() !== "mobile") return;
+    if (RightPanelStore.instance.isOpenForRoom(payload.room_id)) RightPanelStore.instance.hide(payload.room_id);
+}
 
 function onHashChange(): void {
     const previous = lastHash ?? "";
@@ -41,11 +54,14 @@ export function startInsideMobileNavigation(): void {
     if (lastHash !== undefined || typeof window === "undefined") return;
     lastHash = window.location.hash;
     window.addEventListener("hashchange", onHashChange);
+    dispatcherRef = defaultDispatcher.register(onAction);
 }
 
 /** Stop following the URL hash (tests). */
 export function stopInsideMobileNavigation(): void {
     if (typeof window !== "undefined") window.removeEventListener("hashchange", onHashChange);
+    if (dispatcherRef) defaultDispatcher.unregister(dispatcherRef);
+    dispatcherRef = undefined;
     lastHash = undefined;
     roomOpenedFromList = false;
 }

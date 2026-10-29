@@ -11,6 +11,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import defaultDispatcher from "../dispatcher/dispatcher";
 import { Action } from "../dispatcher/actions";
+import RightPanelStore from "../stores/right-panel/RightPanelStore";
 import {
     goBackToRoomList,
     INSIDE_COLUMN_TRANSITION_MS,
@@ -99,5 +100,30 @@ describe("InsideMobileNavigation", () => {
 
         expect(column.classList.contains(LEAVING_CLASS)).toBe(false);
         expect(dispatch).toHaveBeenCalledWith({ action: Action.ViewHomePage });
+    });
+
+    describe("a room opened from the room list", () => {
+        const open = (trigger: string): void =>
+            defaultDispatcher.dispatch(
+                { action: Action.ViewRoom, room_id: "!a:server", metricsTrigger: trigger },
+                true,
+            );
+
+        it("shows its timeline on a phone, not its last right panel", () => {
+            vi.mocked(window.matchMedia).mockReturnValue({ matches: true } as MediaQueryList);
+            vi.spyOn(RightPanelStore.instance, "isOpenForRoom").mockReturnValue(true);
+            const hide = vi.spyOn(RightPanelStore.instance, "hide").mockImplementation(() => {});
+            open("RoomList");
+            expect(hide).toHaveBeenCalledWith("!a:server");
+        });
+
+        it("keeps the right panel in wider windows and from elsewhere", () => {
+            vi.spyOn(RightPanelStore.instance, "isOpenForRoom").mockReturnValue(true);
+            const hide = vi.spyOn(RightPanelStore.instance, "hide").mockImplementation(() => {});
+            open("RoomList");
+            vi.mocked(window.matchMedia).mockReturnValue({ matches: true } as MediaQueryList);
+            open("Notification");
+            expect(hide).not.toHaveBeenCalled();
+        });
     });
 });
