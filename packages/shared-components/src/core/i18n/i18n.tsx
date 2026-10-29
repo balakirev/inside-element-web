@@ -47,6 +47,36 @@ counterpart.setFallbackLocale(FALLBACK_LOCALE);
 // element-web, it operates on a different instance of counterpart
 export function registerTranslations(locale: string, data: object): void {
     counterpart.registerTranslations(locale, data);
+    registerPluralizer(locale);
+}
+
+/**
+ * Inside: plural forms by the language's own rules (Intl.PluralRules).
+ * counterpart ships a pluraliser only for "en" and falls back to it for
+ * every other locale, so Russian got only "one"/"other": "3 ответов",
+ * "3 участников" instead of "3 ответа", "3 участника" (the "few" form was
+ * never picked). Registered once per locale, never over a pluraliser the
+ * locale already has; English keeps counterpart's own.
+ */
+const pluralizerLocales = new Set<string>(["en"]);
+export function registerPluralizer(locale: string): void {
+    if (pluralizerLocales.has(locale)) return;
+    let rules: Intl.PluralRules;
+    try {
+        rules = new Intl.PluralRules(locale.replace("_", "-"));
+    } catch {
+        return;
+    }
+    pluralizerLocales.add(locale);
+    counterpart.registerTranslations(locale, {
+        counterpart: {
+            pluralize: (entry: Record<string, string>, count: number): string | undefined => {
+                if (count === 0 && "zero" in entry) return entry.zero;
+                const form = rules.select(count);
+                return entry[form] ?? entry.other ?? entry.many;
+            },
+        },
+    });
 }
 
 export function setMissingEntryGenerator(callback: (value: string) => void): void {
@@ -409,7 +439,7 @@ export async function setLanguage(language: string): Promise<void> {
 
     const languageData = await getLanguage(i18nFolder + availableLanguages[chosenLanguage]);
 
-    counterpart.registerTranslations(chosenLanguage, languageData);
+    registerTranslations(chosenLanguage, languageData);
     counterpart.setLocale(chosenLanguage);
 }
 

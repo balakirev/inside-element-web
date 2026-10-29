@@ -22,6 +22,32 @@ describe("i18n utils", () => {
         expect(counterpart.registerTranslations).toHaveBeenCalledWith("en", { test: "This is a test" });
     });
 
+    it("picks Russian plural forms by the language's rules (Inside)", () => {
+        registerTranslations("ru", {
+            replies: { one: "%(count)s ответ", few: "%(count)s ответа", many: "%(count)s ответов", other: "%(count)s ответов" },
+        });
+        const t = (count: number): string =>
+            counterpart.translate("replies", { locale: "ru", count, interpolate: false }) as unknown as string;
+        expect([1, 2, 3, 4, 5, 11, 21, 22, 25].map(t)).toEqual([
+            "%(count)s ответ",
+            "%(count)s ответа",
+            "%(count)s ответа",
+            "%(count)s ответа",
+            "%(count)s ответов",
+            "%(count)s ответов",
+            "%(count)s ответ",
+            "%(count)s ответа",
+            "%(count)s ответов",
+        ]);
+    });
+
+    it("keeps English plurals as one/other (Inside)", () => {
+        registerTranslations("en", { members: { one: "%(count)s member", other: "%(count)s members" } });
+        const t = (count: number): string =>
+            counterpart.translate("members", { locale: "en", count, interpolate: false }) as unknown as string;
+        expect([1, 2, 5].map(t)).toEqual(["%(count)s member", "%(count)s members", "%(count)s members"]);
+    });
+
     it("should wrap setMissingEntryGenerator", () => {
         vi.spyOn(counterpart, "setMissingEntryGenerator");
 
