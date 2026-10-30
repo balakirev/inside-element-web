@@ -1,0 +1,1569 @@
+/*
+Copyright 2026 Inside Estate.
+
+SPDX-License-Identifier: AGPL-3.0-only OR GPL-3.0-only OR LicenseRef-Element-Commercial
+Please see LICENSE files in the repository root for full details.
+*/
+
+/*
+ * Inside: the "Помощник" screens (inside/insis/views/assistant) — the folder in the space panel, the list of
+ * sessions in the room list column, a session in the main area. Sizes are those of the Lobby mockup
+ * (docs/design/lobby/variants, #ast); colours come from the Lobby skin tokens, with the mockup's light values as
+ * fallbacks for a build without the skin.
+ */
+
+.mx_InsisAssistantList,
+.mx_InsisAssistant {
+    --ia-panel: var(--lobby-panel, var(--cpd-color-bg-canvas-default, #ffffff));
+    --ia-fill: var(--lobby-fill, var(--cpd-color-bg-subtle-secondary, #f4f4f3));
+    --ia-hover: var(--lobby-hover, var(--cpd-color-bg-subtle-secondary, #f1f1f0));
+    --ia-line: var(--lobby-line, var(--cpd-color-separator-primary, #ececeb));
+    --ia-line-2: var(--lobby-line-2, var(--cpd-color-border-interactive-secondary, #e2e2e0));
+    --ia-ink: var(--lobby-ink, var(--cpd-color-text-primary, #1e1e1e));
+    --ia-ink-2: var(--lobby-ink-2, var(--cpd-color-text-secondary, #4a4a4a));
+    --ia-muted: var(--lobby-muted, var(--cpd-color-text-secondary, #7a7a7a));
+    --ia-faint: var(--lobby-faint, var(--cpd-color-text-disabled, #a3a3a3));
+    --ia-accent: var(--lobby-accent, var(--cpd-color-bg-action-primary-rest, #1e1e1e));
+    --ia-accent-ink: var(--lobby-accent-ink, var(--cpd-color-text-on-solid-primary, #ffffff));
+    --ia-sel: var(--lobby-sel, #1e1e1e);
+    --ia-sel-ink: var(--lobby-sel-ink, #ffffff);
+    --ia-signal: var(--lobby-signal, var(--cpd-color-bg-critical-primary, #c8102e));
+    --ia-signal-ink: var(--lobby-signal-ink, #ffffff);
+    --ia-glass: var(--lobby-glass, rgba(255, 255, 255, 0.78));
+    --ia-glass-line: var(--lobby-glass-line, rgba(30, 30, 30, 0.06));
+    --ia-shadow: var(--lobby-shadow, 0 1px 2px rgba(0, 0, 0, 0.06));
+    /* The spark avatar: ink on the panel in the light theme, graphite in the dark one. */
+    --ia-avatar: var(--ia-ink);
+    --ia-avatar-ink: var(--ia-panel);
+
+    font-family: var(--lobby-font, inherit);
+    color: var(--ia-ink);
+}
+
+.cpd-theme-dark .mx_InsisAssistantList,
+.cpd-theme-dark .mx_InsisAssistant {
+    --ia-avatar: #3a3a3a;
+    --ia-avatar-ink: #ffffff;
+}
+
+.mx_InsisAssistantList button,
+.mx_InsisAssistant button {
+    font: inherit;
+    color: inherit;
+    background: none;
+    border: 0;
+    padding: 0;
+    margin: 0;
+    cursor: pointer;
+}
+
+.mx_InsisAssistantList :is(button, input, a):focus-visible,
+.mx_InsisAssistant :is(button, input, a):focus-visible {
+    outline: 2px solid var(--ia-signal);
+    outline-offset: 2px;
+}
+
+.mx_InsisAssistantList svg,
+.mx_InsisAssistant svg {
+    flex: none;
+    width: 20px;
+    height: 20px;
+}
+
+/* The round spark avatar of a session, as `.av.lv-sav` of the mockup. */
+.mx_InsisAssistant_avatar {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 54px;
+    height: 54px;
+    border-radius: 50%;
+    background: var(--ia-avatar);
+    color: var(--ia-avatar-ink);
+
+    svg {
+        width: 24px;
+        height: 24px;
+        stroke-width: 1.9;
+    }
+}
+
+.mx_InsisAssistant_waitDot {
+    flex: none;
+    align-self: center;
+    width: 10px;
+    height: 10px;
+    margin-inline-end: 6px;
+    border-radius: 50%;
+    background: var(--ia-signal);
+}
+
+/* ---- Space panel: the folder button and its dot ----------------------------------------------------------------- */
+
+.mx_SpaceButton_insideFolder_assistant {
+    position: relative;
+    /* The skin draws folder icons from this mask. */
+    --lobby-folder-icon: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M11 4l1.7 5a2 2 0 0 0 1.3 1.3l5 1.7-5 1.7a2 2 0 0 0-1.3 1.3L11 20l-1.7-5A2 2 0 0 0 8 13.7L3 12l5-1.7a2 2 0 0 0 1.3-1.3z'/%3E%3Cpath d='M19 2.5v4M17 4.5h4'/%3E%3C/svg%3E");
+}
+
+.mx_SpaceButton_insideAssistantDot {
+    position: absolute;
+    z-index: 1;
+    top: 6px;
+    right: 17px;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--lobby-rail-badge, var(--cpd-color-icon-critical-primary, #e2483a));
+    box-shadow: 0 0 0 2px var(--lobby-rail, var(--cpd-color-bg-canvas-default));
+    pointer-events: none;
+}
+
+.mx_SpaceButton_active > .mx_SpaceButton_insideAssistantDot {
+    box-shadow: 0 0 0 2px var(--lobby-rail-active, var(--cpd-color-bg-canvas-default));
+}
+
+.mx_InsideFolderTabs_dot {
+    flex: none;
+    width: 8px;
+    height: 8px;
+    margin-inline-start: 6px;
+    border-radius: 50%;
+    background: var(--lobby-signal, var(--cpd-color-icon-critical-primary, #c8102e));
+}
+
+/* ---- The list of sessions (room list column) -------------------------------------------------------------------- */
+
+.mx_InsisAssistantList {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+    background: var(--ia-panel);
+    font-size: 14px;
+}
+
+.mx_InsisAssistantList_header {
+    display: grid;
+    grid-template-columns: 36px 1fr 36px;
+    align-items: center;
+    padding: 12px 12px 6px;
+
+    h2 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 600;
+        line-height: 1.3;
+        text-align: center;
+    }
+}
+
+.mx_InsisAssistantList_iconButton {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    color: var(--ia-ink-2) !important;
+
+    &:hover {
+        background: var(--ia-hover) !important;
+    }
+}
+
+.mx_InsisAssistantList_search {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: 8px;
+    height: 36px;
+    margin: 4px 12px 8px;
+    padding: 0 14px;
+    border-radius: 18px;
+    background: var(--lobby-fill, var(--cpd-color-bg-subtle-secondary, #f4f4f3));
+    color: var(--lobby-muted, var(--cpd-color-text-secondary, #7a7a7a));
+    font-family: var(--lobby-font, inherit);
+    font-size: 14px;
+
+    svg {
+        width: 17px;
+        height: 17px;
+    }
+
+    input {
+        flex: 1;
+        min-width: 0;
+        margin: 0;
+        padding: 0;
+        border: 0;
+        outline: none;
+        background: transparent;
+        font: inherit;
+        color: var(--lobby-ink, var(--cpd-color-text-primary, #1e1e1e));
+
+        &::placeholder {
+            color: var(--lobby-muted, var(--cpd-color-text-secondary, #7a7a7a));
+        }
+
+        &::-webkit-search-cancel-button {
+            display: none;
+        }
+    }
+
+    &:focus-within {
+        outline: 2px solid var(--lobby-signal, #c8102e);
+        outline-offset: 0;
+    }
+}
+
+/* In the narrow top bar the search fills the space next to the menu button. */
+.mx_RoomListPanel_inside_topBar > .mx_InsisAssistantList_search {
+    flex: 1;
+    margin: 0;
+}
+
+.mx_InsisAssistantList_new {
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: 44px;
+    margin: 2px 12px 8px !important;
+    border-radius: 22px;
+    background: var(--ia-accent) !important;
+    color: var(--ia-accent-ink) !important;
+    font-size: 14.5px !important;
+    font-weight: 600 !important;
+
+    svg {
+        width: 19px;
+        height: 19px;
+    }
+}
+
+.mx_InsisAssistantList_narrow .mx_InsisAssistantList_new {
+    margin-top: 8px !important;
+}
+
+.mx_InsisAssistantList_scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 0 6px 6px;
+}
+
+.mx_InsisAssistantList_empty {
+    padding: 24px 18px;
+    color: var(--ia-muted);
+    font-size: 13.5px;
+    text-align: center;
+}
+
+.mx_InsisAssistantList_groupTitle {
+    margin: 0;
+    padding: 12px 8px 4px;
+    color: var(--ia-muted);
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.mx_InsisAssistantList_rows {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.mx_InsisAssistantRow {
+    position: relative;
+    border-radius: 12px;
+
+    &:hover {
+        background: var(--ia-hover);
+    }
+}
+
+.mx_InsisAssistantRow_main {
+    display: grid !important;
+    grid-template-columns: 54px 1fr;
+    gap: 10px;
+    width: 100%;
+    padding: 8px !important;
+    border-radius: 12px;
+    text-align: start;
+}
+
+.mx_InsisAssistantRow_text {
+    display: grid;
+    align-content: center;
+    gap: 2px;
+    min-width: 0;
+    padding-bottom: 9px;
+    border-bottom: 1px solid var(--ia-line);
+}
+
+.mx_InsisAssistantRow:last-child .mx_InsisAssistantRow_text {
+    border-bottom-color: transparent;
+}
+
+.mx_InsisAssistantRow_line1,
+.mx_InsisAssistantRow_line2 {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+}
+
+.mx_InsisAssistantRow_name {
+    overflow: hidden;
+    min-width: 0;
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.35;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.mx_InsisAssistantRow_nameEditing {
+    flex: 1;
+    height: 20px;
+}
+
+.mx_InsisAssistantRow_pin {
+    width: 15px !important;
+    height: 15px !important;
+    color: var(--ia-faint);
+}
+
+.mx_InsisAssistantRow_time {
+    margin-inline-start: auto;
+    color: var(--ia-muted);
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+.mx_InsisAssistantRow_preview {
+    display: -webkit-box;
+    overflow: hidden;
+    flex: 1;
+    min-width: 0;
+    color: var(--ia-muted);
+    font-size: 14px;
+    line-height: 1.35;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+.mx_InsisAssistantRow_chip {
+    flex: none;
+    align-self: center;
+    padding: 1px 8px;
+    border: 1px solid var(--ia-line-2);
+    border-radius: 999px;
+    background: var(--ia-fill);
+    color: var(--ia-muted);
+    font-size: 11.5px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.mx_InsisAssistantRow_more {
+    position: absolute !important;
+    top: 6px;
+    right: 6px;
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--ia-panel) !important;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+    color: var(--ia-ink-2) !important;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.1s;
+
+    svg {
+        width: 18px;
+        height: 18px;
+    }
+}
+
+.cpd-theme-dark .mx_InsisAssistantRow_more {
+    background: var(--ia-fill) !important;
+}
+
+.mx_InsisAssistantRow:hover,
+.mx_InsisAssistantRow:focus-within,
+.mx_InsisAssistantRow_menuOpen {
+    .mx_InsisAssistantRow_more {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    .mx_InsisAssistantRow_time {
+        visibility: hidden;
+    }
+}
+
+/* While the rename field is open the "…" stays out of its way. */
+.mx_InsisAssistantRow:has(.mx_InsisAssistantRow_rename) .mx_InsisAssistantRow_more {
+    display: none;
+}
+
+.mx_InsisAssistantRow_rename {
+    position: absolute;
+    top: 8px;
+    left: 72px;
+    right: 8px;
+    box-sizing: border-box;
+    height: 24px;
+    margin: 0;
+    padding: 0 4px;
+    border: 0;
+    border-radius: 4px;
+    outline: 2px solid var(--ia-signal);
+    outline-offset: 1px;
+    background: var(--ia-panel);
+    color: var(--ia-ink);
+    font: inherit;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.mx_InsisAssistantRow_selected {
+    background: var(--ia-sel) !important;
+
+    .mx_InsisAssistantRow_text {
+        border-color: transparent;
+    }
+
+    .mx_InsisAssistantRow_name,
+    .mx_InsisAssistantRow_time,
+    .mx_InsisAssistantRow_preview,
+    .mx_InsisAssistantRow_pin {
+        color: var(--ia-sel-ink);
+    }
+
+    .mx_InsisAssistantRow_preview {
+        opacity: 0.82;
+    }
+
+    .mx_InsisAssistantRow_chip {
+        border-color: color-mix(in srgb, var(--ia-sel-ink) 35%, transparent);
+        background: transparent;
+        color: var(--ia-sel-ink);
+    }
+
+    .mx_InsisAssistant_avatar {
+        background: #3a3a3a;
+        color: #ffffff;
+        box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.35);
+    }
+}
+
+/* The previous row's separator would touch the dark selected row. */
+.mx_InsisAssistantRow:has(+ .mx_InsisAssistantRow_selected) .mx_InsisAssistantRow_text {
+    border-bottom-color: transparent;
+}
+
+/* ---- A session (main area) -------------------------------------------------------------------------------------- */
+
+.mx_InsisAssistant {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    overflow: hidden;
+    border-radius: var(--lobby-radius-card, 16px);
+    background-color: var(--lobby-wall, var(--cpd-color-bg-subtle-secondary, #ececec));
+    background-image: var(--lobby-wall-img, none);
+    background-repeat: repeat;
+    background-size: 288px 216px;
+    background-position: 0 0;
+    font-size: 14px;
+}
+
+.mx_InsisHeader {
+    position: absolute;
+    z-index: 3;
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+}
+
+.mx_InsisHeader_capsule,
+.mx_InsisHeader_buttons,
+.mx_InsisComposer_field,
+.mx_InsisComposer_attach,
+.mx_InsisComposer_notice,
+.mx_InsisHello_quick button {
+    border: 1px solid var(--ia-glass-line) !important;
+    background: var(--ia-glass) !important;
+    box-shadow: var(--ia-shadow);
+    backdrop-filter: var(--lobby-glass-blur, blur(22px) saturate(160%));
+}
+
+.mx_InsisHeader_capsule {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    height: 56px;
+    box-sizing: border-box;
+    padding: 0 8px;
+    border-radius: 28px;
+}
+
+.mx_InsisHeader_avatar {
+    width: 40px;
+    height: 40px;
+    background: var(--ia-accent);
+    color: var(--ia-accent-ink);
+
+    svg {
+        width: 21px;
+        height: 21px;
+    }
+}
+
+.mx_InsisHeader_who {
+    display: grid;
+    min-width: 0;
+}
+
+.mx_InsisHeader_title {
+    overflow: hidden;
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.3;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.mx_InsisHeader_subtitle {
+    overflow: hidden;
+    color: var(--ia-muted);
+    font-size: 13px;
+    line-height: 1.3;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.mx_InsisHeader_rename,
+.mx_InsisHeader_search {
+    flex: 1;
+    min-width: 0;
+    height: 32px;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0 10px;
+    border: 0;
+    border-radius: 16px;
+    outline: none;
+    background: var(--ia-fill);
+    color: var(--ia-ink);
+    font: inherit;
+    font-size: 15px;
+}
+
+.mx_InsisHeader_rename {
+    font-weight: 600;
+}
+
+.mx_InsisHeader_back {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 36px;
+    height: 40px;
+    color: var(--ia-ink) !important;
+
+    svg {
+        width: 24px;
+        height: 24px;
+    }
+}
+
+.mx_InsisHeader_buttons {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    height: 56px;
+    box-sizing: border-box;
+    padding: 0 6px;
+    border-radius: 28px;
+}
+
+.mx_InsisHeader_button {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    color: var(--ia-ink) !important;
+
+    &:hover {
+        background: var(--ia-hover) !important;
+    }
+}
+
+.mx_InsisHeader_button_on {
+    background: var(--ia-accent) !important;
+    color: var(--ia-accent-ink) !important;
+}
+
+.mx_InsisFeed {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 84px 0 90px;
+    display: flex;
+    flex-direction: column;
+}
+
+.mx_InsisFeed_inner {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 780px;
+    margin: auto auto 0;
+    padding: 0 24px;
+}
+
+.mx_InsisFeed_inner_empty {
+    flex: 1;
+    justify-content: center;
+    margin: 0 auto;
+}
+
+.mx_InsisFeed_day {
+    align-self: center;
+    margin: 10px 0;
+    padding: 3px 10px;
+    border-radius: var(--lobby-pill-radius, 12px);
+    background: var(--lobby-pill, rgba(30, 30, 30, 0.42));
+    box-shadow: var(--lobby-pill-shadow, none);
+    color: var(--lobby-pill-ink, #ffffff);
+    font-size: 13px;
+    font-weight: 500;
+    backdrop-filter: blur(8px);
+}
+
+.mx_InsisFeed_nothing {
+    align-self: center;
+    margin-top: 20px;
+    padding: 6px 14px;
+    border-radius: 14px;
+    background: var(--lobby-pill, rgba(30, 30, 30, 0.42));
+    color: var(--lobby-pill-ink, #ffffff);
+    font-size: 13px;
+}
+
+.mx_InsisSender {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 10px 0 2px 2px;
+    color: var(--ia-ink-2);
+    font-size: 12.5px;
+    font-weight: 600;
+
+    svg {
+        width: 14px;
+        height: 14px;
+    }
+}
+
+.mx_InsisBubble {
+    position: relative;
+    box-sizing: border-box;
+    max-width: min(520px, 72%);
+    padding: 7px 11px 7px 12px;
+    border-radius: var(--lobby-radius-bubble, 17px);
+    box-shadow: var(--ia-shadow);
+    font-size: 14.5px;
+    line-height: 1.38;
+    overflow-wrap: anywhere;
+}
+
+.mx_InsisBubble_text {
+    white-space: pre-wrap;
+}
+
+.mx_InsisBubble_in {
+    align-self: flex-start;
+    max-width: min(560px, 80%);
+    background: var(--lobby-b-in, #ffffff);
+    color: var(--lobby-b-in-ink, #1e1e1e);
+}
+
+.mx_InsisBubble_out {
+    align-self: flex-end;
+    background: var(--lobby-b-out, #1e1e1e);
+    color: var(--lobby-b-out-ink, #ffffff);
+}
+
+.mx_InsisBubble_tail {
+    margin-bottom: 8px;
+
+    &.mx_InsisBubble_in {
+        border-bottom-left-radius: 5px;
+    }
+
+    &.mx_InsisBubble_out {
+        border-bottom-right-radius: 5px;
+    }
+}
+
+.mx_InsisBubble_streaming .mx_InsisBubble_text::after {
+    content: "";
+    display: inline-block;
+    width: 7px;
+    height: 15px;
+    margin-inline-start: 2px;
+    vertical-align: -2px;
+    border-radius: 1px;
+    background: currentColor;
+    animation: mx_InsisBubble_caret 0.9s steps(1) infinite;
+}
+
+@keyframes mx_InsisBubble_caret {
+    50% {
+        opacity: 0;
+    }
+}
+
+.mx_InsisBubble_meta {
+    position: relative;
+    top: 3px;
+    display: inline-flex;
+    float: right;
+    align-items: center;
+    gap: 3px;
+    margin: 6px 0 -4px 10px;
+    color: var(--lobby-b-in-meta, #9a9a9a);
+    font-size: 11.5px;
+
+    svg {
+        width: 16px;
+        height: 16px;
+        stroke-width: 2;
+    }
+}
+
+.mx_InsisBubble_out .mx_InsisBubble_meta {
+    color: var(--lobby-b-out-meta, rgba(255, 255, 255, 0.55));
+
+    svg {
+        color: var(--lobby-b-out-ink, #ffffff);
+    }
+}
+
+.mx_InsisVoice {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: min(280px, 60vw);
+
+    em {
+        font-size: 12.5px;
+        font-style: normal;
+        opacity: 0.7;
+    }
+}
+
+.mx_InsisVoice_play {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.16);
+
+    svg {
+        width: 14px;
+        height: 14px;
+    }
+}
+
+.mx_InsisVoice_wave {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: 2px;
+    height: 26px;
+
+    i {
+        width: 3px;
+        border-radius: 2px;
+        background: currentColor;
+        opacity: 0.85;
+    }
+
+    .mx_InsisVoice_wave_rest {
+        opacity: 0.4;
+    }
+}
+
+.mx_InsisVoice_transcript {
+    display: block;
+    margin-top: 7px;
+    padding-top: 7px;
+    border-top: 1px solid rgba(255, 255, 255, 0.14);
+    font-size: 13.5px;
+    opacity: 0.9;
+
+    small {
+        display: block;
+        margin-bottom: 2px;
+        font-size: 11.5px;
+        opacity: 0.6;
+    }
+}
+
+.mx_InsisFile {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 3px 2px 2px;
+
+    b {
+        display: block;
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+    div > span {
+        font-size: 12.5px;
+        opacity: 0.65;
+    }
+}
+
+.mx_InsisFile_icon {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.14);
+}
+
+/* ---- Artifact cards ----------------------------------------------------------------------------------------------- */
+
+.mx_InsisArtifact {
+    align-self: flex-start;
+    box-sizing: border-box;
+    width: min(560px, 86%);
+    margin: 4px 0 8px;
+    overflow: hidden;
+    border: 1px solid var(--ia-glass-line);
+    border-radius: var(--lobby-radius-card, 16px);
+    background: var(--ia-panel);
+    box-shadow: var(--ia-shadow);
+    color: var(--ia-ink);
+}
+
+.mx_InsisArtifact_header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px 10px;
+}
+
+.mx_InsisArtifact_icon {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+    background: var(--ia-fill);
+
+    svg {
+        width: 17px;
+        height: 17px;
+    }
+}
+
+.mx_InsisArtifact_titles {
+    min-width: 0;
+
+    b {
+        display: block;
+        font-size: 14.5px;
+        font-weight: 600;
+    }
+
+    span {
+        color: var(--ia-muted);
+        font-size: 12px;
+    }
+}
+
+.mx_InsisArtifact_state {
+    flex: none;
+    margin-inline-start: auto;
+    padding: 3px 8px;
+    border-radius: 6px;
+    background: var(--ia-fill);
+    color: var(--ia-ink-2);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.mx_InsisArtifact_state_done {
+    background: var(--ia-accent);
+    color: var(--ia-accent-ink);
+}
+
+.mx_InsisArtifact_fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    margin: 0;
+    border-top: 1px solid var(--ia-line);
+}
+
+.mx_InsisArtifact_fields_one {
+    grid-template-columns: 1fr;
+}
+
+.mx_InsisArtifact_field {
+    display: grid;
+    gap: 1px;
+    min-width: 0;
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--ia-line);
+
+    dt {
+        display: flex;
+        justify-content: space-between;
+        gap: 6px;
+        color: var(--ia-muted);
+        font-size: 11.5px;
+    }
+
+    em {
+        color: var(--ia-faint);
+        font-size: 10.5px;
+        font-style: normal;
+        font-weight: 600;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+    }
+
+    dd {
+        overflow: hidden;
+        margin: 0;
+        font-size: 14px;
+        font-weight: 500;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+}
+
+.mx_InsisArtifact_fields:not(.mx_InsisArtifact_fields_one) > .mx_InsisArtifact_field:nth-child(odd) {
+    border-inline-end: 1px solid var(--ia-line);
+}
+
+.mx_InsisArtifact_docs {
+    display: flex !important;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 3px !important;
+    white-space: normal !important;
+}
+
+.mx_InsisArtifact_doc {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 9px;
+    border: 1px solid var(--ia-line-2);
+    border-radius: 999px;
+    color: var(--ia-muted);
+    font-size: 12.5px;
+    font-weight: 500;
+
+    svg {
+        width: 13px;
+        height: 13px;
+        stroke-width: 2.4;
+    }
+}
+
+.mx_InsisArtifact_doc_done {
+    border-color: transparent;
+    background: var(--ia-accent);
+    color: var(--ia-accent-ink);
+}
+
+.mx_InsisArtifact_missing {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 10px 14px;
+    color: var(--ia-ink-2);
+    font-size: 13px;
+
+    svg {
+        width: 16px;
+        height: 16px;
+        color: var(--ia-signal);
+    }
+}
+
+.mx_InsisArtifact_warning {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin: 10px 14px 0;
+    padding: 9px 11px;
+    border-radius: 10px;
+    background: var(--ia-fill);
+    color: var(--ia-ink-2);
+    font-size: 12.5px;
+    line-height: 1.4;
+
+    svg {
+        width: 16px;
+        height: 16px;
+        margin-top: 1px;
+        color: var(--ia-signal);
+    }
+}
+
+.mx_InsisArtifact_match {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 10px 14px 0;
+    padding: 10px 11px;
+    border: 1px solid color-mix(in srgb, var(--ia-signal) 35%, var(--ia-line-2));
+    border-radius: 12px;
+
+    b {
+        display: block;
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    span {
+        color: var(--ia-muted);
+        font-size: 12px;
+    }
+}
+
+.mx_InsisArtifact_matchAvatar {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    color: #ffffff !important;
+    font-size: 12px !important;
+    font-weight: 600;
+}
+
+.mx_InsisArtifact_items {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    padding: 0 14px 10px;
+
+    figure {
+        display: grid;
+        gap: 4px;
+        margin: 0;
+    }
+
+    i {
+        display: block;
+        aspect-ratio: 4 / 3;
+        border-radius: 8px;
+    }
+
+    figcaption {
+        color: var(--ia-muted);
+        font-size: 11.5px;
+        line-height: 1.3;
+    }
+
+    b {
+        display: block;
+        overflow: hidden;
+        color: var(--ia-ink);
+        font-size: 12px;
+        font-weight: 600;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+}
+
+.mx_InsisArtifact_buttons {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 14px 14px;
+}
+
+.mx_InsisArtifact_buttons_inline {
+    padding: 0;
+}
+
+.mx_InsisArtifact_button_primary,
+.mx_InsisArtifact_button_secondary {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 38px;
+    box-sizing: border-box;
+    padding: 0 16px !important;
+    border-radius: 19px;
+    font-size: 13.5px !important;
+    font-weight: 600 !important;
+    text-decoration: none;
+    white-space: nowrap;
+
+    svg {
+        width: 16px;
+        height: 16px;
+    }
+}
+
+.mx_InsisArtifact_button_primary {
+    background: var(--ia-accent) !important;
+    color: var(--ia-accent-ink) !important;
+}
+
+.mx_InsisArtifact_button_secondary {
+    background: var(--ia-fill) !important;
+    color: var(--ia-ink) !important;
+}
+
+.mx_InsisArtifact_button_quiet {
+    height: 38px;
+    margin-inline-start: auto !important;
+    padding: 0 6px !important;
+    color: var(--ia-muted) !important;
+    font-size: 13px !important;
+
+    &:hover {
+        color: var(--ia-signal) !important;
+    }
+}
+
+.mx_InsisArtifact_result {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 7px;
+    min-height: 38px;
+    padding: 12px 14px 14px;
+    font-size: 13.5px;
+    font-weight: 600;
+}
+
+.mx_InsisArtifact_result_discarded {
+    color: var(--ia-muted);
+    font-weight: 500;
+}
+
+.mx_InsisArtifact_resultTick {
+    display: grid;
+    place-items: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--ia-accent);
+    color: var(--ia-accent-ink);
+
+    svg {
+        width: 12px;
+        height: 12px;
+        stroke-width: 2.6;
+    }
+}
+
+.mx_InsisArtifact_link {
+    margin-inline-start: 4px;
+    color: var(--ia-ink) !important;
+    font-weight: 500;
+    text-decoration: underline;
+    text-decoration-color: var(--ia-line-2);
+    text-underline-offset: 3px;
+}
+
+.mx_InsisArtifact_confirm {
+    display: grid;
+    gap: 10px;
+    margin: 12px 14px 14px;
+    padding: 12px;
+    border: 1px solid color-mix(in srgb, var(--ia-signal) 40%, var(--ia-line-2));
+    border-radius: 12px;
+
+    p {
+        margin: 0;
+        font-size: 13.5px;
+        line-height: 1.45;
+    }
+
+    b {
+        font-weight: 600;
+    }
+}
+
+.mx_InsisArtifact_markdown {
+    padding: 0 14px 2px;
+    font-size: 14px;
+    line-height: 1.45;
+
+    p {
+        margin: 0 0 8px;
+    }
+
+    ul,
+    ol {
+        margin: 0 0 8px;
+        padding-inline-start: 18px;
+    }
+}
+
+.mx_InsisArtifact_portable .mx_InsisArtifact_buttons {
+    padding-top: 4px;
+}
+
+.mx_InsisSuggestion {
+    display: grid;
+    gap: 8px;
+    margin: 0 14px 8px;
+    padding: 12px 12px 12px 14px;
+    border: 1px solid var(--ia-line-2);
+    border-radius: 14px;
+    background: var(--ia-panel);
+
+    &:last-child {
+        margin-bottom: 14px;
+    }
+
+    p {
+        margin: 0;
+        font-size: 13.5px;
+        font-weight: 500;
+        line-height: 1.38;
+    }
+
+    .mx_InsisArtifact_button_primary,
+    .mx_InsisArtifact_button_secondary {
+        justify-self: start;
+        height: 34px;
+        padding: 0 14px !important;
+    }
+}
+
+.mx_InsisSuggestion_why {
+    display: flex;
+    align-items: flex-start;
+    gap: 5px;
+    color: var(--ia-muted);
+    font-size: 12px;
+    line-height: 1.4;
+
+    svg {
+        width: 13px;
+        height: 13px;
+        margin-top: 1px;
+    }
+}
+
+.mx_InsisSuggestion_done {
+    min-height: 34px;
+    padding: 0;
+    font-size: 13px;
+}
+
+/* ---- Composer ------------------------------------------------------------------------------------------------------ */
+
+.mx_InsisComposer {
+    position: absolute;
+    z-index: 3;
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+}
+
+.mx_InsisComposer_row {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+}
+
+.mx_InsisComposer_round {
+    display: grid !important;
+    flex: none;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    color: var(--ia-ink-2) !important;
+
+    svg {
+        width: 22px;
+        height: 22px;
+    }
+
+    &:disabled {
+        cursor: default;
+        opacity: 0.6;
+    }
+}
+
+.mx_InsisComposer_send {
+    border: 0 !important;
+    background: var(--ia-accent) !important;
+    color: var(--ia-accent-ink) !important;
+}
+
+.mx_InsisComposer_send_go {
+    background: var(--ia-signal) !important;
+    color: var(--ia-signal-ink) !important;
+}
+
+.mx_InsisComposer_field {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    min-height: 48px;
+    box-sizing: border-box;
+    padding: 0 8px 0 18px;
+    border-radius: 24px;
+
+    input {
+        flex: 1;
+        min-width: 0;
+        margin: 0;
+        padding: 0;
+        border: 0;
+        outline: none;
+        background: transparent;
+        color: var(--ia-ink);
+        font: inherit;
+        font-size: 15px;
+
+        &::placeholder {
+            color: var(--ia-muted);
+        }
+    }
+}
+
+.mx_InsisComposer_recording {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--ia-ink);
+    font-size: 15px;
+
+    i {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: var(--ia-signal);
+        animation: mx_InsisComposer_pulse 1.4s infinite;
+    }
+}
+
+@keyframes mx_InsisComposer_pulse {
+    50% {
+        opacity: 0.3;
+    }
+}
+
+.mx_InsisComposer_notice {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    max-width: 780px;
+    margin: 0 auto 8px;
+    padding: 8px 10px 8px 14px;
+    border-radius: 14px;
+    color: var(--ia-ink);
+    font-size: 13px;
+    line-height: 1.4;
+
+    svg {
+        width: 16px;
+        height: 16px;
+        color: var(--ia-signal);
+    }
+
+    span {
+        flex: 1;
+    }
+
+    button {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        color: var(--ia-muted) !important;
+        font-size: 18px !important;
+        line-height: 1;
+    }
+}
+
+/* ---- Empty session and empty folder --------------------------------------------------------------------------- */
+
+.mx_InsisHello {
+    display: grid;
+    justify-items: center;
+    gap: 10px;
+    max-width: 560px;
+    margin: auto;
+    padding: 40px 0 20px;
+    text-align: center;
+
+    h3 {
+        margin: 6px 0 0;
+        font-size: 22px;
+        font-weight: 600;
+    }
+
+    p {
+        margin: 0;
+        color: var(--ia-muted);
+        font-size: 14px;
+        line-height: 1.5;
+    }
+}
+
+.mx_InsisHello_avatar {
+    width: 60px;
+    height: 60px;
+    background: var(--ia-accent);
+    color: var(--ia-accent-ink);
+
+    svg {
+        width: 30px;
+        height: 30px;
+    }
+}
+
+.mx_InsisHello_quick {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 10px;
+
+    button {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        height: 34px;
+        padding: 0 14px !important;
+        border-radius: 17px;
+        color: var(--ia-ink) !important;
+        font-size: 13px !important;
+        font-weight: 500;
+
+        svg {
+            width: 16px;
+            height: 16px;
+        }
+    }
+
+    .mx_InsisHello_primary {
+        height: 44px;
+        padding: 0 20px !important;
+        border: 0 !important;
+        border-radius: 22px;
+        background: var(--ia-accent) !important;
+        color: var(--ia-accent-ink) !important;
+        font-size: 14.5px !important;
+        font-weight: 600;
+    }
+}
+
+.mx_InsisAssistant_empty {
+    justify-content: center;
+    padding: 24px;
+}
+
+/* ---- Phone: one column ------------------------------------------------------------------------------------------ */
+
+@media (max-width: 600px) {
+    .mx_InsisAssistant {
+        border-radius: 0;
+    }
+
+    .mx_InsisHeader {
+        top: calc(8px + env(safe-area-inset-top, 0px));
+        left: 8px;
+        right: 8px;
+    }
+
+    .mx_InsisHeader_capsule {
+        padding-inline-start: 2px;
+    }
+
+    .mx_InsisFeed_inner {
+        padding: 0 10px;
+    }
+
+    .mx_InsisBubble {
+        max-width: 86%;
+        font-size: 15px;
+    }
+
+    .mx_InsisBubble_in {
+        max-width: 90%;
+    }
+
+    .mx_InsisArtifact {
+        width: 100%;
+    }
+
+    .mx_InsisArtifact_items {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .mx_InsisComposer {
+        left: 8px;
+        right: 8px;
+        bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+    }
+
+    .mx_InsisComposer_field input {
+        font-size: 16px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .mx_InsisBubble_streaming .mx_InsisBubble_text::after,
+    .mx_InsisComposer_recording i {
+        animation: none;
+    }
+
+    .mx_InsisAssistantRow_more {
+        transition: none;
+    }
+}
