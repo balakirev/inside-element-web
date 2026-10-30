@@ -16,7 +16,10 @@ import { StaticNotificationState } from "../notifications/StaticNotificationStat
 import { SummarizedNotificationState } from "../notifications/SummarizedNotificationState";
 import { INSIDE_FOLDERS } from "./InsideFolderStore";
 import RoomListStoreV3, { RoomListStoreV3Event } from "./RoomListStoreV3";
-import { type FilterEnum } from "./skip-list/filters";
+import { FilterEnum } from "./skip-list/filters";
+import { NotificationLevel } from "../notifications/NotificationLevel";
+import { InsisPreviewStore, InsisStoreEvent } from "../../inside/insis/InsisPreviewStore";
+import { isInsisPreviewUser } from "../../inside/insis/preview";
 
 export interface InsideFolderUnread {
     /** The number of unread chats of all chats, at the loudest level among them; none when all are read. */
@@ -25,10 +28,20 @@ export interface InsideFolderUnread {
     folders: Map<FilterEnum, NotificationState>;
 }
 
-function toState(summary: SummarizedNotificationState): NotificationState | undefined {
-    return summary.numUnreadStates > 0
-        ? StaticNotificationState.forCount(summary.numUnreadStates, summary.level)
-        : undefined;
+function toState(summary: SummarizedNotificationState, extraChats = 0): NotificationState | undefined {
+    const chats = summary.numUnreadStates + extraChats;
+    if (chats <= 0) return undefined;
+    const level =
+        extraChats > 0 && summary.level < NotificationLevel.Notification
+            ? NotificationLevel.Notification
+            : summary.level;
+    return StaticNotificationState.forCount(chats, level);
+}
+
+/** Inside: unread client conversations of INSIS — they count in "All" and "Clients" for the preview users. */
+function insisUnreadChats(sdkContext: SDKContextClass): number {
+    if (!isInsisPreviewUser(sdkContext.client?.getUserId())) return 0;
+    return InsisPreviewStore.instance.clientConversations.filter((c) => c.unread > 0).length;
 }
 
 /**
@@ -48,12 +61,13 @@ export function getInsideFolderUnread(sdkContext: SDKContextClass): InsideFolder
             if (RoomListStoreV3.instance.roomMatchesFilter(room, filter)) summary.add(state);
         }
     }
+    const clients = insisUnreadChats(sdkContext);
     const folders = new Map<FilterEnum, NotificationState>();
     for (const [filter, summary] of summaries) {
-        const state = toState(summary);
+        const state = toState(summary, filter === FilterEnum.ClientsFilter ? clients : 0);
         if (state) folders.set(filter, state);
     }
-    return { all: toState(all), folders };
+    return { all: toState(all, clients), folders };
 }
 
 /** {@link getInsideFolderUnread}, kept up to date. */
@@ -63,5 +77,6 @@ export function useInsideFolderUnread(): InsideFolderUnread {
     const update = useCallback(() => setUnread(getInsideFolderUnread(sdkContext)), [sdkContext]);
     useEventEmitter(sdkContext.roomNotificationStateStore, UPDATE_STATUS_INDICATOR, update);
     useEventEmitter(RoomListStoreV3.instance, RoomListStoreV3Event.ListsUpdate, update);
+    useEventEmitter(InsisPreviewStore.instance, InsisStoreEvent.Changed, update);
     return unread;
 }

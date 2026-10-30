@@ -72,6 +72,7 @@ export const RoomListItemContent = memo(function RoomListItemContent({
                                 </Tooltip>
                             )}
                         </div>
+                        {item.insideChip && <span className="mx_RoomListItemView_inside_chip">{item.insideChip}</span>}
                         {item.notification.muted && (
                             <NotificationsOffSolidIcon className={styles.mutedIcon} aria-hidden={true} />
                         )}

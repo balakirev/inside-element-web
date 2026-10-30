@@ -69,6 +69,8 @@ export interface RoomListItemViewSnapshot {
     room: Room;
     /** The name of the room */
     name: string;
+    /** Inside: a small chip after the name, e.g. "Клиент" on a client conversation of INSIS */
+    insideChip?: string;
     /** Whether the room name should be bolded (has unread/activity) */
     isBold: boolean;
     /** Optional message preview text */

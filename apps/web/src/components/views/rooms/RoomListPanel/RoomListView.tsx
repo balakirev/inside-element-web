@@ -21,6 +21,9 @@ import { KeyBindingAction } from "../../../../accessibility/KeyboardShortcuts";
 import { Landmark, LandmarkNavigation } from "../../../../accessibility/LandmarkNavigation";
 import { RoomListViewModel } from "../../../../viewmodels/room-list/RoomListViewModel";
 import { SDKContext } from "../../../../contexts/SDKContext.ts";
+import { InsisRowAvatar } from "../../../../inside/insis/InsisRowViewModels";
+import { ClientAvatar } from "../../../../inside/insis/views/clients/ClientAvatar";
+import { InsisWaitingBar } from "../../../../inside/insis/views/clients/InsisWaitingBar";
 
 /**
  * RoomListView component using shared components with proper MVVM pattern.
@@ -43,6 +46,10 @@ export function RoomListView(): JSX.Element {
         if (room instanceof Room) return <DecoratedRoomAvatarView room={room} />;
         // A preview item has no `Room`, only the data needed for its avatar
         if (room instanceof PreviewRoomAvatarData) return <RoomAvatar size="32px" oobData={room} />;
+        // Inside: a client conversation or an assistant session of INSIS
+        if (room instanceof InsisRowAvatar) {
+            return <ClientAvatar kind={room.kind} initials={room.initials} color={room.color} online={room.online} />;
+        }
         return null;
     }, []);
 
@@ -59,5 +66,11 @@ export function RoomListView(): JSX.Element {
         }
     }, []);
 
-    return <SharedRoomListView vm={vm} renderAvatar={renderAvatar} onKeyDown={onKeyDown} />;
+    return (
+        <>
+            {/* Inside: "Ждут приёма · N" over the list in the "Clients" folder */}
+            <InsisWaitingBar />
+            <SharedRoomListView vm={vm} renderAvatar={renderAvatar} onKeyDown={onKeyDown} />
+        </>
+    );
 }

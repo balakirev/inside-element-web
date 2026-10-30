@@ -52,6 +52,21 @@ import SettingsStore from "../../settings/SettingsStore";
 import { type RoomViewStore } from "../../stores/RoomViewStore.tsx";
 import { UPDATE_EVENT } from "../../stores/AsyncStore";
 import { EffectiveMembership, getEffectiveMembership } from "../../utils/membership";
+import { InsisPreviewStore, InsisStoreEvent } from "../../inside/insis/InsisPreviewStore";
+import { isInsisPreviewUser } from "../../inside/insis/preview";
+import { AssistantRowViewModel, ClientRowViewModel } from "../../inside/insis/InsisRowViewModels";
+import {
+    assistantRowId,
+    clientRowId,
+    insisRowsForFolder,
+    isInsisRowId,
+    mergeByActivity,
+    openInsisRow,
+    parseInsisRowId,
+    rowIdOfTarget,
+} from "../../inside/insis/roomListRows";
+import { getLastTimestamp } from "../../stores/room-list-v3/skip-list/sorters/utils/getLastTimestamp";
+import { MetaSpace } from "../../stores/spaces";
 
 /**
  * Tracks the position of the active room within a specific section.
@@ -209,6 +224,13 @@ export class RoomListViewModel
      */
     private previewRoom?: Room;
 
+    /**
+     * Inside: view models of the INSIS rows (client conversations, waiting assistant sessions) by row id, and the
+     * placeholder `Room`s that carry their row ids through the sections. See {@link withInsisRows}.
+     */
+    private readonly insisItems = new Map<string, ClientRowViewModel | AssistantRowViewModel>();
+    private readonly insisRooms = new Map<string, Room>();
+
     public constructor(props: RoomListViewModelProps) {
         const activeSpace = props.spaceStore.activeSpaceRoom;
 
@@ -302,6 +324,9 @@ export class RoomListViewModel
         // The summary of the open room arrives after the room has been opened
         this.disposables.trackListener(props.roomViewStore, UPDATE_EVENT, this.onRoomViewStoreUpdate);
 
+        // Inside: client conversations and assistant sessions of INSIS change, or one of them is opened
+        this.disposables.trackListener(InsisPreviewStore.instance, InsisStoreEvent.Changed, this.onInsisChange);
+
         // Track cleanup of all child view models
         this.disposables.track(() => {
             for (const viewModel of this.roomItemViewModels.values()) {
@@ -309,6 +334,8 @@ export class RoomListViewModel
             }
             this.roomItemViewModels.clear();
             this.previewItem?.dispose();
+            for (const viewModel of this.insisItems.values()) viewModel.dispose();
+            this.insisItems.clear();
         });
 
         // A room may already be open when the list is created
@@ -345,6 +372,7 @@ export class RoomListViewModel
      * Add the room of the preview item at the top of the Chats section, so it is listed like any other room.
      */
     private withPreviewRoom(roomsResult: RoomsResult): RoomsResult {
+        roomsResult = this.withInsisRows(roomsResult);
         const previewRoom = this.previewRoom;
         if (!previewRoom) return roomsResult;
 
@@ -354,6 +382,59 @@ export class RoomListViewModel
                 section.tag === CHATS_TAG ? { ...section, rooms: [previewRoom, ...section.rooms] } : section,
             ),
         };
+    }
+
+    private readonly onInsisChange = (): void => {
+        void this.updateRoomListData();
+    };
+
+    /**
+     * Inside: the client conversations of INSIS in "All chats" and "Clients", merged with the rooms by last
+     * activity, and the assistant sessions waiting for a confirmation pinned at the top of "All chats" — only for
+     * the users of the INSIS preview, in the home space. Each gets a placeholder `Room` with its row id, as the
+     * preview item does, so the list places it like a room; its item is a view model of its own.
+     */
+    private withInsisRows(roomsResult: RoomsResult): RoomsResult {
+        const store = InsisPreviewStore.instance;
+        if (!isInsisPreviewUser(this.props.client.getUserId()) || store.isAssistantFolderActive) return roomsResult;
+        if (roomsResult.spaceId !== MetaSpace.Home) return roomsResult;
+        const folder =
+            this.activeFilter === undefined
+                ? "all"
+                : this.activeFilter === FilterEnum.ClientsFilter
+                  ? "clients"
+                  : "other";
+        const { conversations, pinnedSessions } = insisRowsForFolder(store, folder);
+        if (!conversations.length && !pinnedSessions.length) return roomsResult;
+
+        const extras = conversations.map((c) => ({ row: this.insisRoom(clientRowId(c.id)), ts: c.lastActivityTs }));
+        const pinned = pinnedSessions.map((s) => this.insisRoom(assistantRowId(s.id)));
+        const userId = this.props.client.getSafeUserId();
+        const merge = (rooms: Room[]): Room[] =>
+            mergeByActivity(rooms, (room) => getLastTimestamp(room, userId), extras, pinned);
+
+        if (!roomsResult.sections.some((section) => section.tag === CHATS_TAG)) {
+            return { ...roomsResult, sections: [...roomsResult.sections, { tag: CHATS_TAG, rooms: merge([]) }] };
+        }
+        return {
+            ...roomsResult,
+            sections: roomsResult.sections.map((section) =>
+                section.tag === CHATS_TAG ? { ...section, rooms: merge(section.rooms) } : section,
+            ),
+        };
+    }
+
+    /** The placeholder `Room` of an INSIS row: only its id is used, to place the row in the sections. */
+    private insisRoom(rowId: string): Room {
+        let room = this.insisRooms.get(rowId);
+        if (!room) {
+            const { client } = this.props;
+            room = new Room(rowId, client, client.getSafeUserId(), {
+                pendingEventOrdering: PendingEventOrdering.Detached,
+            });
+            this.insisRooms.set(rowId, room);
+        }
+        return room;
     }
 
     /**
@@ -494,8 +575,11 @@ export class RoomListViewModel
      * The view should call this only for visible rooms from the roomIds list.
      * @throws Error if room is not found in roomsMap (indicates a programming error)
      */
-    public getRoomItemViewModel(roomId: string): RoomListItemViewModel | PreviewRoomListItemViewModel | undefined {
+    public getRoomItemViewModel(
+        roomId: string,
+    ): RoomListItemViewModel | PreviewRoomListItemViewModel | ClientRowViewModel | AssistantRowViewModel | undefined {
         if (this.previewItem?.roomId === roomId) return this.previewItem;
+        if (isInsisRowId(roomId)) return this.getInsisItem(roomId);
 
         // Check if we have a view model for this room
         let viewModel = this.roomItemViewModels.get(roomId);
@@ -524,6 +608,21 @@ export class RoomListViewModel
         }
 
         // Return the view model - the view will call useViewModel() on it
+        return viewModel;
+    }
+
+    /** Inside: the view model of an INSIS row, made when the row becomes visible. */
+    private getInsisItem(rowId: string): ClientRowViewModel | AssistantRowViewModel | undefined {
+        let viewModel = this.insisItems.get(rowId);
+        if (viewModel) return viewModel;
+        const target = parseInsisRowId(rowId);
+        const store = InsisPreviewStore.instance;
+        if (target?.kind === "client" && store.getConversation(target.id)) {
+            viewModel = new ClientRowViewModel(target.id);
+        } else if (target?.kind === "assistant" && store.getSession(target.id)) {
+            viewModel = new AssistantRowViewModel(target.id);
+        }
+        if (viewModel) this.insisItems.set(rowId, viewModel);
         return viewModel;
     }
 
@@ -559,6 +658,12 @@ export class RoomListViewModel
             if (!newVisibleSet.has(roomId)) {
                 viewModel.dispose();
                 this.roomItemViewModels.delete(roomId);
+            }
+        }
+        for (const [rowId, viewModel] of this.insisItems.entries()) {
+            if (!newVisibleSet.has(rowId)) {
+                viewModel.dispose();
+                this.insisItems.delete(rowId);
             }
         }
 
@@ -792,7 +897,8 @@ export class RoomListViewModel
      * Migrated from useRoomListNavigation hook.
      */
     private handleViewRoomDelta(payload: ViewRoomDeltaPayload): void {
-        const currentRoomId = this.props.roomViewStore.getRoomId();
+        // Inside: an open client chat or assistant session is the current item
+        const currentRoomId = this.openInsisRowId() ?? this.props.roomViewStore.getRoomId();
 
         const { delta, unread } = payload;
         const rooms = this.sections.flatMap((section) => section.rooms);
@@ -822,6 +928,10 @@ export class RoomListViewModel
 
         const [newRoom] = filteredRooms.slice(start);
         if (!newRoom) return;
+        if (isInsisRowId(newRoom.roomId)) {
+            openInsisRow(InsisPreviewStore.instance, newRoom.roomId);
+            return;
+        }
 
         dispatcher.dispatch<ViewRoomPayload>({
             action: Action.ViewRoom,
@@ -902,6 +1012,12 @@ export class RoomListViewModel
 
         const index = this.sections.flatMap((section) => section.rooms).findIndex((room) => room.roomId === roomId);
         return index >= 0 ? index : undefined;
+    }
+
+    /** Inside: the row id of the client chat or assistant session open in the main area, if any. */
+    private openInsisRowId(): string | undefined {
+        if (!isInsisPreviewUser(this.props.client.getUserId())) return undefined;
+        return rowIdOfTarget(InsisPreviewStore.instance.openTarget);
     }
 
     /**
@@ -1013,7 +1129,8 @@ export class RoomListViewModel
         this.sections = sections;
 
         // Calculate the active room index from the computed sections (which exclude collapsed sections' rooms)
-        const activeRoomIndex = this.getActiveRoomIndex(roomId);
+        // Inside: an open client chat or assistant session is selected instead of the room under it
+        const activeRoomIndex = this.getActiveRoomIndex(this.openInsisRowId() ?? roomId);
 
         // Update filter keys - only update if they have actually changed to prevent unnecessary re-renders of the room list
         const previousFilterKeys = this.snapshot.current.roomListState.filterKeys;
