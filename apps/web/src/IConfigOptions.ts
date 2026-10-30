@@ -32,6 +32,12 @@ export interface ConfigOptions extends WebConfigJson {
      * device verification protects nothing. Absent or false = upstream behaviour.
      */
     inside_hide_device_verification?: boolean;
+
+    /**
+     * Inside: Matrix IDs that see the INSIS screens (the "Помощник" folder, client conversations, the lead card) on
+     * test data before INSIS is connected — see inside/insis/preview.ts. Absent or empty = nobody.
+     */
+    inside_insis_preview_users?: string[];
 }
 
 /**

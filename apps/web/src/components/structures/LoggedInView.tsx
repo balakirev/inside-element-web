@@ -43,6 +43,7 @@ import Modal from "../../Modal";
 import { getKeyBindingsManager } from "../../KeyBindingsManager";
 import { type IOpts } from "../../createRoom";
 import SpacePanel from "../views/spaces/SpacePanel";
+import { InsisPageSwitch } from "../../inside/insis/views/InsisPageSwitch";
 import { LegacyCallHandlerEvent } from "../../LegacyCallHandler";
 import AudioFeedArrayForLegacyCall from "../views/voip/AudioFeedArrayForLegacyCall";
 import { OwnProfileStore } from "../../stores/OwnProfileStore";
@@ -707,7 +708,11 @@ class LoggedInView extends React.Component<IProps, IState> {
             </div>
         );
 
-        const roomView = <div className="mx_RoomView_wrapper">{pageElement}</div>;
+        const roomView = (
+            <div className="mx_RoomView_wrapper">
+                <InsisPageSwitch>{pageElement}</InsisPageSwitch>
+            </div>
+        );
 
         let content: React.ReactNode;
         const resizerViewModel = !moduleRenderer ? this.getResizerViewModel() : undefined;
