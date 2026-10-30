@@ -74,13 +74,26 @@ exports[`VideoBodyView > matches snapshot for ready story 1`] = `
       <video
         aria-label="Product demo video"
         class="VideoBodyView-module_video"
-        controls=""
         controlslist="nodownload"
         crossorigin="anonymous"
         poster="/static/element.png"
         preload="none"
         src="/static/videoBodyDemo.webm"
       />
+      <button
+        aria-label="Play"
+        class="VideoBodyView-module_bigPlay mx_VideoBody_inside_bigPlay"
+        type="button"
+      >
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 24 24"
+        >
+          <path
+            d="M8 5.6v12.8a1 1 0 0 0 1.5.86l10.4-6.4a1 1 0 0 0 0-1.72L9.5 4.74A1 1 0 0 0 8 5.6Z"
+          />
+        </svg>
+      </button>
     </div>
     <div>
       File body slot

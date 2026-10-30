@@ -3,8 +3,47 @@
 }
 
 .container {
+    position: relative;
     overflow: hidden;
     border-radius: 8px;
+}
+
+/* Inside: Telegram-like round play button over the poster of a video not started yet. */
+.bigPlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    display: grid;
+    place-items: center;
+    width: 56px;
+    height: 56px;
+    margin: -28px 0 0 -28px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(6px);
+    color: #ffffff;
+    cursor: pointer;
+    transition: background-color 0.15s, transform 0.15s;
+}
+
+.bigPlay:hover {
+    background: rgba(0, 0, 0, 0.6);
+    transform: scale(1.04);
+}
+
+.bigPlay svg {
+    width: 26px;
+    height: 26px;
+    margin-left: 3px;
+    fill: currentColor;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .bigPlay {
+        transition: none;
+    }
 }
 
 .video {

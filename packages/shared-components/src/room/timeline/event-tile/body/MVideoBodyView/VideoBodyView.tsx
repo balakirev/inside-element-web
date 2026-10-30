@@ -12,12 +12,17 @@ import React, {
     type PropsWithChildren,
     type ReactEventHandler,
     type Ref,
+    type RefCallback,
+    useCallback,
+    useRef,
+    useState,
 } from "react";
 import classNames from "classnames";
 import { FileErrorIcon, VisibilityOnIcon } from "@vector-im/compound-design-tokens/assets/web/icons";
 import { InlineSpinner } from "@vector-im/compound-web";
 
 import { type ViewModel, useViewModel } from "../../../../../core/viewmodel";
+import { useI18n } from "../../../../../core/i18n/i18nContext";
 import styles from "./VideoBodyView.module.css";
 
 /**
@@ -157,6 +162,35 @@ export function VideoBodyView({
         autoPlay,
     } = useViewModel(vm);
 
+    const { translate: _t } = useI18n();
+
+    // Inside: as in Telegram, a video that has not been started shows its poster with a large round
+    // play button in the middle instead of the browser's small control bar; the controls appear once
+    // it plays.
+    const [started, setStarted] = useState(Boolean(autoPlay));
+    const ownVideoRef = useRef<HTMLVideoElement | null>(null);
+    const setVideoRef = useCallback<RefCallback<HTMLVideoElement>>(
+        (element) => {
+            ownVideoRef.current = element;
+            if (typeof videoRef === "function") videoRef(element);
+            else if (videoRef) (videoRef as { current: HTMLVideoElement | null }).current = element;
+        },
+        [videoRef],
+    );
+    const onBigPlayClick = useCallback<MouseEventHandler<HTMLButtonElement>>((event) => {
+        event.stopPropagation();
+        setStarted(true);
+        ownVideoRef.current?.play().catch(() => {});
+    }, []);
+    const onVideoPlay = useCallback<ReactEventHandler<HTMLVideoElement>>(
+        (event) => {
+            setStarted(true);
+            vm.onPlay?.(event);
+        },
+        [vm],
+    );
+    const showBigPlay = Boolean(controls) && !started;
+
     const rootClassName = classNames(className, styles.root);
     const resolvedContainerClassName = classNames(containerClassName, styles.container);
 
@@ -212,19 +246,31 @@ export function VideoBodyView({
                 {/* Captions will be supplied from app-side data once the VM wiring is in place. */}
                 <video
                     className={styles.video}
-                    ref={videoRef}
+                    ref={setVideoRef}
                     src={src}
                     aria-label={videoLabel}
                     title={videoTitle}
-                    controls={controls}
+                    controls={controls && started}
                     controlsList="nodownload"
                     crossOrigin="anonymous"
                     preload={preload}
                     muted={muted}
                     autoPlay={autoPlay}
                     poster={poster}
-                    onPlay={vm.onPlay}
+                    onPlay={onVideoPlay}
                 />
+                {showBigPlay && (
+                    <button
+                        type="button"
+                        className={classNames(styles.bigPlay, "mx_VideoBody_inside_bigPlay")}
+                        aria-label={_t("action|play")}
+                        onClick={onBigPlayClick}
+                    >
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M8 5.6v12.8a1 1 0 0 0 1.5.86l10.4-6.4a1 1 0 0 0 0-1.72L9.5 4.74A1 1 0 0 0 8 5.6Z" />
+                        </svg>
+                    </button>
+                )}
             </div>
             {children}
         </span>

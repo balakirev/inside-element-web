@@ -126,4 +126,48 @@ describe("VideoBodyView", () => {
         fireEvent.play(video);
         expect(onPlay).toHaveBeenCalledTimes(1);
     });
+
+    it("shows a large round play button instead of the controls until the video is started (Inside)", () => {
+        const onPlay = vi.fn();
+        const vm = new TestVideoBodyViewModel(
+            {
+                state: VideoBodyViewState.READY,
+                videoLabel: "Video",
+                maxWidth: 320,
+                maxHeight: 180,
+                aspectRatio: "16/9",
+                src: "blob:video",
+                controls: true,
+            },
+            { onPlay },
+        );
+        const play = vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue(undefined);
+
+        const { container } = render(<VideoBodyView vm={vm} />);
+        const video = container.querySelector("video")!;
+        expect(video.controls).toBe(false);
+
+        fireEvent.click(screen.getByRole("button", { name: "Play" }));
+        expect(play).toHaveBeenCalledTimes(1);
+        expect(screen.queryByRole("button", { name: "Play" })).toBeNull();
+        expect(video.controls).toBe(true);
+
+        fireEvent.play(video);
+        expect(onPlay).toHaveBeenCalledTimes(1);
+        play.mockRestore();
+    });
+
+    it("has no play button when the video plays by itself or has no controls (Inside)", () => {
+        const vm = new TestVideoBodyViewModel({
+            state: VideoBodyViewState.READY,
+            maxWidth: 320,
+            maxHeight: 180,
+            aspectRatio: "16/9",
+            src: "blob:video",
+            controls: false,
+            autoPlay: true,
+        });
+        render(<VideoBodyView vm={vm} />);
+        expect(screen.queryByRole("button", { name: "Play" })).toBeNull();
+    });
 });
