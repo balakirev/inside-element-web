@@ -167,11 +167,52 @@ export interface Artifact {
     critical?: boolean;
     portableMarkdown: string;
     insisUrl: string;
+
+    // --- Preview extras for the native cards of the mockup (not a contract) --------------------------------------
+    /** The draft waits for the broker's confirmation ("Ждёт подтверждения" chip), not just a draft ("Черновик"). */
+    awaiting?: boolean;
+    /** Label of the second button: "Изменить", "Добавить документы", "Открыть совпадение". */
+    secondaryLabel?: string;
+    /** A one-column row of document chips under the fields: "Этап · документы — загружен 1 из 3". */
+    documents?: { caption: string; items: { label: string; done: boolean }[] };
+    /** A warning row inside the card: "Дебиторка — после подтверждения руководителем направления…". */
+    warning?: string;
+    /** A possible duplicate found by INSIS: "Похожий контакт уже есть у брокера Павла С.". */
+    match?: { initials: string; color: string; title: string; detail: string };
+    /** Tiles of a selection of listings. */
+    items?: { title: string; subtitle: string; color: string }[];
+    /** What the confirm step of a critical action says: who gets what and that it cannot be undone. */
+    confirmText?: string;
+    /** The line shown once finalized: "Отправлено руководителю · ждёт проверки". */
+    resultText?: string;
+    /** The chip once finalized: "На проверке", "Отправлено"; "Создано" when absent. */
+    finalizedLabel?: string;
+    /** Idempotency-Key of the last finalize / discard click — what the `/v1` call would carry. */
+    idempotencyKey?: string;
 }
 
 export type AssistantMessage =
-    | { kind: "user"; id: string; ts: number; text: string; voice?: { durationSec: number } }
-    | { kind: "assistant"; id: string; ts: number; text: string; artifact?: Artifact; streaming?: boolean };
+    | {
+          kind: "user";
+          id: string;
+          ts: number;
+          text: string;
+          voice?: { durationSec: number };
+          /** A file sent along with the request: "Бронь Collective 2.0.pdf", "410 КБ". */
+          file?: { name: string; size: string };
+      }
+    | {
+          kind: "assistant";
+          id: string;
+          ts: number;
+          text: string;
+          artifact?: Artifact;
+          streaming?: boolean;
+          /** "Помощник предлагает": next steps, each done only after the broker confirms. */
+          suggestions?: AssistantSuggestion[];
+          /** A canned reply of the preview, not an answer of the INSIS Copilot. */
+          canned?: boolean;
+      };
 
 export interface AssistantSession {
     id: string;
