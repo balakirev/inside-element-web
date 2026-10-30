@@ -1,0 +1,1620 @@
+/*
+Copyright 2026 Inside Estate.
+
+SPDX-License-Identifier: AGPL-3.0-only OR GPL-3.0-only OR LicenseRef-Element-Commercial
+Please see LICENSE files in the repository root for full details.
+*/
+
+/*
+ * Inside: client conversations of INSIS — rows in the room list, "Ждут приёма", the client chat and the lead card
+ * (ADR-069; mockup docs/design/lobby/variants, #chat-b). Built on the Lobby skin tokens (--lobby-*), so client
+ * chats look as rooms do; without the skin they fall back to Compound.
+ */
+
+.mx_InsisClientChat,
+.mx_InsisWaitingBar,
+.mx_RoomListItemView,
+.mx_InsisAvatar {
+    --ic-ink: var(--lobby-ink, var(--cpd-color-text-primary));
+    --ic-ink-2: var(--lobby-ink-2, var(--cpd-color-text-secondary));
+    --ic-muted: var(--lobby-muted, var(--cpd-color-text-secondary));
+    --ic-faint: var(--lobby-faint, var(--cpd-color-icon-tertiary));
+    --ic-panel: var(--lobby-panel, var(--cpd-color-bg-canvas-default));
+    --ic-fill: var(--lobby-fill, var(--cpd-color-bg-subtle-secondary));
+    --ic-hover: var(--lobby-hover, var(--cpd-color-bg-subtle-primary));
+    --ic-line: var(--lobby-line, var(--cpd-color-separator-primary));
+    --ic-line-2: var(--lobby-line-2, var(--cpd-color-border-interactive-secondary));
+    --ic-accent: var(--lobby-accent, var(--cpd-color-bg-action-primary-rest));
+    --ic-accent-ink: var(--lobby-accent-ink, var(--cpd-color-text-on-solid-primary));
+    --ic-sel: var(--lobby-sel, var(--cpd-color-bg-action-primary-rest));
+    --ic-sel-ink: var(--lobby-sel-ink, var(--cpd-color-text-on-solid-primary));
+    --ic-signal: var(--lobby-signal, var(--cpd-color-text-critical-primary));
+    --ic-online: var(--lobby-online, var(--cpd-color-icon-success-primary));
+    --ic-glass: var(--lobby-glass, var(--cpd-color-bg-canvas-default));
+    --ic-glass-line: var(--lobby-glass-line, var(--cpd-color-border-interactive-secondary));
+    --ic-glass-blur: var(--lobby-glass-blur, blur(22px) saturate(160%));
+    --ic-shadow: var(--lobby-shadow, none);
+    --ic-wall: var(--lobby-wall, var(--cpd-color-bg-subtle-secondary));
+    --ic-b-in: var(--lobby-b-in, var(--cpd-color-bg-canvas-default));
+    --ic-b-in-ink: var(--lobby-b-in-ink, var(--cpd-color-text-primary));
+    --ic-b-in-meta: var(--lobby-b-in-meta, var(--cpd-color-text-secondary));
+    --ic-b-out: var(--lobby-b-out, var(--cpd-color-bg-action-primary-rest));
+    --ic-b-out-ink: var(--lobby-b-out-ink, var(--cpd-color-text-on-solid-primary));
+    --ic-b-out-meta: var(--lobby-b-out-meta, rgba(255, 255, 255, 0.55));
+    --ic-b-out-2: var(--lobby-b-out-2, rgba(255, 255, 255, 0.72));
+    --ic-b-out-fill: var(--lobby-b-out-fill, rgba(255, 255, 255, 0.14));
+    --ic-quote-bar: var(--lobby-signal, var(--cpd-color-text-critical-primary));
+    --ic-quote-bg-in: var(--lobby-quote-bg-in, var(--cpd-color-bg-subtle-secondary));
+    --ic-quote-bg-out: var(--lobby-quote-bg-out, rgba(255, 255, 255, 0.1));
+    --ic-link-src: var(--lobby-link-src, var(--cpd-color-text-critical-primary));
+    --ic-link-src-out: var(--lobby-link-src-out, #ff8a7e);
+    --ic-pill: var(--lobby-pill, rgba(30, 30, 30, 0.42));
+    --ic-pill-ink: var(--lobby-pill-ink, #ffffff);
+    --ic-pill-radius: var(--lobby-pill-radius, 14px);
+    --ic-pill-shadow: var(--lobby-pill-shadow, none);
+    --ic-radius-card: var(--lobby-radius-card, 16px);
+    --ic-radius-bubble: var(--lobby-radius-bubble, 17px);
+    --ic-overlay-shadow: var(--lobby-overlay-shadow, 0 12px 40px rgba(0, 0, 0, 0.18));
+    --ic-menu-shadow: var(--lobby-menu-shadow, 0 8px 30px rgba(0, 0, 0, 0.14));
+}
+
+.mx_InsisIcon {
+    width: 20px;
+    height: 20px;
+    flex: none;
+}
+
+/* ---------------------------------------------------------------- Room list rows */
+
+/* The avatar of a client or of the assistant; the skin sizes .mx_BaseAvatar in rows to 54. */
+.mx_InsisAvatar.mx_BaseAvatar {
+    --cpd-avatar-size: 32px;
+    position: relative;
+    box-sizing: border-box;
+    width: var(--cpd-avatar-size);
+    height: var(--cpd-avatar-size);
+    border-radius: 50%;
+    display: inline-grid;
+    place-items: center;
+    flex: none;
+    color: #fff;
+    font-weight: 600;
+    font-size: calc(var(--cpd-avatar-size) * 0.36);
+    line-height: 1;
+    background: var(--lobby-av-9, #6b655e);
+    user-select: none;
+}
+.mx_InsisAvatar_assistant.mx_InsisAvatar {
+    background: var(--ic-ink);
+    color: var(--ic-panel);
+}
+.cpd-theme-dark .mx_InsisAvatar_assistant.mx_InsisAvatar {
+    background: #3a3a3a;
+    color: #fff;
+}
+.mx_InsisAvatar .mx_InsisIcon {
+    width: 44%;
+    height: 44%;
+    stroke-width: 1.9;
+}
+.mx_InsisAvatar_online {
+    position: absolute;
+    right: 1px;
+    bottom: 1px;
+    width: 24%;
+    height: 24%;
+    min-width: 8px;
+    min-height: 8px;
+    border-radius: 50%;
+    background: var(--ic-online);
+    box-shadow: 0 0 0 2.5px var(--ic-panel);
+}
+.mx_RoomListItemView[aria-selected="true"] .mx_InsisAvatar_online,
+.mx_RoomListItemView_selected .mx_InsisAvatar_online {
+    box-shadow: 0 0 0 2.5px var(--ic-sel);
+}
+.mx_RoomListItemView[aria-selected="true"] .mx_InsisAvatar_assistant.mx_InsisAvatar,
+.mx_RoomListItemView_selected .mx_InsisAvatar_assistant.mx_InsisAvatar {
+    background: #3a3a3a;
+    color: #fff;
+    box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.35);
+}
+
+/* "Клиент" after the name, as the skin's chip of the "Clients" folder (.tag of the mockup). */
+.mx_RoomListItemView_inside_chip {
+    flex: none;
+    padding: 1px 5px;
+    border: 1px solid var(--ic-line-2);
+    border-radius: 5px;
+    background: var(--ic-fill);
+    color: var(--ic-ink-2);
+    font-size: 10.5px;
+    font-weight: 600;
+    line-height: 14px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+.mx_RoomListItemView [class*="_topRow_"]:has(> .mx_RoomListItemView_inside_chip) > [class*="_roomName_"] {
+    flex: 0 1 auto;
+}
+.mx_RoomListItemView:is([aria-selected="true"], .mx_RoomListItemView_selected) .mx_RoomListItemView_inside_chip {
+    background: transparent;
+    color: var(--ic-sel-ink);
+    border-color: color-mix(in srgb, var(--ic-sel-ink) 35%, transparent);
+}
+/* The pinned assistant row: its preview in the ink colour and a red dot (.lv-arow, .lv-wdot of the mockup). */
+.mx_RoomListItemView:has(.mx_InsisAvatar_assistant) [class*="_preview_"] {
+    color: var(--ic-ink-2);
+}
+/* !important: the app's CSS is in a cascade layer, the skin's counter rule is not. */
+.mx_RoomListItemView:has(.mx_InsisAvatar_assistant) [class*="_unread-counter_"]:empty {
+    box-sizing: border-box;
+    min-width: 10px !important;
+    width: 10px !important;
+    height: 10px !important;
+    padding: 0 !important;
+    margin-inline-end: 6px;
+    border-radius: 50% !important;
+    background: var(--ic-signal);
+}
+
+/* "Ждут приёма · N" over the list of the "Clients" folder. */
+.mx_InsisWaitingBar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 12px 8px;
+    padding: 8px 8px 8px 14px;
+    border-radius: 14px;
+    background: var(--ic-fill);
+    color: var(--ic-ink);
+    flex: none;
+}
+.mx_InsisWaitingBar_text {
+    flex: 1;
+    min-width: 0;
+    display: grid;
+    gap: 1px;
+}
+.mx_InsisWaitingBar_text b {
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+.mx_InsisWaitingBar_text span {
+    font-size: 12.5px;
+    color: var(--ic-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.mx_InsisWaitingBar_accept {
+    flex: none;
+    height: 34px;
+    padding: 0 12px;
+    border: none;
+    border-radius: 17px;
+    background: var(--ic-accent);
+    color: var(--ic-accent-ink);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+}
+.mx_InsisWaitingBar_accept:hover {
+    filter: brightness(1.1);
+}
+
+/* ---------------------------------------------------------------- Shared bits */
+
+.mx_InsisGlass {
+    background: var(--ic-glass);
+    -webkit-backdrop-filter: var(--ic-glass-blur);
+    backdrop-filter: var(--ic-glass-blur);
+    border: 1px solid var(--ic-glass-line);
+    box-shadow: var(--ic-shadow);
+    box-sizing: border-box;
+}
+.mx_InsisIconButton {
+    width: 36px;
+    height: 36px;
+    flex: none;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--ic-ink-2);
+    cursor: pointer;
+}
+.mx_InsisIconButton:hover {
+    background: var(--ic-hover);
+}
+.mx_InsisIconButton_filled {
+    background: var(--ic-fill);
+    color: var(--ic-ink);
+}
+.mx_InsisIconButton_filled .mx_InsisIcon {
+    width: 18px;
+    height: 18px;
+}
+.mx_InsisIconButton_on,
+.mx_InsisIconButton_on:hover {
+    background: var(--ic-accent);
+    color: var(--ic-accent-ink);
+}
+.mx_InsisButton {
+    height: 38px;
+    padding: 0 14px;
+    border: none;
+    border-radius: 19px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font: inherit;
+    font-size: 13.5px;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+}
+.mx_InsisButton .mx_InsisIcon {
+    width: 16px;
+    height: 16px;
+}
+.mx_InsisButton_primary {
+    background: var(--ic-accent);
+    color: var(--ic-accent-ink);
+}
+.mx_InsisButton_primary:hover {
+    background: var(--lobby-accent-hover, var(--ic-accent));
+}
+.mx_InsisButton_secondary {
+    background: var(--ic-fill);
+    color: var(--ic-ink);
+}
+.mx_InsisButton_secondary:hover {
+    background: var(--ic-hover);
+}
+.mx_InsisPill {
+    align-self: center;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    max-width: min(520px, 100%);
+    box-sizing: border-box;
+    margin: 8px 0;
+    padding: 5px 12px;
+    border-radius: var(--ic-pill-radius);
+    background: var(--ic-pill);
+    color: var(--ic-pill-ink);
+    box-shadow: var(--ic-pill-shadow);
+    font-size: 13px;
+    font-weight: 500;
+    line-height: normal;
+    text-align: center;
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+}
+.mx_InsisPill .mx_InsisIcon {
+    width: 15px;
+    height: 15px;
+}
+.mx_InsisPill_day {
+    margin: 10px 0;
+    padding: 3px 10px;
+}
+
+/* ---------------------------------------------------------------- Client chat */
+
+.mx_InsisClientChat {
+    line-height: normal;
+    position: relative;
+    display: flex;
+    gap: var(--lobby-gap, 8px);
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    color: var(--ic-ink);
+}
+.mx_InsisClientChat_gone {
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--ic-radius-card);
+    background: var(--ic-wall) var(--lobby-wall-img, none) 0 0 / 288px 216px repeat;
+}
+.mx_InsisClientChat_main {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: var(--ic-radius-card);
+    background: var(--ic-wall) var(--lobby-wall-img, none) 0 0 / 288px 216px repeat;
+}
+
+/* Header — two glass capsules over the wallpaper, 10 from the edges (.ch / .chp / .chb). */
+.mx_InsisClientChat_header {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    z-index: 3;
+    display: flex;
+    gap: 8px;
+}
+.mx_InsisClientChat_capsule {
+    flex: 1;
+    min-width: 0;
+    height: 52px;
+    border-radius: 26px;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 0 8px;
+}
+.mx_InsisClientChat_who {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0;
+    border: none;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: start;
+    cursor: pointer;
+}
+.mx_InsisClientChat_who .mx_InsisAvatar {
+    --cpd-avatar-size: 38px;
+    font-size: 14px;
+}
+.mx_InsisClientChat_who .mx_InsisAvatar_online {
+    width: 10px;
+    height: 10px;
+    right: 0;
+    bottom: 0;
+    box-shadow: 0 0 0 2px var(--ic-panel);
+}
+.mx_InsisClientChat_whoText {
+    min-width: 0;
+    display: grid;
+}
+.mx_InsisClientChat_whoText b {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 20px;
+}
+.mx_InsisClientChat_name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.mx_InsisClientChat_whoText > span {
+    font-size: 13px;
+    color: var(--ic-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.mx_InsisClientChat_search {
+    flex: 1;
+    min-width: 0;
+    height: 36px;
+    margin-inline-start: 8px;
+    border: none;
+    background: transparent;
+    color: var(--ic-ink);
+    font: inherit;
+    font-size: 15px;
+    outline: none;
+}
+.mx_InsisClientChat_buttons {
+    height: 52px;
+    border-radius: 26px;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 0 6px;
+}
+.mx_InsisClientChat_buttons .mx_InsisIconButton {
+    width: 40px;
+    height: 40px;
+    color: var(--ic-ink);
+}
+.mx_InsisClientChat_buttons .mx_InsisIconButton_on {
+    color: var(--ic-accent-ink);
+}
+.mx_InsisMenu {
+    position: absolute;
+    top: 58px;
+    right: 0;
+    z-index: 5;
+    min-width: 220px;
+    padding: 6px;
+    border-radius: 14px;
+    background: var(--ic-panel);
+    box-shadow: var(--ic-menu-shadow);
+    display: grid;
+}
+.mx_InsisMenu button {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 40px;
+    padding: 0 10px;
+    border: none;
+    border-radius: 10px;
+    background: none;
+    color: var(--ic-ink);
+    font: inherit;
+    font-size: 14.5px;
+    text-align: start;
+    cursor: pointer;
+}
+.mx_InsisMenu button:hover {
+    background: var(--ic-hover);
+}
+.mx_InsisClientChat_notice {
+    position: absolute;
+    top: 72px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 4;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    max-width: calc(100% - 40px);
+    padding: 8px 14px;
+    border-radius: 18px;
+    background: var(--ic-ink);
+    color: var(--ic-panel);
+    font-size: 13.5px;
+    font-weight: 500;
+    box-shadow: var(--ic-menu-shadow);
+}
+.mx_InsisClientChat_notice .mx_InsisIcon {
+    width: 17px;
+    height: 17px;
+}
+
+/* Timeline — under the header and the composer (.tl: 74 / 9 % / 90). */
+.mx_InsisClientChat_timeline {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 74px 9% 90px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+/* The window counter over the composer takes room too. */
+.mx_InsisClientChat_main:has(.mx_InsisComposer_window) .mx_InsisClientChat_timeline {
+    padding-bottom: 124px;
+}
+.mx_InsisClientChat_timeline::before {
+    content: "";
+    margin-top: auto;
+}
+
+/* Bubbles (.m of the mockup, as the skin draws Matrix bubbles). */
+.mx_InsisMsg {
+    max-width: min(520px, 72%);
+    display: flex;
+    flex-direction: column;
+}
+.mx_InsisMsg_in {
+    align-self: flex-start;
+    align-items: flex-start;
+}
+.mx_InsisMsg_out {
+    align-self: flex-end;
+    align-items: flex-end;
+}
+.mx_InsisMsg_last {
+    margin-bottom: 8px;
+}
+.mx_InsisMsg_bubble {
+    position: relative;
+    box-sizing: border-box;
+    max-width: 100%;
+    padding: 7px 11px 7px 12px;
+    border-radius: var(--ic-radius-bubble);
+    font-size: 14.5px;
+    line-height: 1.38;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+    box-shadow: var(--ic-shadow);
+}
+.mx_InsisMsg_in .mx_InsisMsg_bubble {
+    background: var(--ic-b-in);
+    color: var(--ic-b-in-ink);
+}
+.mx_InsisMsg_out .mx_InsisMsg_bubble {
+    background: var(--ic-b-out);
+    color: var(--ic-b-out-ink);
+}
+.mx_InsisMsg_in.mx_InsisMsg_last .mx_InsisMsg_bubble {
+    border-bottom-left-radius: 5px;
+}
+.mx_InsisMsg_out.mx_InsisMsg_last .mx_InsisMsg_bubble {
+    border-bottom-right-radius: 5px;
+}
+.mx_InsisMsg_author {
+    margin-bottom: 1px;
+    font-size: 13px;
+    font-weight: 600;
+    white-space: normal;
+}
+.mx_InsisMsg_out .mx_InsisMsg_author {
+    color: var(--ic-b-out-2);
+}
+.mx_InsisMsg_template {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 3px;
+    font-size: 12px;
+    font-weight: 600;
+    opacity: 0.7;
+    white-space: normal;
+}
+.mx_InsisMsg_template .mx_InsisIcon {
+    width: 13px;
+    height: 13px;
+}
+.mx_InsisMsg_meta {
+    float: right;
+    position: relative;
+    top: 3px;
+    margin: 6px 0 -4px 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 11.5px;
+    line-height: normal;
+    white-space: nowrap;
+    color: var(--ic-b-in-meta);
+}
+.mx_InsisMsg_out .mx_InsisMsg_meta {
+    color: var(--ic-b-out-meta);
+}
+.mx_InsisMsg_delivery {
+    display: inline-flex;
+}
+.mx_InsisMsg_delivery .mx_InsisIcon {
+    width: 16px;
+    height: 16px;
+    stroke-width: 2;
+}
+.mx_InsisMsg_delivery_read {
+    color: #fff;
+}
+.mx_InsisMsg_delivery_failed {
+    color: var(--ic-signal);
+}
+.mx_InsisMsg_failed .mx_InsisMsg_bubble {
+    box-shadow: inset 0 0 0 1.5px var(--ic-signal);
+}
+.mx_InsisMsg_failReason {
+    margin: 4px 4px 0;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--ic-signal);
+}
+.mx_InsisMsg_quote {
+    display: block;
+    margin: 1px 0 5px;
+    padding: 4px 8px;
+    border-left: 3px solid var(--ic-quote-bar);
+    border-radius: 6px;
+    background: var(--ic-quote-bg-in);
+    font-size: 13.5px;
+    white-space: normal;
+}
+.mx_InsisMsg_out .mx_InsisMsg_quote {
+    background: var(--ic-quote-bg-out);
+}
+.mx_InsisMsg_quote b {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+}
+.mx_InsisMsg_quote span {
+    display: block;
+    max-width: 320px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    opacity: 0.75;
+}
+.mx_InsisMsg_listing {
+    display: grid;
+    gap: 2px;
+    margin-top: 6px;
+    padding: 6px 9px;
+    border-left: 3px solid var(--ic-quote-bar);
+    border-radius: 6px;
+    background: var(--ic-quote-bg-in);
+    font-size: 13.5px;
+    white-space: normal;
+}
+.mx_InsisMsg_out .mx_InsisMsg_listing {
+    background: var(--ic-quote-bg-out);
+}
+.mx_InsisMsg_listing b {
+    font-weight: 600;
+}
+.mx_InsisMsg_listingSite {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ic-link-src);
+}
+.mx_InsisMsg_out .mx_InsisMsg_listingSite {
+    color: var(--ic-link-src-out);
+}
+.mx_InsisMsg_file {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 3px 2px 2px;
+    white-space: normal;
+}
+.mx_InsisMsg_fileIcon {
+    width: 44px;
+    height: 44px;
+    flex: none;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--ic-b-out-fill);
+}
+.mx_InsisMsg_in .mx_InsisMsg_fileIcon {
+    background: var(--ic-accent);
+    color: var(--ic-accent-ink);
+}
+.mx_InsisMsg_file b {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+}
+.mx_InsisMsg_file span {
+    font-size: 12.5px;
+    opacity: 0.65;
+}
+.mx_InsisMsg_reactions {
+    display: inline-flex;
+    gap: 4px;
+    margin-top: 5px;
+}
+.mx_InsisMsg_reactions span {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 12px;
+    background: var(--ic-b-out-fill);
+    font-size: 12.5px;
+}
+.mx_InsisMsg_in .mx_InsisMsg_reactions span {
+    background: var(--ic-quote-bg-in);
+}
+
+/* "Вниз" (.jump). */
+.mx_InsisClientChat_jump {
+    position: absolute;
+    right: 16px;
+    bottom: 72px;
+    z-index: 2;
+    width: 44px;
+    height: 44px;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border-radius: 50%;
+    color: var(--ic-ink-2);
+    cursor: pointer;
+}
+
+/* Composer (.comp / .rb / .field / .send) with the channel's window. */
+.mx_InsisComposer {
+    position: absolute;
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+    z-index: 3;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.mx_InsisComposer_row {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+}
+.mx_InsisComposer_round {
+    width: 48px;
+    height: 48px;
+    flex: none;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border-radius: 50%;
+    color: var(--ic-ink-2);
+    cursor: pointer;
+}
+.mx_InsisComposer_round .mx_InsisIcon {
+    width: 22px;
+    height: 22px;
+}
+.mx_InsisComposer_send {
+    border: none;
+    background: var(--ic-accent);
+    color: var(--ic-accent-ink);
+}
+.mx_InsisComposer_send_go {
+    background: var(--ic-signal);
+    color: #fff;
+}
+.mx_InsisComposer_field {
+    flex: 1;
+    min-width: 0;
+    min-height: 48px;
+    border-radius: 24px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 8px 0 18px;
+}
+.mx_InsisComposer_field input {
+    flex: 1;
+    min-width: 0;
+    border: none;
+    background: transparent;
+    color: var(--ic-ink);
+    font: inherit;
+    font-size: 15px;
+    outline: none;
+    padding: 0;
+    margin: 0;
+}
+.mx_InsisComposer_field input::placeholder {
+    color: var(--ic-muted);
+}
+.mx_InsisComposer_emoji {
+    width: 36px;
+    height: 36px;
+    display: grid;
+    place-items: center;
+    color: var(--ic-muted);
+}
+.mx_InsisComposer_closed {
+    color: var(--ic-muted);
+    font-size: 14px;
+    gap: 8px;
+}
+.mx_InsisComposer_closed .mx_InsisIcon {
+    width: 17px;
+    height: 17px;
+}
+.mx_InsisComposer_closed span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.mx_InsisComposer_template {
+    height: 48px;
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 18px;
+    border: none;
+    border-radius: 24px;
+    background: var(--ic-accent);
+    color: var(--ic-accent-ink);
+    font: inherit;
+    font-size: 14.5px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.mx_InsisComposer_window {
+    align-self: flex-start;
+    margin-inline-start: 56px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 11px;
+    border-radius: var(--ic-pill-radius);
+    background: var(--ic-pill);
+    color: var(--ic-pill-ink);
+    box-shadow: var(--ic-pill-shadow);
+    font-size: 12.5px;
+    font-weight: 500;
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+}
+.mx_InsisComposer_window .mx_InsisIcon {
+    width: 14px;
+    height: 14px;
+}
+.mx_InsisComposer_window_soon {
+    color: var(--ic-signal);
+}
+
+/* Templates sheet over the composer. */
+.mx_InsisTemplates {
+    margin: 0 56px;
+    max-height: min(420px, 60vh);
+    display: flex;
+    flex-direction: column;
+    border-radius: 18px;
+    background: var(--ic-panel);
+    box-shadow: var(--ic-overlay-shadow);
+    overflow: hidden;
+}
+.mx_InsisTemplates_head {
+    display: grid;
+    grid-template-columns: 36px 1fr 36px;
+    align-items: center;
+    padding: 8px 8px 6px;
+    border-bottom: 1px solid var(--ic-line);
+}
+.mx_InsisTemplates_head b {
+    text-align: center;
+    font-size: 15px;
+    font-weight: 600;
+}
+.mx_InsisTemplates_list {
+    list-style: none;
+    margin: 0;
+    padding: 6px;
+    overflow-y: auto;
+}
+.mx_InsisTemplates_list button {
+    width: 100%;
+    display: grid;
+    gap: 3px;
+    padding: 10px 12px;
+    border: none;
+    border-radius: 12px;
+    background: none;
+    color: var(--ic-ink);
+    font: inherit;
+    text-align: start;
+    cursor: pointer;
+}
+.mx_InsisTemplates_list button:hover {
+    background: var(--ic-hover);
+}
+.mx_InsisTemplates_name {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14.5px;
+    font-weight: 600;
+}
+.mx_InsisTemplates_lang {
+    padding: 0 5px;
+    border: 1px solid var(--ic-line-2);
+    border-radius: 5px;
+    font-size: 10.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: var(--ic-ink-2);
+}
+.mx_InsisTemplates_body {
+    font-size: 13.5px;
+    line-height: 1.35;
+    color: var(--ic-muted);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.mx_InsisTemplates_preview {
+    display: grid;
+    gap: 10px;
+    padding: 12px;
+    overflow-y: auto;
+}
+.mx_InsisTemplates_previewWall {
+    display: flex;
+    flex-direction: column;
+    padding: 14px 12px 6px;
+    border-radius: 12px;
+    background: var(--ic-wall) var(--lobby-wall-img, none) 0 0 / 288px 216px repeat;
+}
+.mx_InsisTemplates_previewWall .mx_InsisMsg {
+    max-width: 88%;
+}
+.mx_InsisTemplates_hint {
+    margin: 0;
+    font-size: 12.5px;
+    line-height: 1.4;
+    color: var(--ic-muted);
+}
+
+/* ---------------------------------------------------------------- Lead card (variant B) */
+
+.mx_InsisLead {
+    position: relative;
+    line-height: normal;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    color: var(--ic-ink);
+    background: var(--ic-panel);
+    font-size: 14px;
+}
+.mx_InsisLead_side {
+    width: 320px;
+    flex: none;
+    border-radius: var(--ic-radius-card);
+    overflow: auto;
+}
+/* Narrower than 1400 the card lies over the chat, as the room's right panel does in the skin. */
+@media (max-width: 1400px) {
+    .mx_InsisClientChat_withCard .mx_InsisLead_side {
+        position: absolute;
+        top: 18px;
+        right: 18px;
+        bottom: 18px;
+        z-index: 6;
+        box-shadow: var(--ic-overlay-shadow);
+    }
+}
+@media (max-width: 1199px) {
+    .mx_InsisClientChat_withCard .mx_InsisLead_side {
+        top: 10px;
+        right: 10px;
+        bottom: 10px;
+    }
+}
+.mx_InsisLead > * {
+    flex: none;
+}
+.mx_InsisLead_head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 12px 0;
+}
+.mx_InsisLead_head b {
+    padding-inline-start: 6px;
+    font-size: 15px;
+    font-weight: 600;
+}
+.mx_InsisLead_contact {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 14px 12px;
+}
+.mx_InsisLead_contact .mx_InsisAvatar {
+    --cpd-avatar-size: 44px;
+    font-size: 16px;
+}
+.mx_InsisLead_who {
+    flex: 1;
+    min-width: 0;
+    display: grid;
+    gap: 1px;
+}
+.mx_InsisLead_who b {
+    font-size: 15.5px;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.mx_InsisLead_who span {
+    font-size: 12.5px;
+    color: var(--ic-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.mx_InsisLead_menu.mx_InsisMenu {
+    top: 108px;
+    right: 12px;
+}
+.mx_InsisLead_queue {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    gap: 8px;
+    padding: 0 12px 12px;
+}
+.mx_InsisLead_tabs {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2px;
+    margin: 0 12px 12px;
+    padding: 3px;
+    border-radius: 11px;
+    background: var(--ic-fill);
+}
+.mx_InsisLead_tabs button {
+    height: 32px;
+    padding: 0 4px;
+    border: none;
+    border-radius: 8px;
+    background: none;
+    color: var(--ic-muted);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+}
+.mx_InsisLead_tabs button.mx_InsisLead_tabOn {
+    background: var(--ic-panel);
+    color: var(--ic-ink);
+    box-shadow: var(--ic-shadow);
+}
+.cpd-theme-dark .mx_InsisLead_tabs button.mx_InsisLead_tabOn {
+    background: var(--ic-sel);
+}
+.mx_InsisLead_pane {
+    flex: 1 0 auto;
+}
+.mx_InsisLead_empty {
+    margin: 8px 16px 16px;
+    font-size: 13.5px;
+    color: var(--ic-muted);
+}
+
+/* "Помощник предлагает" (.lv-sugh / .lv-sug of variant C). */
+.mx_InsisLead_suggestions {
+    margin-bottom: 4px;
+}
+.mx_InsisLead_suggestionsHead {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 2px 16px 8px;
+}
+.mx_InsisLead_suggestionsHead .mx_InsisIcon {
+    width: 17px;
+    height: 17px;
+}
+.mx_InsisLead_suggestionsHead b {
+    font-size: 13.5px;
+    font-weight: 600;
+}
+.mx_InsisLead_suggestionsHead span {
+    margin-inline-start: auto;
+    font-size: 12px;
+    color: var(--ic-muted);
+}
+.mx_InsisLead_suggestion {
+    position: relative;
+    box-sizing: border-box;
+    width: calc(100% - 24px);
+    margin: 0 12px 8px;
+    padding: 12px 34px 12px 14px;
+    display: grid;
+    gap: 8px;
+    border: 1px solid var(--ic-line-2);
+    border-radius: 14px;
+    background: var(--ic-panel);
+    color: var(--ic-ink);
+    font: inherit;
+    text-align: start;
+    cursor: pointer;
+}
+.mx_InsisLead_suggestion:hover {
+    background: var(--ic-hover);
+}
+.mx_InsisLead_suggestion p {
+    margin: 0;
+    font-size: 13.5px;
+    font-weight: 500;
+    line-height: 1.38;
+}
+.mx_InsisLead_why {
+    display: flex;
+    align-items: flex-start;
+    gap: 5px;
+    font-size: 12px;
+    line-height: 1.4;
+    color: var(--ic-muted);
+}
+.mx_InsisLead_why .mx_InsisIcon {
+    width: 13px;
+    height: 13px;
+    margin-top: 1px;
+}
+.mx_InsisLead_suggestionGo.mx_InsisIcon {
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    width: 16px;
+    height: 16px;
+    margin-top: -8px;
+    color: var(--ic-faint);
+}
+
+/* "Лид в Insis" (.grp / .crmh / .lstage / .kv / .lv-chips / .next / .lv-line). */
+.mx_InsisLead_group {
+    margin: 0 12px 12px;
+    border-radius: 14px;
+    background: var(--ic-fill);
+}
+.mx_InsisLead_groupHead {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 14px 8px;
+}
+.mx_InsisLead_label {
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ic-muted);
+}
+.mx_InsisLead_id {
+    margin-inline-start: auto;
+    font-size: 12.5px;
+    font-weight: 600;
+}
+.mx_InsisLead_stage {
+    display: grid;
+    gap: 4px;
+    padding: 2px 14px 12px;
+}
+.mx_InsisLead_stageBar {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    gap: 3px;
+}
+.mx_InsisLead_stageBar i {
+    height: 16px;
+    padding: 6px 0;
+    box-sizing: border-box;
+    border-radius: 2px;
+    background: var(--ic-line-2);
+    background-clip: content-box;
+}
+.mx_InsisLead_stageBar i.mx_InsisLead_stageDone {
+    background-color: var(--ic-ink);
+}
+.mx_InsisLead_stageBar i.mx_InsisLead_stageCurrent {
+    background-color: var(--ic-signal);
+}
+.mx_InsisLead_stageLine {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+}
+.mx_InsisLead_stageLine b {
+    font-weight: 600;
+}
+.mx_InsisLead_stageLine span {
+    color: var(--ic-muted);
+}
+.mx_InsisLead_kv {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 7px 12px;
+    margin: 0;
+    padding: 10px 14px 12px;
+    border-top: 1px solid var(--ic-line);
+    font-size: 13.5px;
+}
+.mx_InsisLead_kv dt {
+    color: var(--ic-muted);
+}
+.mx_InsisLead_kv dd {
+    margin: 0;
+    min-width: 0;
+    text-align: end;
+    font-weight: 500;
+}
+.mx_InsisLead_kv dd small {
+    display: block;
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--ic-muted);
+}
+.mx_InsisLead_chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 10px 14px 12px;
+    border-top: 1px solid var(--ic-line);
+}
+.mx_InsisLead_chips small {
+    width: 100%;
+    font-size: 12px;
+    color: var(--ic-muted);
+}
+.mx_InsisLead_chip {
+    padding: 4px 10px;
+    border: 1px solid var(--ic-line-2);
+    border-radius: 999px;
+    background: var(--ic-panel);
+    font-size: 12.5px;
+    font-weight: 500;
+}
+.mx_InsisLead_next {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-top: 1px solid var(--ic-line);
+}
+.mx_InsisLead_nextIcon {
+    width: 34px;
+    height: 34px;
+    flex: none;
+    display: grid;
+    place-items: center;
+    border-radius: 10px;
+    background: var(--ic-accent);
+    color: var(--ic-accent-ink);
+}
+.mx_InsisLead_nextIcon .mx_InsisIcon {
+    width: 17px;
+    height: 17px;
+}
+.mx_InsisLead_next b {
+    display: block;
+    font-size: 13.5px;
+    font-weight: 600;
+}
+.mx_InsisLead_next span {
+    font-size: 12.5px;
+    color: var(--ic-muted);
+}
+.mx_InsisLead_line {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 9px 14px;
+    border-top: 1px solid var(--ic-line);
+    font-size: 12.5px;
+    color: var(--ic-muted);
+}
+.mx_InsisLead_line .mx_InsisIcon {
+    width: 15px;
+    height: 15px;
+}
+.mx_InsisLead_line b {
+    font-weight: 600;
+    color: var(--ic-ink);
+}
+
+/* Объекты (.lv-obj). */
+.mx_InsisLead_objects {
+    display: grid;
+    gap: 8px;
+    padding: 0 12px 12px;
+}
+.mx_InsisLead_object {
+    display: grid;
+    grid-template-columns: 56px 1fr;
+    gap: 10px;
+    align-items: center;
+    padding: 8px;
+    border-radius: 14px;
+    background: var(--ic-fill);
+}
+.mx_InsisLead_object > i {
+    display: block;
+    width: 56px;
+    height: 56px;
+    border-radius: 10px;
+    background: var(--ic-line-2);
+}
+.mx_InsisLead_objectText {
+    min-width: 0;
+    display: grid;
+    gap: 2px;
+}
+.mx_InsisLead_objectText b {
+    font-size: 13.5px;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.mx_InsisLead_objectPrice {
+    font-size: 12.5px;
+    color: var(--ic-ink-2);
+}
+.mx_InsisLead_objectTags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 2px;
+}
+.mx_InsisLead_objectTags span {
+    padding: 1px 7px;
+    border: 1px solid var(--ic-line-2);
+    border-radius: 999px;
+    background: var(--ic-panel);
+    color: var(--ic-muted);
+    font-size: 11.5px;
+    font-weight: 500;
+}
+.mx_InsisLead_objectTags span.mx_InsisLead_tagKey {
+    border-color: transparent;
+    background: var(--ic-accent);
+    color: var(--ic-accent-ink);
+}
+.mx_InsisLead_objectTags span.mx_InsisLead_tagSignal {
+    border-color: color-mix(in srgb, var(--ic-signal) 35%, transparent);
+    color: var(--ic-signal);
+}
+
+/* Путь (.lv-path). */
+.mx_InsisLead_path {
+    list-style: none;
+    margin: 0;
+    padding: 2px 16px 14px 14px;
+    display: grid;
+}
+.mx_InsisLead_path li {
+    position: relative;
+    display: grid;
+    grid-template-columns: 18px 1fr;
+    gap: 10px;
+    padding-bottom: 14px;
+}
+.mx_InsisLead_path li::before {
+    content: "";
+    position: absolute;
+    left: 8px;
+    top: 14px;
+    bottom: -2px;
+    width: 2px;
+    background: var(--ic-line-2);
+}
+.mx_InsisLead_path li:last-child::before {
+    display: none;
+}
+.mx_InsisLead_path li > i {
+    position: relative;
+    z-index: 1;
+    width: 10px;
+    height: 10px;
+    margin: 4px 0 0 4px;
+    border-radius: 50%;
+    background: var(--ic-panel);
+    box-shadow: inset 0 0 0 2px var(--ic-ink);
+}
+.mx_InsisLead_path li.mx_InsisLead_pathCurrent > i {
+    background: var(--ic-signal);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--ic-signal) 22%, transparent);
+}
+.mx_InsisLead_path b {
+    display: block;
+    font-size: 13.5px;
+    font-weight: 600;
+    line-height: 1.35;
+}
+.mx_InsisLead_path span {
+    display: block;
+    margin-top: 1px;
+    font-size: 12.5px;
+    color: var(--ic-muted);
+}
+
+/* Файлы (.lv-file / .lv-trk). */
+.mx_InsisLead_file {
+    display: grid;
+    gap: 10px;
+    margin: 0 12px 10px;
+    padding: 12px;
+    border-radius: 14px;
+    background: var(--ic-fill);
+}
+.mx_InsisLead_fileHead {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.mx_InsisLead_fileHead > div {
+    min-width: 0;
+}
+.mx_InsisLead_fileIcon {
+    width: 40px;
+    height: 40px;
+    flex: none;
+    display: grid;
+    place-items: center;
+    border-radius: 10px;
+    background: var(--ic-accent);
+    color: var(--ic-accent-ink);
+}
+.mx_InsisLead_fileIcon .mx_InsisIcon {
+    width: 19px;
+    height: 19px;
+}
+.mx_InsisLead_fileSmall .mx_InsisLead_fileIcon {
+    background: var(--ic-panel);
+    color: var(--ic-ink);
+    box-shadow: inset 0 0 0 1px var(--ic-line-2);
+}
+.mx_InsisLead_file b {
+    display: block;
+    font-size: 13.5px;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.mx_InsisLead_fileHead span {
+    font-size: 12px;
+    color: var(--ic-muted);
+}
+.mx_InsisLead_pages {
+    display: flex;
+    align-items: flex-end;
+    gap: 5px;
+    height: 44px;
+    padding: 0 2px;
+}
+.mx_InsisLead_pages i {
+    position: relative;
+    flex: 1;
+    border-radius: 4px 4px 2px 2px;
+    background: var(--ic-line-2);
+}
+.mx_InsisLead_pages i.mx_InsisLead_pageTop {
+    background: var(--ic-ink);
+}
+.mx_InsisLead_pages em {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -17px;
+    font-size: 10.5px;
+    font-style: normal;
+    font-weight: 500;
+    text-align: center;
+    color: var(--ic-muted);
+}
+.mx_InsisLead_fileNote {
+    margin-top: 14px;
+    font-size: 12.5px;
+    color: var(--ic-ink-2);
+}
+
+/* The two actions at the bottom (.lv-sticky). */
+.mx_InsisLead_actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    margin-top: auto;
+    display: grid;
+    gap: 8px;
+    padding: 10px 12px 12px;
+    border-top: 1px solid var(--ic-line);
+    background: var(--ic-panel);
+}
+
+/* ---------------------------------------------------------------- Phone: full screen chat, card as a sheet */
+
+.mx_InsisClientChat_mobile .mx_InsisClientChat_main {
+    border-radius: 0;
+}
+.mx_InsisClientChat_mobile .mx_InsisClientChat_header {
+    top: calc(8px + env(safe-area-inset-top, 0px));
+    left: 8px;
+    right: 8px;
+}
+.mx_InsisClientChat_mobile .mx_InsisClientChat_capsule {
+    padding-inline-start: 2px;
+}
+.mx_InsisClientChat_mobile .mx_InsisClientChat_timeline {
+    padding: 70px 10px 84px;
+}
+.mx_InsisClientChat_mobile .mx_InsisMsg {
+    max-width: 82%;
+}
+.mx_InsisClientChat_mobile .mx_InsisMsg_bubble {
+    font-size: 16px;
+}
+.mx_InsisClientChat_mobile .mx_InsisComposer {
+    left: 8px;
+    right: 8px;
+    bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+}
+.mx_InsisClientChat_mobile .mx_InsisComposer_round,
+.mx_InsisClientChat_mobile .mx_InsisComposer_template {
+    height: 44px;
+}
+.mx_InsisClientChat_mobile .mx_InsisComposer_round {
+    width: 44px;
+}
+.mx_InsisClientChat_mobile .mx_InsisComposer_field {
+    min-height: 44px;
+}
+.mx_InsisClientChat_mobile .mx_InsisComposer_window {
+    margin-inline-start: 52px;
+}
+.mx_InsisClientChat_mobile .mx_InsisTemplates {
+    margin: 0;
+}
+.mx_InsisClientChat_mobile .mx_InsisComposer_closed span {
+    font-size: 13px;
+}
+.mx_InsisLead_backdrop {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+}
+.mx_InsisLead_sheetWrap {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 60%;
+    display: flex;
+}
+.mx_InsisLead_sheet {
+    flex: 1;
+    min-height: 0;
+    border-radius: 14px 14px 0 0;
+    box-shadow: 0 -10px 34px rgba(0, 0, 0, 0.16);
+    overflow: auto;
+    font-size: 16px;
+}
+.mx_InsisLead_grab {
+    width: 40px;
+    height: 5px;
+    margin: 8px auto 6px;
+    border-radius: 3px;
+    background: var(--ic-line-2);
+}
+.mx_InsisLead_sheet .mx_InsisLead_contact {
+    padding: 4px 16px 10px;
+}
+.mx_InsisLead_sheet .mx_InsisLead_who b {
+    font-size: 17px;
+}
+.mx_InsisLead_sheet .mx_InsisLead_who span {
+    font-size: 14px;
+}
+.mx_InsisLead_sheet .mx_InsisLead_contact .mx_InsisIconButton {
+    width: 48px;
+    height: 48px;
+}
+.mx_InsisLead_sheet .mx_InsisLead_contact .mx_InsisIconButton .mx_InsisIcon {
+    width: 22px;
+    height: 22px;
+}
+.mx_InsisLead_sheet .mx_InsisLead_tabs {
+    margin: 0 16px 10px;
+}
+.mx_InsisLead_sheet .mx_InsisLead_tabs button {
+    height: 34px;
+    font-size: 15px;
+}
+.mx_InsisLead_sheet .mx_InsisLead_actions {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+}
+.mx_InsisLead_sheet .mx_InsisLead_actions .mx_InsisButton {
+    height: 48px;
+    border-radius: 24px;
+    font-size: 16px;
+}
