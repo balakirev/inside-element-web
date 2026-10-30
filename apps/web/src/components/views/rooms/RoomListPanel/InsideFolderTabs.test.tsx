@@ -69,7 +69,7 @@ describe("<InsideFolderTabs />", () => {
         expect(spaceStore.setActiveSpace).toHaveBeenCalledWith(MetaSpace.Home);
         expect(InsideFolderStore.instance.activeFilter).toBe(FilterEnum.VipFilter);
         expect(screen.getByRole("tab", { name: "VIP" })).toHaveAttribute("aria-selected", "true");
-        expect(screen.getByRole("tab", { name: "All" })).toHaveAttribute("aria-selected", "false");
+        expect(screen.getByRole("tab", { name: /^All/ })).toHaveAttribute("aria-selected", "false");
     });
 
     it("leaves the folder from All", async () => {
@@ -114,7 +114,7 @@ describe("<InsideFolderTabs />", () => {
         await userEvent.click(screen.getByRole("tab", { name: /Assistant/ }));
         expect(InsisPreviewStore.instance.isAssistantFolderActive).toBe(true);
         expect(screen.getByRole("tab", { name: /Assistant/ })).toHaveAttribute("aria-selected", "true");
-        expect(screen.getByRole("tab", { name: "All" })).toHaveAttribute("aria-selected", "false");
+        expect(screen.getByRole("tab", { name: /^All/ })).toHaveAttribute("aria-selected", "false");
 
         await userEvent.click(screen.getByRole("tab", { name: "Groups" }));
         expect(InsisPreviewStore.instance.isAssistantFolderActive).toBe(false);

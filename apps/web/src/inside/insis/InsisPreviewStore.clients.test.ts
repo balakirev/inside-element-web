@@ -88,6 +88,7 @@ describe("InsisPreviewStore — clients", () => {
     });
 
     it("a suggestion opens the assistant on the client's session with its prompt as the broker's message", () => {
+        const before = store.assistantSessions.find((s) => s.clientConversationId === "alina")?.messages.length ?? 0;
         const session = store.askAssistantForClient("alina", "Подбери ещё 2 варианта", NOW);
         expect(store.isAssistantFolderActive).toBe(true);
         expect(store.openTarget).toEqual({ kind: "assistant", id: session.id });
@@ -95,6 +96,6 @@ describe("InsisPreviewStore — clients", () => {
         expect(session.messages.at(-1)).toMatchObject({ kind: "user", text: "Подбери ещё 2 варианта" });
         const again = store.askAssistantForClient("alina", "Ещё вопрос", NOW + 1);
         expect(again.id).toBe(session.id);
-        expect(again.messages).toHaveLength(2);
+        expect(again.messages).toHaveLength(before + 2);
     });
 });
