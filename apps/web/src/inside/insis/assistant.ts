@@ -262,6 +262,8 @@ export function quickStartLabel(q: QuickStart): string {
 }
 
 function cannedReplyFor(text: string): { text: string; artifact?: Artifact } {
+    // The canned transcript of a voice message dictates a listing.
+    if (text === _t("insis_assistant|voice_transcript")) return { text: _t("insis_assistant|reply_listing") };
     const quick = QUICK_STARTS.find((q) => quickStartLabel(q) === text);
     switch (quick) {
         case "listing":

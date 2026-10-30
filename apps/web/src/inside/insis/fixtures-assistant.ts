@@ -39,9 +39,10 @@ const SERGEY = "клиент: Сергей Мельник";
  * any day. Texts are Russian, as the demo accounts are.
  */
 export function makeAssistantSessions(now: number): AssistantSession[] {
-    const listingTs = todayAgo(now, 26);
-    const dealTs = todayAgo(now, 20);
-    const clientQTs = todayAgo(now, 10);
+    // As in the mockup, the draft that waits for confirmation is the latest session.
+    const listingTs = todayAgo(now, 6);
+    const dealTs = todayAgo(now, 16);
+    const clientQTs = todayAgo(now, 26);
     const newClientTs = at(now, 1, 17, 15);
     const selectionTs = at(now, 1, 17, 32);
     const ownerTs = at(now, 6, 10, 12);

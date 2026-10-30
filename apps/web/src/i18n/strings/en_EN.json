@@ -1373,6 +1373,7 @@
         "discard": "Discard",
         "edit_request": "Change the %(title)s: ",
         "empty_body": "Pick a session on the left or start a new chat. The assistant drafts — nothing reaches Insis until you confirm.",
+        "empty_session": "Empty session",
         "group_earlier": "Earlier",
         "group_pinned": "Pinned",
         "group_today": "Today",

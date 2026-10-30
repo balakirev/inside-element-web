@@ -60,7 +60,7 @@ describe("assistant sessions (preview)", () => {
     it("fixtures group into Today · Yesterday · Earlier relative to now", () => {
         const groups = groupSessions(makeAssistantSessions(NOW), NOW);
         expect(groups.map((g) => [g.key, g.sessions.map((s) => s.id)])).toEqual([
-            ["today", ["client-q", "deal", "listing"]],
+            ["today", ["listing", "deal", "client-q"]],
             ["yesterday", ["selection", "client-new"]],
             ["earlier", ["owner", "week"]],
         ]);
@@ -78,7 +78,7 @@ describe("assistant sessions (preview)", () => {
         ).toEqual(["selection", "owner"]);
         expect(
             groupSessions(store().assistantSessions, NOW, "", true).flatMap((g) => g.sessions.map((s) => s.id)),
-        ).toEqual(["deal", "listing"]);
+        ).toEqual(["listing", "deal"]);
     });
 
     it("the chip of a row follows its latest artifact", () => {
@@ -123,16 +123,16 @@ describe("assistant sessions (preview)", () => {
         openAssistantSession("deal");
         deleteAssistantSession("deal", true);
         expect(session("deal")).toBeUndefined();
-        expect(store().openTarget).toEqual({ kind: "assistant", id: "listing" });
+        expect(store().openTarget).toEqual({ kind: "assistant", id: "client-q" });
         // On a phone nothing opens: the list stays.
-        deleteAssistantSession("listing", false);
+        deleteAssistantSession("client-q", false);
         expect(store().openTarget).toBeNull();
     });
 
     it("entering the folder opens the newest session; leaving it closes the session", () => {
         enterAssistantFolder(true);
         expect(store().isAssistantFolderActive).toBe(true);
-        expect(store().openTarget).toEqual({ kind: "assistant", id: "client-q" });
+        expect(store().openTarget).toEqual({ kind: "assistant", id: "listing" });
         openAssistantSession("owner");
         leaveAssistantFolder();
         expect(store().isAssistantFolderActive).toBe(false);

@@ -46,7 +46,7 @@ describe("<AssistantSessionList />", () => {
             "Yesterday",
             "Earlier",
         ]);
-        expect(rows()[0]).toBe("Что по клиенту: Алина");
+        expect(rows()[0]).toBe("Объект: Collective 2.0 · 2BR");
         // Two sessions wait for confirmation: red dots; the others carry a chip.
         expect(screen.getAllByRole("img", { name: "Awaiting confirmation" })).toHaveLength(2);
         expect(screen.getAllByText("created")).toHaveLength(3);

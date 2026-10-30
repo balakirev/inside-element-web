@@ -185,7 +185,9 @@ function SessionRow({ session, selected, now, openNextOnDelete }: RowProps): JSX
                         </span>
                     </span>
                     <span className="mx_InsisAssistantRow_line2">
-                        <span className="mx_InsisAssistantRow_preview">{session.preview || " "}</span>
+                        <span className="mx_InsisAssistantRow_preview">
+                            {session.preview || _t("insis_assistant|empty_session")}
+                        </span>
                         {awaiting && (
                             <span
                                 className="mx_InsisAssistant_waitDot"
