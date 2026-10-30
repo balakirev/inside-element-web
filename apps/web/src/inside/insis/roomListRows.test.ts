@@ -5,7 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR GPL-3.0-only OR LicenseRef-Element-Com
 Please see LICENSE files in the repository root for full details.
 */
 
-import { describe, it, expect, afterEach } from "vitest";
+import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
 
 import {
     assistantRowId,
@@ -20,8 +20,18 @@ import {
 import { InsisPreviewStore } from "./InsisPreviewStore";
 import { assistantRowSnapshot, clientRowSnapshot } from "./InsisRowViewModels";
 import type { AssistantSession, ClientConversation } from "./model";
+import SettingsStore from "../../settings/SettingsStore";
 
 const NOW = new Date(2026, 9, 30, 15, 0).getTime();
+
+// Row snapshots read the 12/24 h setting; don't depend on the settings handlers (and localStorage) of the
+// environment — a CI shard runs this file where localStorage is not defined.
+beforeEach(() => {
+    vi.spyOn(SettingsStore, "getValue").mockReturnValue(false as never);
+});
+afterEach(() => {
+    vi.restoreAllMocks();
+});
 
 describe("mergeByActivity", () => {
     const rooms = [
