@@ -22,7 +22,10 @@ import { FilterEnum } from "../../../../stores/room-list-v3/skip-list/filters";
 import { type NotificationState } from "../../../../stores/notifications/NotificationState";
 import { NotificationLevel } from "../../../../stores/notifications/NotificationLevel";
 import { formatCount } from "../../../../utils/FormattingUtils";
-import { prefersReducedMotion } from "../../../../utils/InsideLayout";
+import { getInsideLayout, prefersReducedMotion } from "../../../../utils/InsideLayout";
+import { useInsisStore } from "../../../../inside/insis/useInsis";
+import { isInsisPreviewUser } from "../../../../inside/insis/preview";
+import { anySessionAwaiting, enterAssistantFolder, leaveAssistantFolder } from "../../../../inside/insis/assistant";
 
 const folderLabels: Record<string, TranslationKey> = {
     [FilterEnum.RoomsFilter]: "space_panel|inside_folder_groups",
@@ -64,12 +67,24 @@ export function InsideFolderTabs(): JSX.Element {
     );
     const unread = useInsideFolderUnread();
 
+    const insis = useInsisStore();
+    const showAssistant = isInsisPreviewUser();
+    const assistantActive = showAssistant && insis.isAssistantFolderActive;
+
     const folder = activeFilter !== undefined && INSIDE_FOLDERS.includes(activeFilter) ? activeFilter : undefined;
-    const selected = activeSpace === MetaSpace.Home ? (folder ?? "all") : undefined;
+    const selected = assistantActive ? "assistant" : activeSpace === MetaSpace.Home ? (folder ?? "all") : undefined;
 
     const select = (filter: FilterEnum | undefined): void => {
         sdkContext.spaceStore.setActiveSpace(MetaSpace.Home);
         InsideFolderStore.instance.setActiveFilter(filter);
+        leaveAssistantFolder();
+    };
+    // Inside: "Помощник" — the assistant's sessions instead of the room list; on a phone the list comes first.
+    const selectAssistant = (): void => {
+        if (sdkContext.spaceStore.activeSpace !== MetaSpace.Home) {
+            sdkContext.spaceStore.setActiveSpace(MetaSpace.Home, false);
+        }
+        enterAssistantFolder(getInsideLayout() !== "mobile");
     };
 
     // Keep the selected tab in view, as Telegram scrolls it to the middle.
@@ -88,6 +103,7 @@ export function InsideFolderTabs(): JSX.Element {
         label: string,
         state: NotificationState | undefined,
         onClick: () => void,
+        dot?: string,
     ): JSX.Element => (
         <button
             key={key}
@@ -101,12 +117,21 @@ export function InsideFolderTabs(): JSX.Element {
         >
             <span className="mx_InsideFolderTabs_label">{label}</span>
             <Count state={state} />
+            {dot && <span className="mx_InsideFolderTabs_dot" role="img" aria-label={dot} />}
         </button>
     );
 
     return (
         <div className="mx_InsideFolderTabs" role="tablist" aria-label={_t("room_list|inside_folders")} ref={listRef}>
             {tab("all", _t("room_list|inside_folder_all"), unread.all, () => select(undefined))}
+            {showAssistant &&
+                tab(
+                    "assistant",
+                    _t("insis_assistant|title"),
+                    undefined,
+                    selectAssistant,
+                    anySessionAwaiting(insis.assistantSessions) ? _t("insis_assistant|awaiting") : undefined,
+                )}
             {INSIDE_FOLDERS.map((filter) =>
                 tab(filter, _t(folderLabels[filter]), unread.folders.get(filter), () => select(filter)),
             )}

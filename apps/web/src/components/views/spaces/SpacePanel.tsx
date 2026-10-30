@@ -54,6 +54,10 @@ import {
 import { RovingTabIndexProvider } from "../../../accessibility/RovingTabIndex";
 import { FilterEnum } from "../../../stores/room-list-v3/skip-list/filters";
 import { useInsideFolderUnread } from "../../../stores/room-list-v3/InsideFolderUnread";
+import { useInsisStore } from "../../../inside/insis/useInsis";
+import { isInsisPreviewUser } from "../../../inside/insis/preview";
+import { anySessionAwaiting, enterAssistantFolder, leaveAssistantFolder } from "../../../inside/insis/assistant";
+import { getInsideLayout } from "../../../utils/InsideLayout";
 import {
     INSIDE_FOLDERS,
     InsideFolderStore,
@@ -189,6 +193,7 @@ const HomeButton: React.FC<MetaSpaceButtonProps> = ({ selected, isPanelCollapsed
                 // Inside: "All chats" also leaves any folder.
                 sdkContext.spaceStore.setActiveSpace(MetaSpace.Home);
                 InsideFolderStore.instance.setActiveFilter(undefined);
+                leaveAssistantFolder();
             }}
         />
     );
@@ -283,6 +288,58 @@ const insideFolderButtons: Record<string, { label: TranslationKey; icon: JSX.Ele
     [FilterEnum.FavouriteFilter]: { label: "space_panel|inside_folder_favourites", icon: <FavouriteSolidIcon /> },
 };
 
+/** The spark of the "Помощник" folder (the Lobby skin draws it from `--lobby-folder-icon` instead). */
+const SparkIcon: React.FC = () => (
+    <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={1.8}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+    >
+        <path d="M11 4l1.7 5a2 2 0 0 0 1.3 1.3l5 1.7-5 1.7a2 2 0 0 0-1.3 1.3L11 20l-1.7-5A2 2 0 0 0 8 13.7L3 12l5-1.7a2 2 0 0 0 1.3-1.3z" />
+        <path d="M19 2.5v4M17 4.5h4" />
+    </svg>
+);
+
+/**
+ * Inside: the "Помощник" folder right under "All chats" — the sessions of the INSIS Copilot in the room list column
+ * (ADR-069 Amendment 2026-10-30), with a red dot while a draft waits for confirmation. Only for the preview users
+ * until INSIS is connected.
+ */
+const InsideAssistantFolderButton: React.FC<{ isPanelCollapsed: boolean }> = ({ isPanelCollapsed }) => {
+    const sdkContext = useContext(SDKContext);
+    const store = useInsisStore();
+    const awaiting = anySessionAwaiting(store.assistantSessions);
+    return (
+        <MetaSpaceButton
+            className="mx_SpaceButton_insideFolder mx_SpaceButton_insideFolder_assistant"
+            selected={store.isAssistantFolderActive}
+            isPanelCollapsed={isPanelCollapsed}
+            label={_t("insis_assistant|title")}
+            size="32px"
+            icon={<SparkIcon />}
+            onClick={() => {
+                // No context switch: it would view the space's last room, and a room leaves the folder.
+                if (sdkContext.spaceStore.activeSpace !== MetaSpace.Home) {
+                    sdkContext.spaceStore.setActiveSpace(MetaSpace.Home, false);
+                }
+                enterAssistantFolder(getInsideLayout() !== "mobile");
+            }}
+        >
+            {awaiting && (
+                <span
+                    className="mx_SpaceButton_insideAssistantDot"
+                    role="img"
+                    aria-label={_t("insis_assistant|awaiting")}
+                />
+            )}
+        </MetaSpaceButton>
+    );
+};
+
 /**
  * Inside: folders under "All chats", as in other messengers — groups, colleagues, clients, VIP, favourites.
  * Each one shows all chats through a room list filter.
@@ -300,6 +357,7 @@ const InsideFolderButtons: React.FC<{ activeSpace: SpaceKey; isPanelCollapsed: b
 
     // The number of unread chats in each folder, as in other messengers.
     const unread = useInsideFolderUnread().folders;
+    const assistantActive = useInsisStore().isAssistantFolderActive;
 
     return (
         <>
@@ -310,7 +368,7 @@ const InsideFolderButtons: React.FC<{ activeSpace: SpaceKey; isPanelCollapsed: b
                     spaceKey={MetaSpace.Home}
                     notificationState={unread.get(filter)}
                     className={`mx_SpaceButton_insideFolder mx_SpaceButton_insideFolder_${filter}`}
-                    selected={activeSpace === MetaSpace.Home && activeFilter === filter}
+                    selected={activeSpace === MetaSpace.Home && activeFilter === filter && !assistantActive}
                     isPanelCollapsed={isPanelCollapsed}
                     label={_t(insideFolderButtons[filter].label)}
                     size="32px"
@@ -318,6 +376,7 @@ const InsideFolderButtons: React.FC<{ activeSpace: SpaceKey; isPanelCollapsed: b
                     onClick={() => {
                         sdkContext.spaceStore.setActiveSpace(MetaSpace.Home);
                         InsideFolderStore.instance.setActiveFilter(filter);
+                        leaveAssistantFolder();
                     }}
                 />
             ))}
@@ -354,10 +413,14 @@ const InnerSpacePanel = React.memo<IInnerSpacePanelProps>(
             InsideFolderStoreEvent.Changed,
             () => InsideFolderStore.instance.activeFilter,
         );
-        const isFolderActive = activeFilter !== undefined && INSIDE_FOLDERS.includes(activeFilter);
+        const assistantActive = useInsisStore().isAssistantFolderActive;
+        const isFolderActive = (activeFilter !== undefined && INSIDE_FOLDERS.includes(activeFilter)) || assistantActive;
         // Inside: another space leaves the folder.
         useEffect(() => {
-            if (activeSpace !== MetaSpace.Home) InsideFolderStore.instance.setActiveFilter(undefined);
+            if (activeSpace !== MetaSpace.Home) {
+                InsideFolderStore.instance.setActiveFilter(undefined);
+                leaveAssistantFolder();
+            }
         }, [activeSpace]);
 
         const metaSpacesSection = metaSpaces
@@ -368,6 +431,9 @@ const InnerSpacePanel = React.memo<IInnerSpacePanelProps>(
                 return (
                     <React.Fragment key={key}>
                         <Component selected={selected} isPanelCollapsed={isPanelCollapsed} />
+                        {key === MetaSpace.Home && isInsisPreviewUser() && (
+                            <InsideAssistantFolderButton isPanelCollapsed={isPanelCollapsed} />
+                        )}
                         {key === MetaSpace.Home && (
                             <InsideFolderButtons activeSpace={activeSpace} isPanelCollapsed={isPanelCollapsed} />
                         )}
