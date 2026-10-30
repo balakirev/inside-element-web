@@ -94,10 +94,13 @@ export class InsisPreviewStore extends TypedEventEmitter<InsisStoreEvent, Handle
     }
 
     private onAction = (payload: ActionPayload): void => {
-        if (payload.action === Action.ViewRoom && this.target) {
-            this.target = null;
-            this.changed();
-        }
+        if (payload.action !== Action.ViewRoom) return;
+        // A room picked by the user also leaves the "Помощник" folder; a room restored by a space switch does not.
+        const leaveFolder = this.assistantFolder && !payload.context_switch;
+        if (!this.target && !leaveFolder) return;
+        this.target = null;
+        if (leaveFolder) this.assistantFolder = false;
+        this.changed();
     };
 
     private changed(): void {

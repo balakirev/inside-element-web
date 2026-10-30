@@ -23,6 +23,8 @@ import { FilterEnum } from "../../../../stores/room-list-v3/skip-list/filters";
 import { StaticNotificationState } from "../../../../stores/notifications/StaticNotificationState";
 import { NotificationLevel } from "../../../../stores/notifications/NotificationLevel";
 import { type RoomNotificationState } from "../../../../stores/notifications/RoomNotificationState";
+import { isInsisPreviewUser } from "../../../../inside/insis/preview";
+import { InsisPreviewStore } from "../../../../inside/insis/InsisPreviewStore";
 
 // The folders ask the room list store which rooms they hold; the real store would start syncing.
 vi.mock("../../../../stores/room-list-v3/RoomListStoreV3", async () => {
@@ -30,6 +32,9 @@ vi.mock("../../../../stores/room-list-v3/RoomListStoreV3", async () => {
     const instance = Object.assign(new EventEmitter(), { roomMatchesFilter: vi.fn().mockReturnValue(false) });
     return { default: { instance }, RoomListStoreV3Event: { ListsUpdate: "lists_update" } };
 });
+
+// The "Помощник" tab is for the INSIS preview users only.
+vi.mock("../../../../inside/insis/preview", () => ({ isInsisPreviewUser: vi.fn().mockReturnValue(false) }));
 
 describe("<InsideFolderTabs />", () => {
     const client = createTestClient();
@@ -96,5 +101,25 @@ describe("<InsideFolderTabs />", () => {
         expect(screen.getByRole("tab", { name: "All 2" })).toBeInTheDocument();
         expect(screen.getByRole("tab", { name: "Colleagues 2" })).toBeInTheDocument();
         expect(screen.getByRole("tab", { name: "Clients" })).toBeInTheDocument();
+    });
+
+    it("for preview users: a Помощник tab after All, with a dot while a draft waits; picking a folder leaves it", async () => {
+        vi.mocked(isInsisPreviewUser).mockReturnValue(true);
+        InsisPreviewStore.resetInstance();
+        renderComponent();
+        const tabs = screen.getAllByRole("tab");
+        expect(tabs[1]).toHaveTextContent("Assistant");
+        expect(screen.getByRole("img", { name: "Awaiting confirmation" })).toBeInTheDocument();
+
+        await userEvent.click(screen.getByRole("tab", { name: /Assistant/ }));
+        expect(InsisPreviewStore.instance.isAssistantFolderActive).toBe(true);
+        expect(screen.getByRole("tab", { name: /Assistant/ })).toHaveAttribute("aria-selected", "true");
+        expect(screen.getByRole("tab", { name: "All" })).toHaveAttribute("aria-selected", "false");
+
+        await userEvent.click(screen.getByRole("tab", { name: "Groups" }));
+        expect(InsisPreviewStore.instance.isAssistantFolderActive).toBe(false);
+        expect(InsisPreviewStore.instance.openTarget).toBeNull();
+        vi.mocked(isInsisPreviewUser).mockReturnValue(false);
+        InsisPreviewStore.resetInstance();
     });
 });

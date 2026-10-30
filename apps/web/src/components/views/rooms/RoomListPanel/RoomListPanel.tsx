@@ -5,7 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only OR GPL-3.0-only OR LicenseRef-Element-Com
 Please see LICENSE files in the repository root for full details.
 */
 
-import React, { useState, useCallback, useContext } from "react";
+import React, { useState, useCallback, useContext, useEffect } from "react";
 import { Flex, RoomListHeaderView, useCreateAutoDisposedViewModel } from "@element-hq/web-shared-components";
 
 import { shouldShowComponent } from "../../../../customisations/helpers/UIComponents";
@@ -25,6 +25,14 @@ import { type IState as IRovingTabIndexState } from "../../../../accessibility/R
 import { RoomListHeaderViewModel } from "../../../../viewmodels/room-list/RoomListHeaderViewModel";
 import { useMatrixClientContext } from "../../../../contexts/MatrixClientContext";
 import { SDKContext } from "../../../../contexts/SDKContext.ts";
+import { useInsisStore } from "../../../../inside/insis/useInsis";
+import { isInsisPreviewUser } from "../../../../inside/insis/preview";
+import { leaveAssistantFolder } from "../../../../inside/insis/assistant";
+import {
+    AssistantSessionList,
+    AssistantSessionSearch,
+} from "../../../../inside/insis/views/assistant/AssistantSessionList";
+import { InsideFolderStore, InsideFolderStoreEvent } from "../../../../stores/room-list-v3/InsideFolderStore";
 
 type RoomListPanelProps = {
     /**
@@ -68,6 +76,18 @@ export const RoomListPanel: React.FC<RoomListPanelProps> = ({ activeSpace }) => 
 
     const narrow = useInsideLayout() !== "desktop";
 
+    // Inside: the "Помощник" folder replaces the room list with the assistant's sessions; picking any other folder
+    // leaves it.
+    const insis = useInsisStore();
+    const assistant = insis.isAssistantFolderActive && isInsisPreviewUser();
+    useEffect(() => {
+        const onFolder = (): void => leaveAssistantFolder();
+        InsideFolderStore.instance.on(InsideFolderStoreEvent.Changed, onFolder);
+        return () => {
+            InsideFolderStore.instance.off(InsideFolderStoreEvent.Changed, onFolder);
+        };
+    }, []);
+
     const matrixClient = useMatrixClientContext();
     const vm = useCreateAutoDisposedViewModel(
         () => new RoomListHeaderViewModel({ matrixClient, spaceStore: sdkContext.spaceStore }),
@@ -90,11 +110,26 @@ export const RoomListPanel: React.FC<RoomListPanelProps> = ({ activeSpace }) => 
                 <>
                     <div className="mx_RoomListPanel_inside_topBar">
                         <InsideMainMenu />
-                        {displayRoomSearch && <RoomListSearch activeSpace={activeSpace} />}
+                        {assistant ? (
+                            <AssistantSessionSearch />
+                        ) : (
+                            displayRoomSearch && <RoomListSearch activeSpace={activeSpace} />
+                        )}
                     </div>
                     <InsideFolderTabs />
-                    <RoomListView />
-                    <InsideComposeFab />
+                    {assistant ? (
+                        <AssistantSessionList narrow />
+                    ) : (
+                        <>
+                            <RoomListView />
+                            <InsideComposeFab />
+                        </>
+                    )}
+                </>
+            ) : assistant ? (
+                <>
+                    <AssistantSessionList />
+                    <RoomListBottomBar />
                 </>
             ) : (
                 <>

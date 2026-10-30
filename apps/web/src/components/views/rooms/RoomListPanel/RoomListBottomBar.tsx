@@ -16,6 +16,7 @@ import { useDispatcher } from "../../../../hooks/useDispatcher";
 import { SDKContext } from "../../../../contexts/SDKContext.ts";
 import { MetaSpace } from "../../../../stores/spaces";
 import { OwnAvatarButton } from "./OwnAvatarButton";
+import { leaveAssistantFolder } from "../../../../inside/insis/assistant";
 
 /**
  * Inside: the bar at the bottom of the room list, as in other messengers — contacts, chats and the
@@ -42,7 +43,11 @@ export function RoomListBottomBar(): JSX.Element {
                 className="mx_RoomListBottomBar_button mx_RoomListBottomBar_button_active"
                 title={_t("room_list|chats")}
                 aria-current="page"
-                onClick={() => sdkContext.spaceStore.setActiveSpace(MetaSpace.Home)}
+                onClick={() => {
+                    sdkContext.spaceStore.setActiveSpace(MetaSpace.Home);
+                    // Inside: "Chats" also leaves the "Помощник" folder.
+                    leaveAssistantFolder();
+                }}
             >
                 <ChatSolidIcon />
             </AccessibleButton>
