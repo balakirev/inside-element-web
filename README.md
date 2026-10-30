@@ -1,3 +1,7 @@
+> **Moved 30.10.2026.** This fork now lives in the INSIS monorepo at `apps/lobby-web/` and is built into
+> `ghcr.io/balakirev/lobby-web`. This repository is a read-only archive and stays public: it holds the source of the
+> releases up to `inside-v1.12.32-36`. Newer builds serve their own source at `/inside-source.tar.gz`.
+
 [![Chat](https://img.shields.io/matrix/element-web:matrix.org?logo=matrix)](https://matrix.to/#/#element-web:matrix.org)
 ![Tests](https://github.com/element-hq/element-web/actions/workflows/tests.yaml/badge.svg)
 ![Static Analysis](https://github.com/element-hq/element-web/actions/workflows/static_analysis.yaml/badge.svg)
