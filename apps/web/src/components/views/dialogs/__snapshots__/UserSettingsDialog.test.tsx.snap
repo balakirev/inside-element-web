@@ -6,7 +6,7 @@ NodeList [
     aria-controls="mx_tabpanel_USER_ACCOUNT_TAB"
     aria-labelledby="mx_tabpanel_USER_ACCOUNT_TAB_label"
     aria-selected="true"
-    class="mx_AccessibleButton mx_TabbedView_tabLabel mx_TabbedView_tabLabel_active"
+    class="mx_AccessibleButton mx_TabbedView_tabLabel mx_UserSettingsDialog_groupFirst mx_TabbedView_tabLabel_active"
     data-testid="settings-tab-USER_ACCOUNT_TAB"
     role="tab"
     tabindex="0"
@@ -39,7 +39,7 @@ NodeList [
     aria-controls="mx_tabpanel_USER_SESSION_MANAGER_TAB"
     aria-labelledby="mx_tabpanel_USER_SESSION_MANAGER_TAB_label"
     aria-selected="false"
-    class="mx_AccessibleButton mx_TabbedView_tabLabel"
+    class="mx_AccessibleButton mx_TabbedView_tabLabel mx_UserSettingsDialog_groupLast"
     data-testid="settings-tab-USER_SESSION_MANAGER_TAB"
     role="tab"
     tabindex="-1"
@@ -60,6 +60,33 @@ NodeList [
       id="mx_tabpanel_USER_SESSION_MANAGER_TAB_label"
     >
       Devices
+    </span>
+  </li>,
+  <li
+    aria-controls="mx_tabpanel_USER_NOTIFICATIONS_TAB"
+    aria-labelledby="mx_tabpanel_USER_NOTIFICATIONS_TAB_label"
+    aria-selected="false"
+    class="mx_AccessibleButton mx_TabbedView_tabLabel mx_UserSettingsDialog_groupFirst"
+    data-testid="settings-tab-USER_NOTIFICATIONS_TAB"
+    role="tab"
+    tabindex="-1"
+  >
+    <svg
+      fill="currentColor"
+      height="1em"
+      viewBox="0 0 24 24"
+      width="1em"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M12 3c7 0 7 7 7 7v6l1.293 1.293c.63.63.184 1.707-.707 1.707H4.414c-.89 0-1.337-1.077-.707-1.707L5 16v-6s0-7 7-7m5 7.01v-.022l-.009-.146a7 7 0 0 0-.073-.607 6.6 6.6 0 0 0-.582-1.84c-.319-.638-.766-1.215-1.398-1.637C14.318 5.344 13.4 5 12 5s-2.317.344-2.937.758c-.633.422-1.08.999-1.4 1.636a6.6 6.6 0 0 0-.58 1.841A7 7 0 0 0 7 9.988v6.84L6.828 17h10.344L17 16.828zM12 22a2 2 0 0 1-2-2h4a2 2 0 0 1-2 2"
+      />
+    </svg>
+    <span
+      class="mx_TabbedView_tabLabel_text"
+      id="mx_tabpanel_USER_NOTIFICATIONS_TAB_label"
+    >
+      Notifications
     </span>
   </li>,
   <li
@@ -90,33 +117,6 @@ NodeList [
     </span>
   </li>,
   <li
-    aria-controls="mx_tabpanel_USER_NOTIFICATIONS_TAB"
-    aria-labelledby="mx_tabpanel_USER_NOTIFICATIONS_TAB_label"
-    aria-selected="false"
-    class="mx_AccessibleButton mx_TabbedView_tabLabel"
-    data-testid="settings-tab-USER_NOTIFICATIONS_TAB"
-    role="tab"
-    tabindex="-1"
-  >
-    <svg
-      fill="currentColor"
-      height="1em"
-      viewBox="0 0 24 24"
-      width="1em"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        d="M12 3c7 0 7 7 7 7v6l1.293 1.293c.63.63.184 1.707-.707 1.707H4.414c-.89 0-1.337-1.077-.707-1.707L5 16v-6s0-7 7-7m5 7.01v-.022l-.009-.146a7 7 0 0 0-.073-.607 6.6 6.6 0 0 0-.582-1.84c-.319-.638-.766-1.215-1.398-1.637C14.318 5.344 13.4 5 12 5s-2.317.344-2.937.758c-.633.422-1.08.999-1.4 1.636a6.6 6.6 0 0 0-.58 1.841A7 7 0 0 0 7 9.988v6.84L6.828 17h10.344L17 16.828zM12 22a2 2 0 0 1-2-2h4a2 2 0 0 1-2 2"
-      />
-    </svg>
-    <span
-      class="mx_TabbedView_tabLabel_text"
-      id="mx_tabpanel_USER_NOTIFICATIONS_TAB_label"
-    >
-      Notifications
-    </span>
-  </li>,
-  <li
     aria-controls="mx_tabpanel_USER_PREFERENCES_TAB"
     aria-labelledby="mx_tabpanel_USER_PREFERENCES_TAB_label"
     aria-selected="false"
@@ -143,67 +143,6 @@ NodeList [
       id="mx_tabpanel_USER_PREFERENCES_TAB_label"
     >
       Preferences
-    </span>
-  </li>,
-  <li
-    aria-controls="mx_tabpanel_USER_KEYBOARD_TAB"
-    aria-labelledby="mx_tabpanel_USER_KEYBOARD_TAB_label"
-    aria-selected="false"
-    class="mx_AccessibleButton mx_TabbedView_tabLabel"
-    data-testid="settings-tab-USER_KEYBOARD_TAB"
-    role="tab"
-    tabindex="-1"
-  >
-    <svg
-      fill="currentColor"
-      height="1em"
-      viewBox="0 0 24 24"
-      width="1em"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        d="M5.188 8v2h2V8zm3.875 0v2h2V8zm3.875 0v2h2V8zm3.875 0v2h2V8zM5.188 11.531v2h2v-2zm3.875 0v2h2v-2zm3.875 0v2h2v-2zm3.875 0v2h2v-2zM9 15a1 1 0 1 0 0 2h6a1 1 0 1 0 0-2z"
-      />
-      <path
-        clip-rule="evenodd"
-        d="M2 6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2zm2 0h16v12H4z"
-        fill-rule="evenodd"
-      />
-    </svg>
-    <span
-      class="mx_TabbedView_tabLabel_text"
-      id="mx_tabpanel_USER_KEYBOARD_TAB_label"
-    >
-      Keyboard
-    </span>
-  </li>,
-  <li
-    aria-controls="mx_tabpanel_USER_SIDEBAR_TAB"
-    aria-labelledby="mx_tabpanel_USER_SIDEBAR_TAB_label"
-    aria-selected="false"
-    class="mx_AccessibleButton mx_TabbedView_tabLabel"
-    data-testid="settings-tab-USER_SIDEBAR_TAB"
-    role="tab"
-    tabindex="-1"
-  >
-    <svg
-      fill="currentColor"
-      height="1em"
-      viewBox="0 0 24 24"
-      width="1em"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        clip-rule="evenodd"
-        d="M18 3a4 4 0 0 1 4 4v10a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V7a4 4 0 0 1 4-4zm-8 2h8a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-8zM8 19H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2z"
-        fill-rule="evenodd"
-      />
-    </svg>
-    <span
-      class="mx_TabbedView_tabLabel_text"
-      id="mx_tabpanel_USER_SIDEBAR_TAB_label"
-    >
-      Sidebar
     </span>
   </li>,
   <li
@@ -237,7 +176,7 @@ NodeList [
     aria-controls="mx_tabpanel_USER_ENCRYPTION_TAB"
     aria-labelledby="mx_tabpanel_USER_ENCRYPTION_TAB_label"
     aria-selected="false"
-    class="mx_AccessibleButton mx_TabbedView_tabLabel"
+    class="mx_AccessibleButton mx_TabbedView_tabLabel mx_UserSettingsDialog_groupLast"
     data-testid="settings-tab-USER_ENCRYPTION_TAB"
     role="tab"
     tabindex="-1"
@@ -258,6 +197,76 @@ NodeList [
       id="mx_tabpanel_USER_ENCRYPTION_TAB_label"
     >
       Encryption
+    </span>
+  </li>,
+  <li
+    aria-controls="mx_tabpanel_USER_KEYBOARD_TAB"
+    aria-labelledby="mx_tabpanel_USER_KEYBOARD_TAB_label"
+    aria-selected="false"
+    class="mx_AccessibleButton mx_TabbedView_tabLabel mx_UserSettingsDialog_groupFirst"
+    data-testid="settings-tab-USER_KEYBOARD_TAB"
+    role="tab"
+    tabindex="-1"
+  >
+    <svg
+      fill="currentColor"
+      height="1em"
+      viewBox="0 0 24 24"
+      width="1em"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M5.188 8v2h2V8zm3.875 0v2h2V8zm3.875 0v2h2V8zm3.875 0v2h2V8zM5.188 11.531v2h2v-2zm3.875 0v2h2v-2zm3.875 0v2h2v-2zm3.875 0v2h2v-2zM9 15a1 1 0 1 0 0 2h6a1 1 0 1 0 0-2z"
+      />
+      <path
+        clip-rule="evenodd"
+        d="M2 6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2zm2 0h16v12H4z"
+        fill-rule="evenodd"
+      />
+    </svg>
+    <span
+      class="mx_TabbedView_tabLabel_text"
+      id="mx_tabpanel_USER_KEYBOARD_TAB_label"
+    >
+      Keyboard
+      <span
+        class="mx_TabbedView_tabLabel_suffix"
+      >
+        <span
+          class="mx_UserSettingsDialog_shortcut"
+        >
+          Ctrl /
+        </span>
+      </span>
+    </span>
+  </li>,
+  <li
+    aria-controls="mx_tabpanel_USER_SIDEBAR_TAB"
+    aria-labelledby="mx_tabpanel_USER_SIDEBAR_TAB_label"
+    aria-selected="false"
+    class="mx_AccessibleButton mx_TabbedView_tabLabel"
+    data-testid="settings-tab-USER_SIDEBAR_TAB"
+    role="tab"
+    tabindex="-1"
+  >
+    <svg
+      fill="currentColor"
+      height="1em"
+      viewBox="0 0 24 24"
+      width="1em"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        clip-rule="evenodd"
+        d="M18 3a4 4 0 0 1 4 4v10a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V7a4 4 0 0 1 4-4zm-8 2h8a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-8zM8 19H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2z"
+        fill-rule="evenodd"
+      />
+    </svg>
+    <span
+      class="mx_TabbedView_tabLabel_text"
+      id="mx_tabpanel_USER_SIDEBAR_TAB_label"
+    >
+      Sidebar
     </span>
   </li>,
   <li
@@ -299,7 +308,7 @@ NodeList [
     aria-controls="mx_tabpanel_USER_HELP_TAB"
     aria-labelledby="mx_tabpanel_USER_HELP_TAB_label"
     aria-selected="false"
-    class="mx_AccessibleButton mx_TabbedView_tabLabel"
+    class="mx_AccessibleButton mx_TabbedView_tabLabel mx_UserSettingsDialog_groupLast"
     data-testid="settings-tab-USER_HELP_TAB"
     role="tab"
     tabindex="-1"

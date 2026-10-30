@@ -55,6 +55,7 @@ import AutoDiscoveryUtils from "../../utils/AutoDiscoveryUtils";
 import { calculateRoomVia, makeRoomPermalink } from "../../utils/permalinks/Permalinks";
 import ThemeWatcher, { ThemeWatcherEvent } from "../../settings/watchers/ThemeWatcher";
 import { FontWatcher } from "../../settings/watchers/FontWatcher";
+import { InsideWallpaperWatcher } from "../../settings/watchers/InsideWallpaperWatcher";
 import { storeRoomAliasInCache } from "../../RoomAliasCache";
 import ToastStore from "../../stores/ToastStore";
 import * as StorageManager from "../../utils/StorageManager";
@@ -233,6 +234,7 @@ export default class MatrixChat extends React.PureComponent<IProps, IState> {
     private dispatcherRef?: string;
     private themeWatcher?: ThemeWatcher;
     private fontWatcher?: FontWatcher;
+    private insideWallpaperWatcher?: InsideWallpaperWatcher;
     private readonly stores: SDKContextClass;
     private loadSessionAbortController = new AbortController();
 
@@ -483,6 +485,8 @@ export default class MatrixChat extends React.PureComponent<IProps, IState> {
         this.themeWatcher.start();
         this.themeWatcher.on(ThemeWatcherEvent.Change, setTheme);
         void this.fontWatcher.start();
+        this.insideWallpaperWatcher = new InsideWallpaperWatcher();
+        this.insideWallpaperWatcher.start();
 
         void initSentry(SdkConfig.get("sentry"));
         window.addEventListener("resize", this.onWindowResized);
@@ -525,6 +529,7 @@ export default class MatrixChat extends React.PureComponent<IProps, IState> {
         this.themeWatcher?.off(ThemeWatcherEvent.Change, setTheme);
         this.themeWatcher?.stop();
         this.fontWatcher?.stop();
+        this.insideWallpaperWatcher?.stop();
         UIStore.destroy();
         this.stores.resizeNotifier.removeListener("middlePanelResized", this.dispatchTimelineResize);
         window.removeEventListener("resize", this.onWindowResized);

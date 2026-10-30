@@ -31,6 +31,7 @@ import UserSettingsDialog from "./UserSettingsDialog";
 import { UIFeature } from "../../../settings/UIFeature";
 import { SettingLevel } from "../../../settings/SettingLevel";
 import { type FeatureSettingKey } from "../../../settings/Settings.tsx";
+import UIStore from "../../../stores/UIStore";
 
 mockPlatformPeg({
     supportsSpellCheckSettings: vi.fn().mockReturnValue(false),
@@ -80,6 +81,7 @@ describe("<UserSettingsDialog />", () => {
             getMediaConfig: vi.fn(),
             getAuthMetadata: vi.fn().mockResolvedValue(makeDelegatedAuthMetadata()),
             getSyncState: vi.fn().mockReturnValue("SYNCING"),
+            getDevices: vi.fn().mockResolvedValue({ devices: [] }),
         });
         sdkContext = new TestSDKContext();
         sdkContext._client = mockClient;
@@ -172,7 +174,8 @@ describe("<UserSettingsDialog />", () => {
     it("renders with keyboard tab selected", () => {
         const { container } = render(getComponent({ initialTabId: UserTab.Keyboard }));
 
-        expect(getActiveTabLabel(container)).toEqual("Keyboard");
+        // Inside: the label ends with the shortcut that opens this tab.
+        expect(getActiveTabLabel(container)).toEqual("KeyboardCtrl /");
         expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Settings: Keyboard");
     });
 
@@ -291,6 +294,99 @@ describe("<UserSettingsDialog />", () => {
 
         await waitFor(() => {
             expect(container.querySelector(".mx_SettingsDialog_tabLabelsAlert")).not.toBeInTheDocument();
+        });
+    });
+    describe("Inside", () => {
+        const labelIds = (container: Element): (string | null)[] =>
+            [...container.querySelectorAll(".mx_TabbedView_tabLabel")].map((l) => l.getAttribute("data-testid"));
+
+        it("orders the sections in groups and marks the ends of each group", () => {
+            SdkConfig.add({ show_labs_settings: true });
+            const { container } = render(getComponent());
+            expect(labelIds(container)).toEqual([
+                `settings-tab-${UserTab.Account}`,
+                `settings-tab-${UserTab.SessionManager}`,
+                `settings-tab-${UserTab.Notifications}`,
+                `settings-tab-${UserTab.Appearance}`,
+                `settings-tab-${UserTab.Preferences}`,
+                `settings-tab-${UserTab.Security}`,
+                `settings-tab-${UserTab.Encryption}`,
+                `settings-tab-${UserTab.Keyboard}`,
+                `settings-tab-${UserTab.Sidebar}`,
+                `settings-tab-${UserTab.Labs}`,
+                `settings-tab-${UserTab.Help}`,
+            ]);
+            const marked = (cls: string): (string | null)[] =>
+                [...container.querySelectorAll(`.${cls}`)].map((l) => l.getAttribute("data-testid"));
+            expect(marked("mx_UserSettingsDialog_groupFirst")).toEqual([
+                `settings-tab-${UserTab.Account}`,
+                `settings-tab-${UserTab.Notifications}`,
+                `settings-tab-${UserTab.Keyboard}`,
+            ]);
+            expect(marked("mx_UserSettingsDialog_groupLast")).toEqual([
+                `settings-tab-${UserTab.SessionManager}`,
+                `settings-tab-${UserTab.Encryption}`,
+                `settings-tab-${UserTab.Help}`,
+            ]);
+        });
+
+        it("shows the number of sessions next to Devices and the shortcut next to Keyboard", async () => {
+            mockClient.getDevices.mockResolvedValue({
+                devices: [{ device_id: "A" }, { device_id: "B" }, { device_id: "C" }],
+            });
+            const { getByTestId } = render(getComponent());
+            await waitFor(() =>
+                expect(getByTestId(`settings-tab-${UserTab.SessionManager}`)).toHaveTextContent("Devices3"),
+            );
+            expect(
+                getByTestId(`settings-tab-${UserTab.Keyboard}`).querySelector(".mx_UserSettingsDialog_shortcut"),
+            ).toHaveTextContent("/");
+        });
+
+        it("filters the sections by name and keeps the open section", () => {
+            const { container, getByRole } = render(getComponent({ initialTabId: UserTab.Help }));
+            const search = getByRole("searchbox", { name: "Search settings" });
+
+            fireEvent.change(search, { target: { value: "secur" } });
+            expect(labelIds(container)).toEqual([`settings-tab-${UserTab.Security}`]);
+            expect(container.querySelector(".mx_UserSettingsDialog_profile")).toBeNull();
+            expect(container.querySelector(`#mx_tabpanel_${UserTab.Help}`)).toBeInTheDocument();
+            expect(container.querySelector(".mx_UserSettingsDialog_groupFirst.mx_UserSettingsDialog_groupLast")).toBe(
+                container.querySelector(`[data-testid="settings-tab-${UserTab.Security}"]`),
+            );
+
+            fireEvent.change(search, { target: { value: "zzz" } });
+            expect(labelIds(container)).toEqual([]);
+            expect(screen.getByText("Nothing found")).toBeInTheDocument();
+
+            fireEvent.keyDown(search, { key: "Escape" });
+            expect(labelIds(container)).toHaveLength(10);
+            expect(defaultProps.onFinished).not.toHaveBeenCalled();
+        });
+
+        it("in a narrow window starts on the list and goes back to it", () => {
+            const width = UIStore.instance.windowWidth;
+            UIStore.instance.windowWidth = 390;
+            try {
+                const { container, getByTestId, getByLabelText } = render(getComponent());
+                const dialog = container.ownerDocument.querySelector(".mx_UserSettingsDialog")!;
+                expect(dialog).toHaveClass(
+                    "mx_UserSettingsDialog_inside_oneColumn",
+                    "mx_UserSettingsDialog_inside_list",
+                );
+
+                fireEvent.click(getByTestId(`settings-tab-${UserTab.Appearance}`));
+                expect(dialog).not.toHaveClass("mx_UserSettingsDialog_inside_list");
+
+                fireEvent.click(getByLabelText("Close dialog"));
+                expect(dialog).toHaveClass("mx_UserSettingsDialog_inside_list");
+                expect(defaultProps.onFinished).not.toHaveBeenCalled();
+
+                fireEvent.click(getByLabelText("Close dialog"));
+                expect(defaultProps.onFinished).toHaveBeenCalled();
+            } finally {
+                UIStore.instance.windowWidth = width;
+            }
         });
     });
 });
