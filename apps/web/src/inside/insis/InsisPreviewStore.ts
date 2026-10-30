@@ -155,6 +155,31 @@ export class InsisPreviewStore extends TypedEventEmitter<InsisStoreEvent, Handle
         this.changed();
     }
 
+    /**
+     * "Спросить помощника" from a client's lead card: open the assistant folder on the client's session — the latest
+     * one about this client, or a new empty one with the client in its context.
+     */
+    public openAssistantForClient(conversationId: string, now = Date.now()): AssistantSession {
+        const conversation = this.getConversation(conversationId);
+        let session = this.sessions.find((s) => s.clientConversationId === conversationId);
+        if (!session) {
+            session = {
+                id: `client-${conversationId}-${now}`,
+                title: conversation ? `Что по клиенту: ${conversation.displayName}` : "Что по клиенту",
+                context: conversation?.displayName ?? "",
+                clientConversationId: conversationId,
+                preview: "",
+                lastActivityTs: now,
+                messages: [],
+            };
+            this.sessions = [session, ...this.sessions];
+        }
+        this.assistantFolder = true;
+        this.target = { kind: "assistant", id: session.id };
+        this.changed();
+        return session;
+    }
+
     public deleteSession(id: string): void {
         this.sessions = this.sessions.filter((s) => s.id !== id);
         if (this.target?.kind === "assistant" && this.target.id === id) this.target = null;
