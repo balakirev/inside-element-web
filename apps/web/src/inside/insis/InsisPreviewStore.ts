@@ -10,8 +10,22 @@ import { TypedEventEmitter } from "matrix-js-sdk/src/matrix";
 import dis from "../../dispatcher/dispatcher";
 import { Action } from "../../dispatcher/actions";
 import type { ActionPayload } from "../../dispatcher/payloads";
-import type { AssistantSession, ClientConversation, LeadCard } from "./model";
-import { makeClientConversations, makeLeadCards } from "./fixtures-clients";
+import type {
+    AssistantSession,
+    ClientConversation,
+    ClientTemplate,
+    ClientTimelineItem,
+    DeliveryState,
+    LeadCard,
+    WaitingQueue,
+} from "./model";
+import {
+    makeClientConversations,
+    makeClientTemplates,
+    makeLeadCards,
+    makeQueuedConversations,
+    makeWaitingQueue,
+} from "./fixtures-clients";
 import { makeAssistantSessions } from "./fixtures-assistant";
 
 export enum InsisStoreEvent {
@@ -56,16 +70,25 @@ export class InsisPreviewStore extends TypedEventEmitter<InsisStoreEvent, Handle
     /** Bumped on every change, so hooks can use it as a snapshot. */
     private revision = 0;
     private readonly dispatcherRef: string;
+    private queuedConversations: ClientConversation[];
+    private queue: WaitingQueue;
+    private readonly templates: ClientTemplate[];
+    private readonly timers = new Set<ReturnType<typeof setTimeout>>();
 
     public constructor(now = Date.now()) {
         super();
         this.conversations = makeClientConversations(now);
         this.leadCards = makeLeadCards(now);
+        this.queuedConversations = makeQueuedConversations(now);
+        this.queue = makeWaitingQueue(now);
+        this.templates = makeClientTemplates();
         this.sessions = makeAssistantSessions(now);
         this.dispatcherRef = dis.register(this.onAction);
     }
 
     public dispose(): void {
+        for (const timer of this.timers) clearTimeout(timer);
+        this.timers.clear();
         dis.unregister(this.dispatcherRef);
         this.removeAllListeners();
     }
@@ -133,6 +156,107 @@ export class InsisPreviewStore extends TypedEventEmitter<InsisStoreEvent, Handle
         this.conversations = this.conversations.map((c) => (c.id === id && c.unread ? { ...c, unread: 0 } : c));
     }
 
+    /** "Ждут приёма · N": leads assigned to the viewer and not accepted yet — only their number and age. */
+    public get waitingQueue(): WaitingQueue {
+        return this.queue;
+    }
+
+    /** Approved templates of the channel, for sending outside the service window. */
+    public get clientTemplates(): readonly ClientTemplate[] {
+        return this.templates;
+    }
+
+    /**
+     * "Принять следующий" (iter-58 `accept-next`): the next lead of the queue becomes the viewer's conversation and
+     * opens. Returns the conversation, or undefined when the queue is empty.
+     */
+    public acceptNext(now = Date.now()): ClientConversation | undefined {
+        if (this.queue.count <= 0) return undefined;
+        const [next, ...rest] = this.queuedConversations;
+        const count = this.queue.count - 1;
+        this.queue = { count, oldestSince: count > 0 ? this.queue.oldestSince : undefined };
+        this.queuedConversations = rest;
+        if (!next) {
+            this.changed();
+            return undefined;
+        }
+        const accepted: ClientConversation = {
+            ...next,
+            queue: "accepted",
+            lastActivityTs: Math.min(next.lastActivityTs, now),
+        };
+        this.conversations = [accepted, ...this.conversations.filter((c) => c.id !== accepted.id)];
+        this.target = { kind: "client", id: accepted.id };
+        this.markRead(accepted.id);
+        this.changed();
+        return accepted;
+    }
+
+    /** "Принять" on a lead assigned to the viewer. */
+    public acceptConversation(id: string): void {
+        this.updateConversation(id, (c) => ({ ...c, queue: "accepted" }));
+    }
+
+    /** "Вернуть в очередь": the conversation leaves the viewer's list and the queue grows by one. */
+    public returnToQueue(id: string, now = Date.now()): void {
+        const conversation = this.getConversation(id);
+        if (!conversation) return;
+        this.conversations = this.conversations.filter((c) => c.id !== id);
+        this.queuedConversations = [{ ...conversation, queue: undefined }, ...this.queuedConversations];
+        this.queue = { count: this.queue.count + 1, oldestSince: Math.min(this.queue.oldestSince ?? now, now) };
+        if (this.target?.kind === "client" && this.target.id === id) this.target = null;
+        this.changed();
+    }
+
+    /**
+     * Send a message to the client — locally only on test data: it is appended with "sending" and goes on to "sent"
+     * and "delivered", as `comm` statuses would come.
+     */
+    public sendClientMessage(
+        conversationId: string,
+        text: string,
+        options: { templateName?: string } = {},
+        now = Date.now(),
+    ): string | undefined {
+        const body = text.trim();
+        if (!body || !this.getConversation(conversationId)) return undefined;
+        const id = `local-${now}-${Math.random().toString(36).slice(2, 8)}`;
+        const item: ClientTimelineItem = {
+            kind: "message",
+            id,
+            ts: now,
+            author: { kind: "me" },
+            text: body,
+            delivery: "sending",
+            templateName: options.templateName,
+        };
+        this.updateConversation(conversationId, (c) => ({
+            ...c,
+            timeline: [...c.timeline, item],
+            lastActivityTs: Math.max(c.lastActivityTs, now),
+        }));
+        this.later(600, () => this.setDelivery(conversationId, id, "sent"));
+        this.later(1800, () => this.setDelivery(conversationId, id, "delivered"));
+        return id;
+    }
+
+    private setDelivery(conversationId: string, messageId: string, delivery: DeliveryState): void {
+        this.updateConversation(conversationId, (c) => ({
+            ...c,
+            timeline: c.timeline.map((item) =>
+                item.kind === "message" && item.id === messageId ? { ...item, delivery } : item,
+            ),
+        }));
+    }
+
+    private later(ms: number, fn: () => void): void {
+        const timer = setTimeout(() => {
+            this.timers.delete(timer);
+            fn();
+        }, ms);
+        this.timers.add(timer);
+    }
+
     // --- Assistant sessions -------------------------------------------------------------------------------------
 
     public get assistantSessions(): readonly AssistantSession[] {
@@ -178,6 +302,23 @@ export class InsisPreviewStore extends TypedEventEmitter<InsisStoreEvent, Handle
         this.target = { kind: "assistant", id: session.id };
         this.changed();
         return session;
+    }
+
+    /**
+     * A suggestion of the lead card ("Помощник предлагает"): open the assistant on the client's session and put the
+     * suggestion's prompt into it as the broker's message.
+     */
+    public askAssistantForClient(conversationId: string, prompt: string, now = Date.now()): AssistantSession {
+        const session = this.openAssistantForClient(conversationId, now);
+        const text = prompt.trim();
+        if (!text) return session;
+        this.updateSession(session.id, (s) => ({
+            ...s,
+            preview: text,
+            lastActivityTs: now,
+            messages: [...s.messages, { kind: "user", id: `ask-${now}`, ts: now, text }],
+        }));
+        return this.getSession(session.id) ?? session;
     }
 
     public deleteSession(id: string): void {

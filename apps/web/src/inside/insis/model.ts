@@ -53,11 +53,13 @@ export type ClientTimelineItem =
           delivery?: DeliveryState;
           /** Reason shown under a failed message. */
           failReason?: string;
+          /** Sent as an approved template of the channel (outside the service window): its name. */
+          templateName?: string;
       }
-    /** "Передано: Анна Петрова → вам · 14 окт". */
+    /** "Передано: Анна Петрова → вам · 14 окт"; `to` is "me" when the viewer got the conversation. */
     | { kind: "assignment_changed"; id: string; ts: number; from: string; to: string }
     /** A system line, e.g. "Амир создал показ в Insis · чт, 30 окт, 16:30". */
-    | { kind: "system"; id: string; ts: number; text: string; icon?: "calendar" | "info" };
+    | { kind: "system"; id: string; ts: number; text: string; icon?: "calendar" | "info" | "lead" };
 
 export interface ClientConversation {
     id: string;
@@ -82,6 +84,28 @@ export interface ClientConversation {
     clientTimeZone?: string;
     leadId: string;
     timeline: ClientTimelineItem[];
+    /**
+     * The lead came through "Ждут приёма": "pending" — assigned to the viewer but not accepted yet ("Принять" and
+     * "Вернуть в очередь" in the card); "accepted" — just accepted, can still go back to the queue. Absent — neither.
+     */
+    queue?: "pending" | "accepted";
+}
+
+/** An approved template of the channel, the only thing that can be sent outside the service window. */
+export interface ClientTemplate {
+    id: string;
+    name: string;
+    /** Language of the template, e.g. "ru", "en". */
+    language: string;
+    /** Body with `{{name}}` for the client's first name. */
+    body: string;
+}
+
+/** The queue of leads assigned to the viewer and not accepted yet ("Ждут приёма · N"): only the number and the age. */
+export interface WaitingQueue {
+    count: number;
+    /** When the oldest of them was assigned, ms since epoch. */
+    oldestSince?: number;
 }
 
 /** A next step the assistant suggests for a lead, with why. */
@@ -100,6 +124,10 @@ export interface LeadListing {
     price: string;
     /** "Понравился", "Отправлен", "Показ чт 16:30". */
     status?: string;
+    /** Status chips: "key" — filled, "signal" — red outline (the client liked it). */
+    tags?: { label: string; tone?: "key" | "signal" }[];
+    /** Thumbnail background, a CSS background value. */
+    thumb?: string;
 }
 
 export interface LeadJourneyStep {
@@ -115,6 +143,10 @@ export interface LeadFile {
     name: string;
     size: string;
     ts: number;
+    /** Seconds the client spent on each page of a tracked PDF; the longest is highlighted. */
+    pageSeconds?: number[];
+    /** "Просмотрено 3 мин · дольше всего стр. 3 (Collective 2.0)". */
+    viewSummary?: string;
 }
 
 /** The lead card of a client conversation — read only (ADR-069 Amendment 2026-10-30, iter-68 ЛБ-8). */
