@@ -28,6 +28,7 @@ const NOW = new Date(2026, 9, 30, 15, 0).getTime();
 // environment — a CI shard runs this file where localStorage is not defined.
 beforeEach(() => {
     vi.spyOn(SettingsStore, "getValue").mockReturnValue(false as never);
+    vi.spyOn(SettingsStore, "getValueAt").mockReturnValue(null as never);
 });
 afterEach(() => {
     vi.restoreAllMocks();
