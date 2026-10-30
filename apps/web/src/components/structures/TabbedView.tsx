@@ -30,6 +30,7 @@ export class Tab<T extends string> {
      * @param {JSX.Element} body The JSX for the tab container.
      * @param {string} screenName The screen name to report to Posthog.
      * @param {string} labelClassName Additional class to add to the tab label.
+     * @param {ReactNode} labelSuffix Inside: shown at the end of the tab label, e.g. a count or a shortcut.
      */
     public constructor(
         public readonly id: T,
@@ -38,6 +39,7 @@ export class Tab<T extends string> {
         public readonly body: JSX.Element,
         public readonly screenName?: ScreenName,
         public readonly labelClassName?: string,
+        public readonly labelSuffix?: React.ReactNode,
     ) {}
 }
 
@@ -116,6 +118,9 @@ function TabLabel<T extends string>({ tab, isActive, showToolip, onClick }: ITab
             {tabIcon}
             <span className="mx_TabbedView_tabLabel_text" id={`${id}_label`}>
                 {label}
+                {tab.labelSuffix !== undefined && tab.labelSuffix !== null && (
+                    <span className="mx_TabbedView_tabLabel_suffix">{tab.labelSuffix}</span>
+                )}
             </span>
         </RovingAccessibleButton>
     );
@@ -144,6 +149,11 @@ interface IProps<T extends string> {
      * Only applies if `tabLocation === TabLocation.LEFT`.
      */
     tabListHeader?: React.ReactNode;
+    /**
+     * Inside: tabs whose labels are not shown (e.g. filtered out by the settings search); the active one
+     * keeps its panel.
+     */
+    hiddenTabIds?: T[];
 }
 
 /**
@@ -159,16 +169,18 @@ export default function TabbedView<T extends string>(props: IProps<T>): JSX.Elem
 
     const windowWidth = useWindowWidth();
 
-    const labels = props.tabs.map((tab) => (
-        <TabLabel
-            key={"tab_label_" + tab.id}
-            tab={tab}
-            isActive={tab.id === props.activeTabId}
-            onClick={() => props.onChange(tab.id)}
-            // This should be the same as the the CSS breakpoint at which the tab labels are hidden
-            showToolip={windowWidth < 1024 && tabLocation == TabLocation.LEFT}
-        />
-    ));
+    const labels = props.tabs
+        .filter((tab) => !props.hiddenTabIds?.includes(tab.id))
+        .map((tab) => (
+            <TabLabel
+                key={"tab_label_" + tab.id}
+                tab={tab}
+                isActive={tab.id === props.activeTabId}
+                onClick={() => props.onChange(tab.id)}
+                // This should be the same as the the CSS breakpoint at which the tab labels are hidden
+                showToolip={windowWidth < 1024 && tabLocation == TabLocation.LEFT}
+            />
+        ));
     const tab = getTabById(props.activeTabId);
     const panel = tab ? <TabPanel tab={tab} /> : null;
 

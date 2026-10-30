@@ -62,6 +62,7 @@ import {
 } from "../stores/room-list-v3/section.ts";
 import { type NotificationSound } from "../Notifier.ts";
 import VideoRoomsBetaImage from "../../res/img/betas/video_rooms.png";
+import { type InsideChatWallpaper } from "./watchers/InsideWallpaperWatcher.ts";
 
 export const defaultWatchManager = new WatchManager();
 
@@ -284,6 +285,7 @@ export interface Settings {
     "theme": IBaseSetting<string>;
     "custom_themes": IBaseSetting<CustomTheme[]>;
     "use_system_theme": IBaseSetting<boolean>;
+    "inside_chat_wallpaper": IBaseSetting<InsideChatWallpaper>;
     "useBundledEmojiFont": IBaseSetting<boolean>;
     "useSystemFont": IBaseSetting<boolean>;
     "systemFont": IBaseSetting<string>;
@@ -986,6 +988,12 @@ export const SETTINGS: Settings = {
         supportedLevels: LEVELS_DEVICE_ONLY_SETTINGS,
         default: true,
         displayName: _td("settings|appearance|match_system_theme"),
+    },
+    // Inside: the chat wallpaper, reflected as <html data-lobby-wallpaper> for the skin (InsideWallpaperWatcher).
+    "inside_chat_wallpaper": {
+        supportedLevels: LEVELS_DEVICE_ONLY_SETTINGS,
+        default: "pattern",
+        displayName: _td("settings|appearance|inside_wallpaper"),
     },
     "useBundledEmojiFont": {
         supportedLevels: LEVELS_DEVICE_ONLY_SETTINGS,

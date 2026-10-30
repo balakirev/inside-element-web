@@ -1,0 +1,406 @@
+/*
+Copyright 2026 Inside Estate.
+
+SPDX-License-Identifier: AGPL-3.0-only OR GPL-3.0-only OR LicenseRef-Element-Commercial
+Please see LICENSE files in the repository root for full details.
+*/
+
+/* Inside: the Appearance screen (InsideAppearancePanel.tsx) and the search of the settings list
+   (UserSettingsDialog.tsx). Layout and Compound colours; the Inside skin recolours them with its tokens
+   and draws the wallpaper previews. */
+
+.mx_InsideAppearance {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.mx_InsideAppearance_heading {
+    margin: 16px 16px 6px;
+    font-size: 12px;
+    line-height: 15px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--cpd-color-text-secondary);
+}
+
+.mx_InsideAppearance_card {
+    background: var(--cpd-color-bg-canvas-default);
+    border-radius: 14px;
+    overflow: hidden;
+}
+
+.mx_InsideAppearance_footnote {
+    margin: 6px 16px 0;
+    font-size: 12.5px;
+    line-height: 1.45;
+    color: var(--cpd-color-text-secondary);
+}
+
+/* Theme and wallpaper tiles: three in a row, the chosen one framed. */
+.mx_InsideAppearance_tiles {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    padding: 14px 16px 16px;
+}
+
+.mx_InsideAppearance_tile {
+    position: relative;
+    display: grid;
+    justify-items: center;
+    gap: 8px;
+    min-width: 0;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--cpd-color-text-primary);
+    cursor: pointer;
+}
+
+.mx_InsideAppearance_tileLabel {
+    max-width: 100%;
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* The native radio stays in the page for the keyboard and screen readers, over the whole tile. */
+.mx_InsideAppearance_radio {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.mx_InsideAppearance_themePreview,
+.mx_InsideAppearance_themePreview_split,
+.mx_InsideAppearance_wallPreview {
+    box-sizing: border-box;
+    display: block;
+    width: 100%;
+    border: 2px solid var(--cpd-color-border-interactive-secondary);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.mx_InsideAppearance_tile_on
+    :is(.mx_InsideAppearance_themePreview, .mx_InsideAppearance_themePreview_split, .mx_InsideAppearance_wallPreview) {
+    border-color: var(--cpd-color-border-critical-primary);
+}
+
+.mx_InsideAppearance_tile:has(.mx_InsideAppearance_radio:focus-visible)
+    :is(.mx_InsideAppearance_themePreview, .mx_InsideAppearance_themePreview_split, .mx_InsideAppearance_wallPreview) {
+    outline: 2px solid var(--cpd-color-border-focused);
+    outline-offset: 2px;
+}
+
+/* Theme preview: the rail, the chat background, an incoming and an own bubble. The preview carries
+   cpd-theme-light / cpd-theme-dark, so its colours are those of its theme. */
+.mx_InsideAppearance_themePreview {
+    position: relative;
+    aspect-ratio: 16 / 10;
+    background: var(--cpd-color-bg-subtle-secondary);
+
+    i {
+        position: absolute;
+        display: block;
+    }
+}
+
+.mx_InsideAppearance_themePreview_rail {
+    inset: 0 auto 0 0;
+    width: 22%;
+    background: var(--cpd-color-gray-1400);
+}
+
+.mx_InsideAppearance_themePreview_in,
+.mx_InsideAppearance_themePreview_out {
+    height: 9px;
+    border-radius: 5px;
+}
+
+.mx_InsideAppearance_themePreview_in {
+    left: 30%;
+    top: 28%;
+    width: 38%;
+    background: var(--cpd-color-bg-canvas-default);
+}
+
+.mx_InsideAppearance_themePreview_out {
+    right: 8%;
+    top: 52%;
+    width: 34%;
+    background: var(--cpd-color-bg-action-primary-rest);
+}
+
+/* "Match system": the light theme on the left half, the dark one on the right, without bubbles. */
+.mx_InsideAppearance_themePreview_split {
+    position: relative;
+    aspect-ratio: 16 / 10;
+
+    .mx_InsideAppearance_themePreview {
+        position: absolute;
+        inset: 0;
+        border: none;
+        border-radius: 0;
+        aspect-ratio: auto;
+    }
+
+    .mx_InsideAppearance_themePreview + .mx_InsideAppearance_themePreview {
+        left: 50%;
+
+        .mx_InsideAppearance_themePreview_rail {
+            display: none;
+        }
+    }
+
+    .mx_InsideAppearance_themePreview_in,
+    .mx_InsideAppearance_themePreview_out {
+        display: none;
+    }
+}
+
+/* Wallpaper preview: without the skin, the plain chat background or white. */
+.mx_InsideAppearance_wallPreview {
+    aspect-ratio: 4 / 3;
+    background: var(--cpd-color-bg-subtle-secondary);
+
+    &[data-wallpaper="white"] {
+        background: var(--cpd-color-bg-canvas-default);
+    }
+}
+
+/* Rows of the text and messages card. */
+.mx_InsideAppearance_row,
+.mx_InsideAppearance_option {
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 50px;
+    padding: 0 16px;
+    font-size: 14.5px;
+    color: var(--cpd-color-text-primary);
+    text-align: start;
+}
+
+.mx_InsideAppearance_card > * + * {
+    border-top: 1px solid var(--cpd-color-separator-primary);
+}
+
+/* Over .mx_SettingsTab .mx_AccessibleButton (align-self: flex-start). */
+.mx_InsideAppearance :is(.mx_InsideAppearance_row, .mx_InsideAppearance_option) > .mx_ToggleSwitch {
+    margin-inline-start: auto;
+    flex: none;
+    align-self: center;
+}
+
+.mx_InsideAppearance_value {
+    margin-inline-start: auto;
+    font-size: 14px;
+    color: var(--cpd-color-text-secondary);
+    white-space: nowrap;
+}
+
+.mx_InsideAppearance_rowButton {
+    cursor: pointer;
+
+    &:hover {
+        background: var(--cpd-color-bg-subtle-secondary);
+    }
+
+    .mx_InsideAppearance_value {
+        margin-inline-end: -6px;
+    }
+}
+
+.mx_InsideAppearance_chevron {
+    flex: none;
+    width: 20px;
+    height: 20px;
+    color: var(--cpd-color-icon-tertiary);
+    transition: transform 0.15s;
+
+    &.mx_InsideAppearance_chevron_open {
+        transform: rotate(90deg);
+    }
+}
+
+/* The layouts under "Message view", the chosen one with a tick. */
+.mx_InsideAppearance_options {
+    padding: 4px 0;
+    background: var(--cpd-color-bg-subtle-secondary);
+}
+
+.mx_InsideAppearance_option {
+    position: relative;
+    min-height: 44px;
+    padding-inline-start: 28px;
+    cursor: pointer;
+
+    &:has(.mx_InsideAppearance_radio:focus-visible) {
+        outline: 2px solid var(--cpd-color-border-focused);
+        outline-offset: -2px;
+    }
+}
+
+.mx_InsideAppearance_check {
+    margin-inline-start: auto;
+    width: 20px;
+    height: 20px;
+    color: var(--cpd-color-icon-primary);
+}
+
+/* Text size: small A, slider, big A, the size in px. */
+.mx_InsideAppearance_slider {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-inline-start: 12px;
+    color: var(--cpd-color-text-secondary);
+
+    input {
+        --mx-inside-slider-track: var(--cpd-color-border-interactive-secondary);
+        --mx-inside-slider-on: var(--cpd-color-bg-action-primary-rest);
+
+        flex: 1;
+        min-width: 0;
+        height: 20px;
+        margin: 0;
+        background: transparent;
+        -webkit-appearance: none;
+        appearance: none;
+        cursor: pointer;
+
+        &::-webkit-slider-runnable-track {
+            height: 4px;
+            border-radius: 2px;
+            background: linear-gradient(
+                90deg,
+                var(--mx-inside-slider-on) 0 var(--mx-inside-slider-fill, 0%),
+                var(--mx-inside-slider-track) var(--mx-inside-slider-fill, 0%) 100%
+            );
+        }
+
+        &::-moz-range-track {
+            height: 4px;
+            border-radius: 2px;
+            background: var(--mx-inside-slider-track);
+        }
+
+        &::-moz-range-progress {
+            height: 4px;
+            border-radius: 2px;
+            background: var(--mx-inside-slider-on);
+        }
+
+        &::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            margin-top: -8px;
+            border: none;
+            border-radius: 50%;
+            background: #fff;
+            box-shadow: 0 1px 3px rgb(0, 0, 0, 0.3);
+        }
+
+        &::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border: none;
+            border-radius: 50%;
+            background: #fff;
+            box-shadow: 0 1px 3px rgb(0, 0, 0, 0.3);
+        }
+
+        &:focus-visible {
+            outline: 2px solid var(--cpd-color-border-focused);
+            outline-offset: 2px;
+            border-radius: 10px;
+        }
+    }
+}
+
+.mx_InsideAppearance_slider_small {
+    font-size: 12px;
+}
+
+.mx_InsideAppearance_slider_big {
+    font-size: 17px;
+}
+
+.mx_InsideAppearance_fontSize .mx_InsideAppearance_value {
+    min-width: 2ch;
+    margin-inline-start: 0;
+    text-align: end;
+}
+
+/* Settings list: the search field above the profile and the end of a section label (count, shortcut). */
+.mx_UserSettingsDialog_search {
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 36px;
+    margin: 4px 6px 8px;
+    padding: 0 14px;
+    border-radius: 18px;
+    background: var(--cpd-color-bg-subtle-secondary);
+    color: var(--cpd-color-text-secondary);
+
+    input {
+        flex: 1;
+        min-width: 0;
+        margin: 0;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        font: inherit;
+        font-size: 14px;
+        font-weight: 400;
+        color: var(--cpd-color-text-primary);
+        outline: none;
+
+        &::placeholder {
+            color: var(--cpd-color-text-secondary);
+        }
+
+        &::-webkit-search-cancel-button {
+            cursor: pointer;
+        }
+    }
+
+    &:focus-within {
+        outline: 2px solid var(--cpd-color-border-focused);
+        outline-offset: -2px;
+    }
+}
+
+.mx_UserSettingsDialog_search_icon {
+    flex: none;
+    width: 17px;
+    height: 17px;
+}
+
+.mx_UserSettingsDialog_searchEmpty {
+    padding: 16px;
+    text-align: center;
+    font-size: 13.5px;
+    color: var(--cpd-color-text-secondary);
+}
+
+.mx_TabbedView_tabLabel_suffix {
+    margin-inline-start: auto;
+    font-size: 13.5px;
+    color: var(--cpd-color-text-secondary);
+}

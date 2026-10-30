@@ -9,7 +9,8 @@ Please see LICENSE files in the repository root for full details.
 
 import { ClientEvent, type MatrixEvent } from "matrix-js-sdk/src/matrix";
 import { Toast } from "@vector-im/compound-web";
-import React, { type JSX, useState } from "react";
+import React, { type JSX, useEffect, useState } from "react";
+import classNames from "classnames";
 import UserProfileIcon from "@vector-im/compound-design-tokens/assets/web/icons/user-profile";
 import DevicesIcon from "@vector-im/compound-design-tokens/assets/web/icons/devices";
 import VisibilityOnIcon from "@vector-im/compound-design-tokens/assets/web/icons/visibility-on";
@@ -23,6 +24,7 @@ import LockIcon from "@vector-im/compound-design-tokens/assets/web/icons/lock";
 import LabsIcon from "@vector-im/compound-design-tokens/assets/web/icons/labs";
 import BlockIcon from "@vector-im/compound-design-tokens/assets/web/icons/block";
 import HelpIcon from "@vector-im/compound-design-tokens/assets/web/icons/help";
+import SearchIcon from "@vector-im/compound-design-tokens/assets/web/icons/search";
 import { ToastContext, useActiveToast } from "@element-hq/web-shared-components";
 
 import TabbedView, { Tab, useActiveTabWithDefault } from "../../structures/TabbedView";
@@ -58,6 +60,8 @@ import {
     useEventEmitterState,
     type AsyncStateCallbackResult,
 } from "../../../hooks/useEventEmitter";
+import { IS_MAC } from "../../../Keyboard";
+import { useWindowWidth } from "../../../hooks/useWindowWidth";
 import { EncryptionUserSettingsTab, type State } from "../settings/tabs/user/EncryptionUserSettingsTab";
 
 interface IProps {
@@ -89,7 +93,9 @@ function SettingsProfileHeader({ onClick }: { onClick: () => void }): JSX.Elemen
     );
     const userId = client.getSafeUserId();
     return (
-        <AccessibleButton className="mx_UserSettingsDialog_profile" onClick={onClick}>
+        // The dialog's focus lock focuses this, not the search field below the title: on a phone a focused
+        // field would open the keyboard over the settings.
+        <AccessibleButton className="mx_UserSettingsDialog_profile" onClick={onClick} data-autofocus={true}>
             <OwnAvatar size="64px" userId={userId} />
             <div className="mx_UserSettingsDialog_profile_text">
                 <div className="mx_UserSettingsDialog_profile_name">{displayName ?? userId}</div>
@@ -97,6 +103,110 @@ function SettingsProfileHeader({ onClick }: { onClick: () => void }): JSX.Elemen
             </div>
         </AccessibleButton>
     );
+}
+
+/** Inside: below this window width the settings are one column (the same number in the Inside skin). */
+const INSIDE_SETTINGS_ONE_COLUMN_WIDTH = 900;
+
+/** Inside: a section of the settings with its group in the list (1 account, 2 app, 3 help). */
+interface InsideTabEntry {
+    group: number;
+    tab: Tab<UserTab>;
+}
+
+/**
+ * Inside: marks the first and the last visible section of each group, so the skin rounds the group and
+ * separates it from the next — also when the search or a missing section (voice, Mjolnir) shortens it.
+ */
+function insideGroupTabs(entries: InsideTabEntry[], hidden: UserTab[]): NonEmptyArray<Tab<UserTab>> {
+    const visible = entries.filter((e) => !hidden.includes(e.tab.id));
+    return entries.map((e) => {
+        const i = visible.indexOf(e);
+        if (i < 0) return e.tab;
+        const first = i === 0 || visible[i - 1].group !== e.group;
+        const last = i === visible.length - 1 || visible[i + 1].group !== e.group;
+        if (!first && !last) return e.tab;
+        const t = e.tab;
+        return new Tab(
+            t.id,
+            t.label,
+            t.icon,
+            t.body,
+            t.screenName,
+            classNames(t.labelClassName, {
+                mx_UserSettingsDialog_groupFirst: first,
+                mx_UserSettingsDialog_groupLast: last,
+            }),
+            t.labelSuffix,
+        );
+    }) as NonEmptyArray<Tab<UserTab>>;
+}
+
+/** Inside: the label of every section, for the settings search. */
+const ALL_TAB_LABELS: Array<[UserTab, TranslationKey]> = [
+    [UserTab.Account, _td("settings|account|title")],
+    [UserTab.SessionManager, _td("settings|sessions|title")],
+    [UserTab.Notifications, _td("notifications|enable_prompt_toast_title")],
+    [UserTab.Voice, _td("settings|voip|title")],
+    [UserTab.Appearance, _td("common|appearance")],
+    [UserTab.Preferences, _td("common|preferences")],
+    [UserTab.Security, _td("room_settings|security|title")],
+    [UserTab.Mjolnir, _td("labs_mjolnir|title")],
+    [UserTab.Encryption, _td("settings|encryption|title")],
+    [UserTab.Keyboard, _td("settings|keyboard|title")],
+    [UserTab.Sidebar, _td("settings|sidebar|title")],
+    [UserTab.Labs, _td("common|labs")],
+    [UserTab.Help, _td("setting|help_about|title")],
+];
+
+/** Inside: the sections whose name does not contain the search text. */
+function insideHiddenTabIds(query: string): UserTab[] {
+    const q = query.trim().toLocaleLowerCase();
+    if (!q) return [];
+    return ALL_TAB_LABELS.filter(([, label]) => !_t(label).toLocaleLowerCase().includes(q)).map(([id]) => id);
+}
+
+/** Inside: the search field at the top of the settings list. */
+function SettingsSearch({ query, onChange }: { query: string; onChange: (query: string) => void }): JSX.Element {
+    const placeholder = _t("settings|inside_search");
+    return (
+        <label className="mx_UserSettingsDialog_search mx_no_textinput">
+            <SearchIcon className="mx_UserSettingsDialog_search_icon" aria-hidden={true} />
+            <input
+                type="search"
+                value={query}
+                placeholder={placeholder}
+                aria-label={placeholder}
+                autoComplete="off"
+                onChange={(e) => onChange(e.target.value)}
+                onKeyDown={(e) => {
+                    // Escape clears the search first, then closes the settings.
+                    if (e.key === "Escape" && query) {
+                        e.stopPropagation();
+                        onChange("");
+                    }
+                }}
+            />
+        </label>
+    );
+}
+
+/** Inside: the number of the user's sessions, shown next to Devices. */
+function useSessionCount(sdkContext: SDKContextClass): number | null {
+    const [count, setCount] = useState<number | null>(null);
+    useEffect(() => {
+        let cancelled = false;
+        sdkContext.client
+            ?.getDevices()
+            .then(({ devices }) => {
+                if (!cancelled) setCount(devices.length);
+            })
+            .catch(() => {});
+        return () => {
+            cancelled = true;
+        };
+    }, [sdkContext]);
+    return count;
 }
 
 function titleForTabID(tabId: UserTab): React.ReactNode {
@@ -140,6 +250,14 @@ export default function UserSettingsDialog(props: IProps): JSX.Element {
     const [showMsc4108QrCode, setShowMsc4108QrCode] = useState(props.showMsc4108QrCode);
     const [initialEncryptionState, setInitialEncryptionState] = useState(props.initialEncryptionState);
     const [startCustomStatus, setStartCustomStatus] = useState(props.startCustomStatus);
+    // Inside: the settings search filters the sections by name; the number of sessions next to Devices.
+    const [query, setQuery] = useState("");
+    const sessionCount = useSessionCount(props.sdkContext);
+    const hiddenTabIds = insideHiddenTabIds(query);
+    // Inside: in a narrow window the settings are one column, as in Telegram: the list of sections, a
+    // section opens over it and "back" returns to the list. Opened without a section, it starts on the list.
+    const oneColumn = useWindowWidth() < INSIDE_SETTINGS_ONE_COLUMN_WIDTH;
+    const [showList, setShowList] = useState(!props.initialTabId);
 
     // If the user doesn't have Recovery set up (no default Secret Storage key),
     // we show an indicator on the Encryption tab.
@@ -161,97 +279,100 @@ export default function UserSettingsDialog(props: IProps): JSX.Element {
         false,
     );
 
+    // Inside: the sections in groups as the Lobby settings screen: account and devices; notifications,
+    // appearance, preferences (language), security, encryption; keyboard, sidebar, labs, help.
     const getTabs = (): NonEmptyArray<Tab<UserTab>> => {
-        const tabs: Tab<UserTab>[] = [];
+        const entries: InsideTabEntry[] = [];
 
-        tabs.push(
-            new Tab(
+        entries.push({
+            group: 1,
+            tab: new Tab(
                 UserTab.Account,
                 _td("settings|account|title"),
                 <UserProfileIcon />,
                 <AccountUserSettingsTab closeSettingsFn={props.onFinished} startCustomStatus={startCustomStatus} />,
                 "UserSettingsGeneral",
             ),
-        );
-        tabs.push(
-            new Tab(
+        });
+        entries.push({
+            group: 1,
+            tab: new Tab(
                 UserTab.SessionManager,
                 _td("settings|sessions|title"),
                 <DevicesIcon />,
                 <SessionManagerTab showMsc4108QrCode={showMsc4108QrCode} />,
                 undefined,
+                undefined,
+                sessionCount ?? undefined,
             ),
-        );
-        tabs.push(
-            new Tab(
-                UserTab.Appearance,
-                _td("common|appearance"),
-                <VisibilityOnIcon />,
-                <AppearanceUserSettingsTab />,
-                "UserSettingsAppearance",
-            ),
-        );
-        tabs.push(
-            new Tab(
+        });
+        entries.push({
+            group: 2,
+            tab: new Tab(
                 UserTab.Notifications,
                 _td("notifications|enable_prompt_toast_title"),
                 <NotificationsIcon />,
                 <NotificationUserSettingsTab />,
                 "UserSettingsNotifications",
             ),
-        );
-        tabs.push(
-            new Tab(
-                UserTab.Preferences,
-                _td("common|preferences"),
-                <PreferencesIcon />,
-                <PreferencesUserSettingsTab />,
-                "UserSettingsPreferences",
-            ),
-        );
-        tabs.push(
-            new Tab(
-                UserTab.Keyboard,
-                _td("settings|keyboard|title"),
-                <KeyboardIcon />,
-                <KeyboardUserSettingsTab />,
-                "UserSettingsKeyboard",
-            ),
-        );
-        tabs.push(
-            new Tab(
-                UserTab.Sidebar,
-                _td("settings|sidebar|title"),
-                <SidebarIcon />,
-                <SidebarUserSettingsTab />,
-                "UserSettingsSidebar",
-            ),
-        );
-
+        });
         if (voipEnabled) {
-            tabs.push(
-                new Tab(
+            entries.push({
+                group: 2,
+                tab: new Tab(
                     UserTab.Voice,
                     _td("settings|voip|title"),
                     <MicOnIcon />,
                     <VoiceUserSettingsTab />,
                     "UserSettingsVoiceVideo",
                 ),
-            );
+            });
         }
-
-        tabs.push(
-            new Tab(
+        entries.push({
+            group: 2,
+            tab: new Tab(
+                UserTab.Appearance,
+                _td("common|appearance"),
+                <VisibilityOnIcon />,
+                <AppearanceUserSettingsTab />,
+                "UserSettingsAppearance",
+            ),
+        });
+        entries.push({
+            group: 2,
+            tab: new Tab(
+                UserTab.Preferences,
+                _td("common|preferences"),
+                <PreferencesIcon />,
+                <PreferencesUserSettingsTab />,
+                "UserSettingsPreferences",
+            ),
+        });
+        entries.push({
+            group: 2,
+            tab: new Tab(
                 UserTab.Security,
                 _td("room_settings|security|title"),
                 <LockIcon />,
                 <SecurityUserSettingsTab />,
                 "UserSettingsSecurityPrivacy",
             ),
-        );
-
-        tabs.push(
-            new Tab(
+        });
+        if (mjolnirEnabled) {
+            entries.push({
+                group: 2,
+                tab: new Tab(
+                    UserTab.Mjolnir,
+                    _td("labs_mjolnir|title"),
+                    <BlockIcon />,
+                    <MjolnirUserSettingsTab />,
+                    "UserSettingMjolnir",
+                ),
+            });
+        }
+        entries.push({
+            group: 2,
+            tab: new Tab(
                 UserTab.Encryption,
                 _td("settings|encryption|title"),
                 <KeyIcon />,
@@ -259,40 +380,59 @@ export default function UserSettingsDialog(props: IProps): JSX.Element {
                 "UserSettingsEncryption",
                 showSetupRecoveryIndicator ? "mx_SettingsDialog_tabLabelsAlert" : undefined,
             ),
-        );
-
+        });
+        entries.push({
+            group: 3,
+            tab: new Tab(
+                UserTab.Keyboard,
+                _td("settings|keyboard|title"),
+                <KeyboardIcon />,
+                <KeyboardUserSettingsTab />,
+                "UserSettingsKeyboard",
+                undefined,
+                <span className="mx_UserSettingsDialog_shortcut">{IS_MAC ? "⌘ /" : "Ctrl /"}</span>,
+            ),
+        });
+        entries.push({
+            group: 3,
+            tab: new Tab(
+                UserTab.Sidebar,
+                _td("settings|sidebar|title"),
+                <SidebarIcon />,
+                <SidebarUserSettingsTab />,
+                "UserSettingsSidebar",
+            ),
+        });
         if (showLabsFlags() || SettingsStore.getFeatureSettingNames().some((k) => SettingsStore.getBetaInfo(k))) {
-            tabs.push(
-                new Tab(UserTab.Labs, _td("common|labs"), <LabsIcon />, <LabsUserSettingsTab />, "UserSettingsLabs"),
-            );
-        }
-        if (mjolnirEnabled) {
-            tabs.push(
-                new Tab(
-                    UserTab.Mjolnir,
-                    _td("labs_mjolnir|title"),
-                    <BlockIcon />,
-                    <MjolnirUserSettingsTab />,
-                    "UserSettingMjolnir",
+            entries.push({
+                group: 3,
+                tab: new Tab(
+                    UserTab.Labs,
+                    _td("common|labs"),
+                    <LabsIcon />,
+                    <LabsUserSettingsTab />,
+                    "UserSettingsLabs",
                 ),
-            );
+            });
         }
-        tabs.push(
-            new Tab(
+        entries.push({
+            group: 3,
+            tab: new Tab(
                 UserTab.Help,
                 _td("setting|help_about|title"),
                 <HelpIcon />,
                 <HelpUserSettingsTab />,
                 "UserSettingsHelpAbout",
             ),
-        );
+        });
 
-        return tabs as NonEmptyArray<Tab<UserTab>>;
+        return insideGroupTabs(entries, hiddenTabIds);
     };
 
     const [activeTabId, _setActiveTabId] = useActiveTabWithDefault(getTabs(), UserTab.Account, props.initialTabId);
     const setActiveTabId = (tabId: UserTab): void => {
         _setActiveTabId(tabId);
+        setShowList(false);
         // Clear these so switching away from the tab and back to it will not show the QR code again
         setShowMsc4108QrCode(false);
         setInitialEncryptionState(undefined);
@@ -300,6 +440,7 @@ export default function UserSettingsDialog(props: IProps): JSX.Element {
     };
 
     const [activeToast, toastRack] = useActiveToast();
+    const tabs = getTabs();
 
     return (
         // XXX: SDKContext is provided within the LoggedInView subtree.
@@ -308,20 +449,37 @@ export default function UserSettingsDialog(props: IProps): JSX.Element {
         <SDKContext.Provider value={props.sdkContext}>
             <ToastContext.Provider value={toastRack}>
                 <BaseDialog
-                    className="mx_UserSettingsDialog"
+                    className={classNames("mx_UserSettingsDialog", {
+                        mx_UserSettingsDialog_inside_oneColumn: oneColumn,
+                        mx_UserSettingsDialog_inside_list: oneColumn && showList,
+                    })}
                     hasCancel={true}
-                    onFinished={props.onFinished}
+                    onFinished={oneColumn && !showList ? () => setShowList(true) : props.onFinished}
                     title={titleForTabID(activeTabId)}
                     titleClass="mx_UserSettingsDialog_title"
                 >
                     <div className="mx_SettingsDialog_content">
                         <TabbedView
-                            tabs={getTabs()}
+                            tabs={tabs}
                             activeTabId={activeTabId}
                             screenName="UserSettings"
                             onChange={setActiveTabId}
                             responsive={true}
-                            tabListHeader={<SettingsProfileHeader onClick={() => setActiveTabId(UserTab.Account)} />}
+                            hiddenTabIds={hiddenTabIds}
+                            tabListHeader={
+                                <>
+                                    <SettingsSearch query={query} onChange={setQuery} />
+                                    {query ? (
+                                        tabs.every((t) => hiddenTabIds.includes(t.id)) && (
+                                            <div className="mx_UserSettingsDialog_searchEmpty">
+                                                {_t("settings|inside_search_empty")}
+                                            </div>
+                                        )
+                                    ) : (
+                                        <SettingsProfileHeader onClick={() => setActiveTabId(UserTab.Account)} />
+                                    )}
+                                </>
+                            }
                         />
                     </div>
                     <div className="mx_SettingsDialog_toastContainer">
